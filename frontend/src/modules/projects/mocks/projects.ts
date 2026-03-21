@@ -1,0 +1,48 @@
+import type { Project } from '@/modules/projects/types';
+
+export const mockProjects: Project[] = [
+  {
+    id: 'cliente-core',
+    name: 'ClienteCore',
+    colorHex: '#0F172A',
+    allocationPct: 25,
+    type: 'fixed',
+    sprintDays: 14,
+    status: 'active',
+    fixedDays: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'],
+    fixedHoursPerDay: 2,
+  },
+  {
+    id: 'fintrack',
+    name: 'FinTrack',
+    colorHex: '#1D4ED8',
+    allocationPct: 20,
+    type: 'rotative',
+    sprintDays: 7,
+    status: 'active',
+    fixedDays: [],
+    fixedHoursPerDay: 0,
+  },
+  {
+    id: 'datavault',
+    name: 'DataVault',
+    colorHex: '#0F766E',
+    allocationPct: 10,
+    type: 'rotative',
+    sprintDays: 7,
+    status: 'active',
+    fixedDays: [],
+    fixedHoursPerDay: 0,
+  },
+  {
+    id: 'authguard',
+    name: 'AuthGuard',
+    colorHex: '#7C3AED',
+    allocationPct: 6,
+    type: 'rotative',
+    sprintDays: 30,
+    status: 'paused',
+    fixedDays: [],
+    fixedHoursPerDay: 0,
+  },
+];

@@ -1,0 +1,18 @@
+export const projectsListStyles = {
+  list: 'grid gap-4',
+  item: 'rounded-[1.5rem] border border-border/60 bg-card/90 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.28)]',
+  header: 'flex flex-col gap-4 md:flex-row md:items-start md:justify-between',
+  titleWrap: 'flex items-start gap-3',
+  color: 'mt-1 h-4 w-4 rounded-full ring-4 ring-white/70',
+  title: 'text-lg font-semibold tracking-tight text-foreground',
+  meta: 'mt-1 text-sm leading-6 text-muted-foreground',
+  badges: 'mt-4 flex flex-wrap gap-2',
+  badge: 'inline-flex min-h-10 items-center rounded-full px-3 text-xs font-medium uppercase tracking-[0.18em]',
+  badgeFixed: 'bg-slate-900 text-white',
+  badgeRotative: 'bg-slate-200 text-slate-800',
+  badgePaused: 'bg-amber-100 text-amber-800',
+  badgeActive: 'bg-emerald-100 text-emerald-800',
+  footer: 'mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4',
+  footerText: 'text-sm text-muted-foreground',
+  actions: 'flex flex-wrap gap-3',
+};

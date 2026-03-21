@@ -209,7 +209,7 @@ Done
 
 ### Status
 
-Planned
+Done
 
 ### Escopo
 
@@ -219,11 +219,11 @@ Planned
 
 ### Tasks
 
-- [ ] FE-0201 criar módulo `projects` com tipos, mocks, queries temporárias e componentes visuais
-- [ ] FE-0202 construir formulário com React Hook Form + Zod
-- [ ] FE-0203 criar lista editorial de projetos com chips de tipo e sprint
-- [ ] FE-0204 exibir soma de percentuais e alertas de inconsistência
-- [ ] FE-0205 modelar estados para dias fixos e horas reservadas
+- [x] FE-0201 criar módulo `projects` com tipos, mocks, queries temporárias e componentes visuais
+- [x] FE-0202 construir formulário com React Hook Form + Zod
+- [x] FE-0203 criar lista editorial de projetos com chips de tipo e sprint
+- [x] FE-0204 exibir soma de percentuais e alertas de inconsistência
+- [x] FE-0205 modelar estados para dias fixos e horas reservadas
 
 ### Critérios de teste unitário
 
@@ -234,28 +234,49 @@ Planned
 
 ### Execução
 
-- Data:
-- Responsável:
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
+  - a tela `Projetos` deixou de ser apenas um preview estático e passou a operar como mock funcional client-side
+  - a persistência continua local ao módulo neste ciclo, preservando escopo fechado enquanto o backend não entra
+  - o formulário foi implementado com React Hook Form + Zod e validações condicionais para projetos fixos
+  - a modelagem de domínio foi tipada com `Project`, `ProjectFormValues`, `SprintDays` e variações de status e tipo
 - Riscos:
+  - a carteira ainda não persiste entre recargas e precisará ser conectada ao backend ou storage em ciclos futuros
+  - a edição cobre os dados principais do projeto, mas ainda não há ordenação, busca ou filtros avançados
 - Dependências:
+  - integração futura do módulo com endpoints reais de projetos
+  - reaproveitamento do resumo percentual na tela `Hoje`
 
 ### Changelog
 
 - Added:
+  - tipos fortes e mocks do domínio `projects`
+  - helpers de soma percentual, delta e formatação de agenda fixa
+  - componente `ProjectsWorkspace` com resumo, consistência da carteira e edição local
+  - componente `ProjectForm` com RHF + Zod e regras condicionais para projetos fixos
+  - componente `ProjectsList` com estados ativo, pausado, fixo e rotativo
+  - testes unitários para schema, helpers, formulário, lista, workspace e rota `/projetos`
 - Changed:
+  - a rota `/projetos` passou a renderizar a experiência funcional do módulo em vez de cards estáticos editoriais
+  - o resumo da tela agora mostra total alocado, delta até 100% e mensagem semafórica de consistência
 - Fixed:
+  - corrigido o alinhamento de tipos entre Zod e React Hook Form para schema com coercion e unions literais
+  - removidos reexports conflitantes que causavam resolução incorreta dos componentes do módulo
 - Removed:
+  - removido o preview estático `ProjectsPortfolioPreview`
 
 ### Evidência de validação
 
-- Build:
-- Tests:
+- Build: `pnpm build` passou com a rota `/projetos` gerando bundle funcional do módulo
+- Tests: `pnpm test:run` passou com 16 arquivos e 25 testes
 - Observações:
+  - o ciclo foi fechado com formulário funcional, edição local, pausa/reativação de projeto e cobertura unitária do comportamento relevante
 
 ### Pendências para próximo ciclo
 
--
+- iniciar o Cycle 3 com CRUD visual de tarefas e associação por projeto
+- reaproveitar os projetos cadastrados como base dos filtros e resumos do módulo de tarefas
 
 ## Cycle 3 — Tarefas
 

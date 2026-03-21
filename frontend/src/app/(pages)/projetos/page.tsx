@@ -1,11 +1,11 @@
-import { ProjectsPortfolioPreview } from '@/modules/projects/components/ProjectsPortfolioPreview';
+import { ProjectsWorkspace } from '@/modules/projects/components/ProjectsWorkspace/index';
 
 import { pageStyles } from './styles';
 
 export default function ProjetosRoutePage() {
   return (
     <main className={pageStyles.container}>
-      <ProjectsPortfolioPreview />
+      <ProjectsWorkspace />
     </main>
   );
 }
