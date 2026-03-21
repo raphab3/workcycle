@@ -4,10 +4,22 @@ export type TaskDeadlineState = 'overdue' | 'today' | 'soon' | 'planned';
 export type TaskCycleAssignment = 'backlog' | 'current' | 'next';
 export type TaskFilterValue = 'all';
 
+export interface TaskColumn {
+  id: string;
+  title: string;
+  status: TaskStatus;
+}
+
+export interface TaskColumnFormValues {
+  title: string;
+  status: TaskStatus;
+}
+
 export interface Task {
   id: string;
   title: string;
   projectId: string;
+  columnId: string;
   priority: TaskPriority;
   status: TaskStatus;
   cycleAssignment: TaskCycleAssignment;
@@ -18,6 +30,7 @@ export interface Task {
 export interface TaskFormValues {
   title: string;
   projectId: string;
+  columnId: string;
   priority: TaskPriority;
   status: TaskStatus;
   cycleAssignment: TaskCycleAssignment;

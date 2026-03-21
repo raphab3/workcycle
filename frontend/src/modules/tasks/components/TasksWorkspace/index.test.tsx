@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
@@ -14,6 +14,9 @@ describe('TasksWorkspace', () => {
     render(<TasksWorkspace />);
 
     expect(screen.getByText('Tasks em aberto')).toBeInTheDocument();
+    expect(screen.getByText('Backlog')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.getByText('CodeReview')).toBeInTheDocument();
     expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
     expect(screen.getByText('Carga aberta reaproveitando a carteira do Cycle 2')).toBeInTheDocument();
   });
@@ -50,5 +53,32 @@ describe('TasksWorkspace', () => {
     await user.selectOptions(screen.getAllByLabelText('Cycle')[0], 'next');
 
     expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+  });
+
+  it('creates a new dynamic kanban column', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.type(screen.getByLabelText('Nome da coluna'), 'Waiting QA');
+    await user.selectOptions(screen.getByLabelText('Categoria da coluna'), 'blocked');
+    await user.click(screen.getByRole('button', { name: 'Criar coluna' }));
+
+    expect(screen.getByText('Waiting QA')).toBeInTheDocument();
+  });
+
+  it('moves a task to a custom column', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.type(screen.getByLabelText('Nome da coluna'), 'Waiting QA');
+    await user.click(screen.getByRole('button', { name: 'Criar coluna' }));
+    await user.selectOptions(screen.getByLabelText('Mover Ajustar migration de faturamento'), 'waiting-qa-5');
+
+    const customColumn = screen.getByText('Waiting QA').closest('section');
+
+    expect(customColumn).not.toBeNull();
+    expect(within(customColumn as HTMLElement).getByText('Ajustar migration de faturamento')).toBeInTheDocument();
   });
 });

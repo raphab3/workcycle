@@ -1,7 +1,7 @@
 export const tasksWorkspaceStyles = {
-  layout: 'grid gap-6 xl:grid-cols-[0.95fr_1.05fr]',
+  layout: 'grid gap-6',
   stack: 'grid gap-6',
-  summaryGrid: 'grid gap-4 sm:grid-cols-3',
+  summaryGrid: 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4',
   metricValue: 'text-3xl font-semibold tracking-tight text-foreground',
   metricLabel: 'mt-2 text-sm text-muted-foreground',
   projectLoad: 'grid gap-3',

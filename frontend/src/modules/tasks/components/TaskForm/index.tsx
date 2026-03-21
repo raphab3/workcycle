@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/shared/components/Button';
@@ -13,6 +13,7 @@ import type { TaskFormProps } from './types';
 const baseValues: TaskFormSchemaInput = {
   title: '',
   projectId: '',
+  columnId: 'backlog',
   priority: 'medium',
   status: 'todo',
   cycleAssignment: 'backlog',
@@ -30,7 +31,7 @@ const priorityLabels = {
 const statusLabels = {
   todo: 'Todo',
   doing: 'Doing',
-  blocked: 'Blocked',
+  blocked: 'CodeReview',
   done: 'Done',
 } as const;
 
@@ -40,24 +41,43 @@ const cycleLabels = {
   next: 'Proximo cycle',
 } as const;
 
-export function TaskForm({ defaultValues, onCancelEdit, onSubmitTask, projects }: TaskFormProps) {
+export function TaskForm({ columns, defaultValues, onCancelEdit, onSubmitTask, projects }: TaskFormProps) {
+  const fallbackColumn = columns[0];
+  const emptyValues = useMemo<TaskFormSchemaInput>(() => ({
+    ...baseValues,
+    columnId: fallbackColumn?.id ?? baseValues.columnId,
+    status: fallbackColumn?.status ?? baseValues.status,
+  }), [fallbackColumn?.id, fallbackColumn?.status]);
+
   const {
     formState: { errors },
     handleSubmit,
     register,
     reset,
+    setValue,
+    watch,
   } = useForm<TaskFormSchemaInput, undefined, TaskFormSchemaOutput>({
     resolver: zodResolver(taskFormSchema),
-    defaultValues: defaultValues ?? baseValues,
+    defaultValues: defaultValues ?? emptyValues,
   });
 
+  const selectedColumnId = watch('columnId');
+
   useEffect(() => {
-    reset(defaultValues ?? baseValues);
-  }, [defaultValues, reset]);
+    reset(defaultValues ?? emptyValues);
+  }, [defaultValues, emptyValues, reset]);
+
+  useEffect(() => {
+    const selectedColumn = columns.find((column) => column.id === selectedColumnId);
+
+    if (selectedColumn) {
+      setValue('status', selectedColumn.status, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [columns, selectedColumnId, setValue]);
 
   function handleSubmitForm(values: TaskFormSchemaOutput) {
     onSubmitTask(values, defaultValues?.id);
-    reset(baseValues);
+    reset(emptyValues);
   }
 
   return (
@@ -90,12 +110,21 @@ export function TaskForm({ defaultValues, onCancelEdit, onSubmitTask, projects }
         </div>
 
         <div className={taskFormStyles.field}>
-          <label className={taskFormStyles.label} htmlFor="task-status">Status</label>
-          <select className={taskFormStyles.select} id="task-status" {...register('status')}>
-            {taskStatusValues.map((value) => (
-              <option key={value} value={value}>{statusLabels[value]}</option>
+          <label className={taskFormStyles.label} htmlFor="task-column">Coluna do quadro</label>
+          <select className={taskFormStyles.select} id="task-column" {...register('columnId')}>
+            {columns.map((column) => (
+              <option key={column.id} value={column.id}>{column.title}</option>
             ))}
           </select>
+          {errors.columnId ? <p className={taskFormStyles.error}>{errors.columnId.message}</p> : <p className={taskFormStyles.helper}>A coluna define o fluxo visivel do kanban e sincroniza a fase da task.</p>}
+        </div>
+
+        <input type="hidden" {...register('status')} />
+
+        <div className={taskFormStyles.field}>
+          <label className={taskFormStyles.label} htmlFor="task-status-preview">Fase vinculada</label>
+          <div className={taskFormStyles.preview} id="task-status-preview">{statusLabels[watch('status')]}</div>
+          <p className={taskFormStyles.helper}>A fase operacional acompanha a coluna escolhida no board.</p>
         </div>
 
         <div className={taskFormStyles.field}>

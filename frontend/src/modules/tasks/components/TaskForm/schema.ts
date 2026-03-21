@@ -7,6 +7,7 @@ export const taskCycleAssignmentValues = ['backlog', 'current', 'next'] as const
 export const taskFormSchema = z.object({
   title: z.string().min(4, 'Informe pelo menos 4 caracteres').max(80, 'Use no maximo 80 caracteres'),
   projectId: z.string().min(1, 'Selecione um projeto'),
+  columnId: z.string().min(1, 'Selecione uma coluna do quadro'),
   priority: z.enum(taskPriorityValues),
   status: z.enum(taskStatusValues),
   cycleAssignment: z.enum(taskCycleAssignmentValues),

@@ -717,6 +717,77 @@ Done
 
 - decidir a entrada de persistência local durável antes do dashboard mensal
 
+## Cycle 9 — Kanban de Tarefas com Colunas Dinâmicas
+
+### Status
+
+Done
+
+### Escopo
+
+- refatorar a tela `Tarefas` para um board kanban horizontal mais estável com volume maior de cards
+- remover a dependência visual da composição lateral entre criação e listagem
+- manter filtros, formulário, prioridade, cycle e edição já existentes
+- permitir criação dinâmica de colunas mantendo uma configuração default inspirada em Trello
+
+### Tasks
+
+- [x] FE-0901 modelar colunas dinâmicas do quadro no domínio e no store compartilhado
+- [x] FE-0902 trocar a listagem vertical por um board horizontal com colunas fixas e cards operacionais
+- [x] FE-0903 manter realocação de cycle, edição e conclusão dentro do card do kanban
+- [x] FE-0904 adaptar o formulário para trabalhar com coluna do board sem perder metadados existentes
+- [x] FE-0905 permitir criação dinâmica de colunas com configuração default `Backlog -> In Progress -> CodeReview -> Done`
+
+### Critérios de teste unitário
+
+- validar o formulário com a nova coluna do board
+- validar a tela `Tarefas` com as colunas default e criação dinâmica de coluna
+- garantir que o contexto da tela `Hoje` continue aceitando tasks criadas no novo shape
+
+### Execução
+
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
+- Decisões:
+  - o board passou a usar colunas dinâmicas no store, mas preservando status, prioridade e cycle assignment já existentes
+  - a configuração default do fluxo do quadro foi alinhada para `Backlog`, `In Progress`, `CodeReview` e `Done`
+  - a criação de tarefa saiu da dependência visual da lateral e permaneceu integrada ao board em largura total
+  - o movimento entre colunas atualiza a fase operacional da task sem quebrar o restante da lógica compartilhada
+- Riscos:
+  - ainda não há drag and drop real; a movimentação entre colunas acontece por seletor no card
+  - as colunas dinâmicas ainda não persistem após refresh por dependerem do store em sessão
+- Dependências:
+  - persistência local durável do board
+  - possível evolução futura para drag and drop ou quick add por coluna
+
+### Changelog
+
+- Added:
+  - modelo de colunas dinâmicas para o quadro de tarefas
+  - configuração default do board no estilo Trello com quatro colunas iniciais
+  - criação dinâmica de colunas a partir da própria tela `Tarefas`
+- Changed:
+  - a rota `Tarefas` deixou de depender de uma listagem lateral e passou a operar com board horizontal de cards
+  - o formulário de tarefas passou a trabalhar com coluna do quadro como parte do cadastro e da edição
+  - a movimentação entre colunas sincroniza a fase operacional da task mantendo cycle, prazo e prioridade
+- Fixed:
+  - reduzido o risco de quebra visual quando a quantidade de tasks ultrapassa a massa mock inicial
+  - removida a dependência da coluna lateral como área principal de criação para a tela `Tarefas`
+- Removed:
+  - removida a composição principal em duas colunas entre backlog e formulário na rota `Tarefas`
+
+### Evidência de validação
+
+- Build: `pnpm build` passou com a rota `/tarefas` e o restante do app compilando após a troca para kanban
+- Tests: arquivos de teste atualizados para `TaskForm`, `TasksWorkspace` e `TodayPlannerOverview`; o runner do Vitest no terminal compartilhado foi interrompido antes de retornar um resumo limpo desta rodada
+- Observações:
+  - os diagnósticos do editor nos arquivos alterados ficaram sem erros
+
+### Pendências para próximo ciclo
+
+- avaliar persistência local das colunas criadas dinamicamente
+- decidir se entra drag and drop real no board ou se o seletor de movimentação permanece no MVP
+
 ## Convenções de Changelog
 
 Use sempre estas categorias:

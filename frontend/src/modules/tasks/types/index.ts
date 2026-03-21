@@ -1,4 +1,6 @@
 export type {
+  TaskColumn,
+  TaskColumnFormValues,
   TaskCycleAssignment,
   TaskCyclePlan,
   TaskCyclePlanItem,

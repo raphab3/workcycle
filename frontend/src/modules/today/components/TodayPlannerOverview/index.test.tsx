@@ -23,6 +23,7 @@ describe('TodayPlannerOverview', () => {
     useWorkspaceStore.getState().addTask({
       title: 'Escalar analise de onboarding',
       projectId: 'cliente-core',
+      columnId: 'backlog',
       cycleAssignment: 'current',
       priority: 'critical',
       status: 'todo',

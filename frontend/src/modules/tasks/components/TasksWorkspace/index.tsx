@@ -27,8 +27,11 @@ export function TasksWorkspace() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filters, setFilters] = useState<TaskFiltersValues>(baseFilters);
   const tasks = useWorkspaceStore((state) => state.tasks);
+  const taskColumns = useWorkspaceStore((state) => state.taskColumns);
   const projects: Project[] = useWorkspaceStore((state) => state.projects);
   const addTask = useWorkspaceStore((state) => state.addTask);
+  const addTaskColumn = useWorkspaceStore((state) => state.addTaskColumn);
+  const moveTaskToColumn = useWorkspaceStore((state) => state.moveTaskToColumn);
   const updateTask = useWorkspaceStore((state) => state.updateTask);
   const toggleTaskDone = useWorkspaceStore((state) => state.toggleTaskDone);
   const setTaskCycleAssignment = useWorkspaceStore((state) => state.setTaskCycleAssignment);
@@ -109,9 +112,20 @@ export function TasksWorkspace() {
             <CardTitle>{editingTask ? editingTask.title : 'Adicionar item ao backlog visivel'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TaskForm defaultValues={editingTask} onCancelEdit={() => setEditingTask(null)} onSubmitTask={handleSubmitTask} projects={projects} />
+            <TaskForm columns={taskColumns} defaultValues={editingTask} onCancelEdit={() => setEditingTask(null)} onSubmitTask={handleSubmitTask} projects={projects} />
           </CardContent>
         </Card>
+
+        <TasksList
+          onAddColumn={addTaskColumn}
+          onAssignCycle={setTaskCycleAssignment}
+          onEditTask={setEditingTask}
+          onMoveTaskToColumn={moveTaskToColumn}
+          onToggleDone={handleToggleDone}
+          projects={projects}
+          taskColumns={taskColumns}
+          tasks={filteredTasks}
+        />
 
         <Card>
           <CardHeader>
@@ -134,8 +148,6 @@ export function TasksWorkspace() {
           </CardContent>
         </Card>
       </div>
-
-      <TasksList onAssignCycle={setTaskCycleAssignment} onEditTask={setEditingTask} onToggleDone={handleToggleDone} projects={projects} tasks={filteredTasks} />
     </div>
   );
 }

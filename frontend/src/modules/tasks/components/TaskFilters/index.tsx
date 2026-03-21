@@ -15,7 +15,7 @@ const statusOptions = [
   { label: 'Todos status', value: 'all' },
   { label: 'Todo', value: 'todo' },
   { label: 'Doing', value: 'doing' },
-  { label: 'Blocked', value: 'blocked' },
+  { label: 'CodeReview', value: 'blocked' },
   { label: 'Done', value: 'done' },
 ] as const;
 
