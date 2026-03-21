@@ -164,8 +164,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           </header>
 
           <div className={appLayoutStyles.statusRow}>
-            <div aria-live="polite" className={appLayoutStyles.status} role="status">Cycle 7 · contexto operacional e shell</div>
-            <p className={appLayoutStyles.statusHint}>Shell responsiva com sidebar colapsavel, header de produto e theme mode.</p>
+            <div aria-live="polite" className={appLayoutStyles.status} role="status">Planejamento do dia sincronizado</div>
+            <p className={appLayoutStyles.statusHint}>Acompanhe prioridades, capacidade do cycle e ajustes do dia em um unico fluxo.</p>
           </div>
 
           <main className={appLayoutStyles.content} id="main-content" tabIndex={-1}>{children}</main>
