@@ -1,0 +1,32 @@
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
+
+import { AppNavigation } from './index';
+
+const usePathnameMock = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => usePathnameMock(),
+}));
+
+describe('AppNavigation', () => {
+  it('renders the four main routes', () => {
+    usePathnameMock.mockReturnValue('/hoje');
+
+    render(<AppNavigation />);
+
+    expect(screen.getByRole('link', { name: 'Hoje' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Semana' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Tarefas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Projetos' })).toBeInTheDocument();
+  });
+
+  it('marks the current route as active', () => {
+    usePathnameMock.mockReturnValue('/tarefas');
+
+    render(<AppNavigation />);
+
+    expect(screen.getByRole('link', { name: 'Tarefas' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Hoje' })).not.toHaveAttribute('aria-current');
+  });
+});

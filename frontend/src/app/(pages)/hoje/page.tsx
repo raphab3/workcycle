@@ -1,11 +1,10 @@
-import { FeatureGrid, HeroSection } from '@/modules/home';
+import { TodayPlannerOverview } from '@/modules/today/components/TodayPlannerOverview';
 import { pageStyles } from './styles';
 
 export default function HojeRoutePage() {
   return (
     <main className={pageStyles.container}>
-      <HeroSection />
-      <FeatureGrid />
+      <TodayPlannerOverview />
     </main>
   );
 }

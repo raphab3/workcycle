@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { AppNavigation } from '@/shared/components/AppNavigation/index';
+
 import { appLayoutStyles } from './styles';
 
 interface AppLayoutProps {
@@ -18,6 +20,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               <p className={appLayoutStyles.brandDescription}>frontend scaffold</p>
             </div>
           </div>
+
+          <AppNavigation />
+
+          <div className={appLayoutStyles.status}>Cycle 1 em andamento</div>
         </div>
       </header>
 
