@@ -73,6 +73,8 @@ interface WorkspaceStoreState {
   updateTask: (taskId: string, values: TaskFormValues) => void;
   addTaskColumn: (values: TaskColumnFormValues) => void;
   moveTaskToColumn: (taskId: string, columnId: string) => void;
+  archiveTask: (taskId: string) => void;
+  deleteTask: (taskId: string) => void;
   toggleTaskDone: (taskId: string) => void;
   setTaskCycleAssignment: (taskId: string, cycleAssignment: Task['cycleAssignment']) => void;
   completeTask: (taskId: string) => void;
@@ -107,6 +109,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
     tasks: [
       {
         id: createTaskId(values.title, state.tasks),
+        isArchived: false,
         ...values,
       },
       ...state.tasks,
@@ -139,6 +142,16 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
       )),
     };
   }),
+  archiveTask: (taskId) => set((state) => ({
+    tasks: state.tasks.map((task) => (
+      task.id === taskId
+        ? { ...task, isArchived: true, cycleAssignment: 'backlog' }
+        : task
+    )),
+  })),
+  deleteTask: (taskId) => set((state) => ({
+    tasks: state.tasks.filter((task) => task.id !== taskId),
+  })),
   toggleTaskDone: (taskId) => set((state) => ({
     tasks: state.tasks.map((task) => (
       task.id === taskId
@@ -146,6 +159,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
           ...task,
           status: task.status === 'done' ? 'todo' : 'done',
           columnId: getColumnIdForStatus(state.taskColumns, task.status === 'done' ? 'todo' : 'done'),
+          isArchived: false,
         }
         : task
     )),
@@ -156,7 +170,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
   completeTask: (taskId) => set((state) => ({
     tasks: state.tasks.map((task) => (
       task.id === taskId
-        ? { ...task, status: 'done', columnId: getColumnIdForStatus(state.taskColumns, 'done'), cycleAssignment: 'backlog' }
+        ? { ...task, status: 'done', columnId: getColumnIdForStatus(state.taskColumns, 'done'), cycleAssignment: 'backlog', isArchived: false }
         : task
     )),
   })),

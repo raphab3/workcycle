@@ -18,7 +18,8 @@ describe('TasksWorkspace', () => {
     expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('CodeReview')).toBeInTheDocument();
     expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
-    expect(screen.getByText('Carga aberta reaproveitando a carteira do Cycle 2')).toBeInTheDocument();
+    expect(screen.getByText('Carga aberta da carteira atual')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nova task/i })).toBeInTheDocument();
   });
 
   it('filters tasks by selected project', async () => {
@@ -37,8 +38,9 @@ describe('TasksWorkspace', () => {
 
     render(<TasksWorkspace />);
 
+    await user.click(screen.getByRole('button', { name: /Nova task/i }));
     await user.type(screen.getByLabelText('Titulo da tarefa'), 'Planejar entrega mobile');
-    await user.selectOptions(screen.getAllByLabelText('Projeto')[1], 'cliente-core');
+    await user.selectOptions(screen.getByLabelText('Projeto'), 'cliente-core');
     await user.click(screen.getByRole('button', { name: 'Adicionar tarefa' }));
 
     expect(await screen.findByText('Planejar entrega mobile')).toBeInTheDocument();
@@ -74,11 +76,25 @@ describe('TasksWorkspace', () => {
 
     await user.type(screen.getByLabelText('Nome da coluna'), 'Waiting QA');
     await user.click(screen.getByRole('button', { name: 'Criar coluna' }));
-    await user.selectOptions(screen.getByLabelText('Mover Ajustar migration de faturamento'), 'waiting-qa-5');
+    await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    await user.click(screen.getByRole('button', { name: 'Waiting QA' }));
 
     const customColumn = screen.getByText('Waiting QA').closest('section');
 
     expect(customColumn).not.toBeNull();
     expect(within(customColumn as HTMLElement).getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+  });
+
+  it('archives a task after confirmation', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    await user.click(screen.getByRole('button', { name: 'Arquivar' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Arquivar task' });
+    await user.click(within(dialog).getByRole('button', { name: 'Arquivar' }));
+
+    expect(screen.queryByText('Ajustar migration de faturamento')).not.toBeInTheDocument();
   });
 });

@@ -20,6 +20,7 @@ export interface Task {
   title: string;
   projectId: string;
   columnId: string;
+  isArchived: boolean;
   priority: TaskPriority;
   status: TaskStatus;
   cycleAssignment: TaskCycleAssignment;

@@ -1,9 +1,9 @@
 'use client';
 
-import { Bell, ChevronLeft, LogOut, Menu, MonitorCog, MoonStar, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, SunMedium, UserCircle2, X } from 'lucide-react';
+import { Bell, LogOut, Menu, MonitorCog, MoonStar, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, SunMedium, UserCircle2, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import { AppNavigation } from '@/shared/components/AppNavigation/index';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
@@ -20,16 +20,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [mobileSidebarOpenPath, setMobileSidebarOpenPath] = useState<string | null>(null);
   const projects = useWorkspaceStore((state) => state.projects);
+  const isMobileSidebarOpen = mobileSidebarOpenPath === pathname;
   const activeAllocationPct = useMemo(
     () => projects.filter((project) => project.status === 'active').reduce((total, project) => total + project.allocationPct, 0),
     [projects],
   );
-
-  useEffect(() => {
-    setIsMobileSidebarOpen(false);
-  }, [pathname]);
 
   return (
     <div className={appLayoutStyles.shell}>
@@ -37,7 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         Pular para o conteudo
       </a>
 
-      {isMobileSidebarOpen && <button aria-label="Fechar navegacao" className={appLayoutStyles.backdrop} onClick={() => setIsMobileSidebarOpen(false)} type="button" />}
+      {isMobileSidebarOpen && <button aria-label="Fechar navegacao" className={appLayoutStyles.backdrop} onClick={() => setMobileSidebarOpenPath(null)} type="button" />}
 
       <div className={appLayoutStyles.frame}>
         <aside
@@ -70,7 +67,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             <div className={appLayoutStyles.sidebarBody}>
-              <AppNavigation variant="sidebar" collapsed={isSidebarCollapsed} onNavigate={() => setIsMobileSidebarOpen(false)} />
+              <AppNavigation variant="sidebar" collapsed={isSidebarCollapsed} onNavigate={() => setMobileSidebarOpenPath(null)} />
 
               <Link className={cn(appLayoutStyles.primaryAction, isSidebarCollapsed && appLayoutStyles.primaryActionCollapsed)} href="/hoje#cycle-available-hours">
                 <Plus className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
@@ -128,7 +125,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <header className={appLayoutStyles.topBar}>
             <div className={appLayoutStyles.topBarContent}>
               <div className={appLayoutStyles.headerLeft}>
-                <button aria-label="Abrir navegacao" className={appLayoutStyles.mobileMenuButton} onClick={() => setIsMobileSidebarOpen(true)} type="button">
+                <button aria-label="Abrir navegacao" className={appLayoutStyles.mobileMenuButton} onClick={() => setMobileSidebarOpenPath(pathname)} type="button">
                   <Menu className="h-5 w-5" aria-hidden="true" />
                 </button>
 
@@ -155,18 +152,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <UserCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
                 {isMobileSidebarOpen && (
-                  <button aria-label="Fechar menu lateral" className={appLayoutStyles.iconButtonMobileOnly} onClick={() => setIsMobileSidebarOpen(false)} type="button">
+                  <button aria-label="Fechar menu lateral" className={appLayoutStyles.iconButtonMobileOnly} onClick={() => setMobileSidebarOpenPath(null)} type="button">
                     <X className="h-4.5 w-4.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
             </div>
           </header>
-
-          <div className={appLayoutStyles.statusRow}>
-            <div aria-live="polite" className={appLayoutStyles.status} role="status">Planejamento do dia sincronizado</div>
-            <p className={appLayoutStyles.statusHint}>Acompanhe prioridades, capacidade do cycle e ajustes do dia em um unico fluxo.</p>
-          </div>
 
           <main className={appLayoutStyles.content} id="main-content" tabIndex={-1}>{children}</main>
         </div>

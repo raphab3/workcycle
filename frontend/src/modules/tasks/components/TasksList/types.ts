@@ -4,6 +4,8 @@ import type { Task, TaskColumn, TaskColumnFormValues } from '@/modules/tasks/typ
 export interface TasksListProps {
   onAddColumn: (values: TaskColumnFormValues) => void;
   onAssignCycle: (taskId: string, cycleAssignment: Task['cycleAssignment']) => void;
+  onArchiveTask: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onMoveTaskToColumn: (taskId: string, columnId: string) => void;
   onToggleDone: (taskId: string) => void;

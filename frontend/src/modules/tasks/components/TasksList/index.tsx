@@ -1,5 +1,6 @@
  'use client';
 
+import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/shared/components/Button';
@@ -30,9 +31,10 @@ const cycleLabels = {
   backlog: 'Backlog',
 } as const;
 
-export function TasksList({ onAddColumn, onAssignCycle, onEditTask, onMoveTaskToColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
+export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteTask, onEditTask, onMoveTaskToColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
   const [columnTitle, setColumnTitle] = useState('');
   const [columnStatus, setColumnStatus] = useState<TasksListProps['taskColumns'][number]['status']>('todo');
+  const [activeMenuTaskId, setActiveMenuTaskId] = useState<string | null>(null);
 
   function handleCreateColumn() {
     const normalizedTitle = columnTitle.trim();
@@ -44,6 +46,11 @@ export function TasksList({ onAddColumn, onAssignCycle, onEditTask, onMoveTaskTo
     onAddColumn({ title: normalizedTitle, status: columnStatus });
     setColumnTitle('');
     setColumnStatus('todo');
+  }
+
+  function handleMenuAction(action: () => void) {
+    action();
+    setActiveMenuTaskId(null);
   }
 
   return (
@@ -91,6 +98,28 @@ export function TasksList({ onAddColumn, onAssignCycle, onEditTask, onMoveTaskTo
                                 {project?.name ?? 'Projeto nao encontrado'} · {getTaskDeadlineLabel(task)} · {task.estimatedHours.toFixed(1).replace('.', ',')}h previstas
                               </p>
                             </div>
+
+                            <div className={tasksListStyles.menuWrap}>
+                              <button aria-label={`Abrir opcoes de ${task.title}`} className={tasksListStyles.menuButton} onClick={() => setActiveMenuTaskId((current) => current === task.id ? null : task.id)} type="button">
+                                <MoreHorizontal className="h-4.5 w-4.5" aria-hidden="true" />
+                              </button>
+
+                              {activeMenuTaskId === task.id ? (
+                                <div className={tasksListStyles.menu}>
+                                  <p className={tasksListStyles.menuLabel}>Mover para</p>
+                                  {taskColumns.map((option) => (
+                                    <button key={option.id} className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onMoveTaskToColumn(task.id, option.id))} type="button">
+                                      {option.title}
+                                    </button>
+                                  ))}
+                                  <p className={tasksListStyles.menuLabel}>Acoes</p>
+                                  <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onEditTask(task))} type="button">Editar</button>
+                                  <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onToggleDone(task.id))} type="button">{task.status === 'done' ? 'Reabrir' : 'Concluir'}</button>
+                                  <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onArchiveTask(task))} type="button">Arquivar</button>
+                                  <button className={cn(tasksListStyles.menuAction, tasksListStyles.menuActionDanger)} onClick={() => handleMenuAction(() => onDeleteTask(task))} type="button">Excluir</button>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
 
                           <div className={tasksListStyles.chips}>
@@ -101,29 +130,10 @@ export function TasksList({ onAddColumn, onAssignCycle, onEditTask, onMoveTaskTo
                           </div>
 
                           <div className={tasksListStyles.footer}>
-                            <div className={tasksListStyles.footerTop}>
-                              <p className={tasksListStyles.footerLabel}>Mover no quadro</p>
-                              <select
-                                aria-label={`Mover ${task.title}`}
-                                className={tasksListStyles.moveSelect}
-                                value={task.columnId}
-                                onChange={(event) => onMoveTaskToColumn(task.id, event.target.value)}
-                              >
-                                {taskColumns.map((option) => (
-                                  <option key={option.id} value={option.id}>{option.title}</option>
-                                ))}
-                              </select>
-                              <p className={tasksListStyles.footerText}>Realocar a task continua refletindo a capacidade do cycle atual na tela Hoje.</p>
-                            </div>
-
-                            <div className={tasksListStyles.footerBottom}>
+                            <div className={tasksListStyles.footerRow}>
                               <Button type="button" size="sm" variant={task.cycleAssignment === 'current' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'current')}>Cycle atual</Button>
                               <Button type="button" size="sm" variant={task.cycleAssignment === 'next' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'next')}>Proximo cycle</Button>
                               <Button type="button" size="sm" variant={task.cycleAssignment === 'backlog' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'backlog')}>Backlog</Button>
-                              <Button type="button" size="sm" variant="outline" onClick={() => onEditTask(task)}>Editar</Button>
-                              <Button type="button" size="sm" variant="ghost" onClick={() => onToggleDone(task.id)}>
-                                {task.status === 'done' ? 'Reabrir' : 'Concluir'}
-                              </Button>
                             </div>
                           </div>
                         </article>

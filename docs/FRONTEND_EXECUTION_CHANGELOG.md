@@ -737,6 +737,9 @@ Done
 - [x] FE-0903 manter realocação de cycle, edição e conclusão dentro do card do kanban
 - [x] FE-0904 adaptar o formulário para trabalhar com coluna do board sem perder metadados existentes
 - [x] FE-0905 permitir criação dinâmica de colunas com configuração default `Backlog -> In Progress -> CodeReview -> Done`
+- [x] FE-0906 substituir o formulário inline por drawer global com comportamento de bottom sheet no mobile
+- [x] FE-0907 adicionar menu contextual por card com ações de mover, editar, concluir, arquivar e excluir
+- [x] FE-0908 compactar o resumo por projeto e posicioná-lo acima dos filtros
 
 ### Critérios de teste unitário
 
@@ -766,13 +769,19 @@ Done
   - modelo de colunas dinâmicas para o quadro de tarefas
   - configuração default do board no estilo Trello com quatro colunas iniciais
   - criação dinâmica de colunas a partir da própria tela `Tarefas`
+  - componente compartilhado de drawer responsivo para abrir como painel lateral no desktop e bottom sheet no mobile
+  - componente compartilhado de confirmação para ações destrutivas do board
 - Changed:
   - a rota `Tarefas` deixou de depender de uma listagem lateral e passou a operar com board horizontal de cards
   - o formulário de tarefas passou a trabalhar com coluna do quadro como parte do cadastro e da edição
   - a movimentação entre colunas sincroniza a fase operacional da task mantendo cycle, prazo e prioridade
+  - a criação de task passou a acontecer por CTA dedicado abrindo o drawer global, liberando mais área útil para o kanban
+  - o resumo por projeto ficou mais compacto e foi reposicionado acima dos filtros para melhorar leitura do fluxo
+  - cada card do kanban passou a concentrar ações em um menu contextual de três pontos, reduzindo ruído visual permanente
 - Fixed:
   - reduzido o risco de quebra visual quando a quantidade de tasks ultrapassa a massa mock inicial
   - removida a dependência da coluna lateral como área principal de criação para a tela `Tarefas`
+  - melhor aproveitamento de espaço no desktop e no mobile com foco no board como área principal de trabalho
 - Removed:
   - removida a composição principal em duas colunas entre backlog e formulário na rota `Tarefas`
 

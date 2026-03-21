@@ -51,6 +51,10 @@ export function getTaskDeadlineLabel(task: Pick<Task, 'dueInDays'>) {
 
 export function filterTasks(tasks: Task[], filters: TaskFiltersValues) {
   return tasks.filter((task) => {
+    if (task.isArchived) {
+      return false;
+    }
+
     const matchesProject = filters.projectId === 'all' || task.projectId === filters.projectId;
     const matchesPriority = filters.priority === 'all' || task.priority === filters.priority;
     const matchesStatus = filters.status === 'all' || task.status === filters.status;
@@ -61,7 +65,7 @@ export function filterTasks(tasks: Task[], filters: TaskFiltersValues) {
 }
 
 export function getOpenTasks(tasks: Task[]) {
-  return tasks.filter((task) => task.status !== 'done');
+  return tasks.filter((task) => !task.isArchived && task.status !== 'done');
 }
 
 export function getOpenTasksCount(tasks: Task[]) {
