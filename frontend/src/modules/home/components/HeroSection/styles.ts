@@ -1,0 +1,16 @@
+export const heroStyles = {
+  section: 'relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/85 p-8 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] backdrop-blur md:p-12',
+  glow: 'absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_60%)]',
+  content: 'relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end',
+  copy: 'space-y-6',
+  badge: 'inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-emerald-700',
+  title: 'max-w-3xl text-4xl font-semibold tracking-tight text-foreground md:text-6xl',
+  description: 'max-w-2xl text-base leading-7 text-muted-foreground md:text-lg',
+  actions: 'flex flex-col gap-3 sm:flex-row',
+  panel: 'grid gap-4 rounded-[1.5rem] border border-border/60 bg-background/85 p-5',
+  panelTitle: 'text-sm font-medium uppercase tracking-[0.24em] text-muted-foreground',
+  metrics: 'grid gap-3 sm:grid-cols-2',
+  metricCard: 'rounded-2xl border border-border/60 bg-muted/50 p-4',
+  metricValue: 'text-3xl font-semibold tracking-tight text-foreground',
+  metricLabel: 'text-sm text-muted-foreground',
+};

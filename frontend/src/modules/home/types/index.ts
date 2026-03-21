@@ -1,0 +1,1 @@
+export type { HomeFeature } from './feature';
