@@ -4,6 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { TodayPlannerOverview } from './index';
 
 describe('TodayPlannerOverview', () => {
+  it('renders operational context derived from the current plan', () => {
+    render(<TodayPlannerOverview />);
+
+    expect(screen.getByText('50h00 projetadas no ritmo atual')).toBeInTheDocument();
+    expect(screen.getByText('Backlog ocupa 5% da janela de 4 semanas')).toBeInTheDocument();
+    expect(screen.getByText('3 sinais de atencao ativos')).toBeInTheDocument();
+    expect(screen.getByText(/AuthGuard esta pausado/i)).toBeInTheDocument();
+  });
+
   it('renders fixed and rotative planning blocks', () => {
     render(<TodayPlannerOverview />);
 

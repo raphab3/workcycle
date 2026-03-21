@@ -571,6 +571,70 @@ In Progress
 - finalizar manifest, metadados e assets PWA do frontend
 - revisar limpeza final de componentes, textos de scaffold e dependências antes do fechamento do MVP frontend
 
+## Cycle 7 — Contexto Operacional da Tela Hoje
+
+### Status
+
+In Progress
+
+### Escopo
+
+- substituir o topo editorial da tela `Hoje` por contexto operacional orientado a uso real
+- consolidar sinais de ritmo diario, leitura semanal, janela mensal e atrasos a partir dos dados ja existentes
+- manter a tela `Hoje` como orquestracao, movendo os calculos para helper do dominio
+
+### Tasks
+
+- [x] FE-0701 mapear indicadores de hoje, semana e mes a partir de projetos, tasks e escala atual
+- [x] FE-0702 substituir o bloco fixo inicial por cards de contexto operacional
+- [x] FE-0703 expor sinais de atraso, carga futura e projeto sob maior pressao
+- [ ] FE-0704 revisar refinamento visual final junto do restante do hardening
+
+### Critérios de teste unitário
+
+- testar o helper que monta o contexto operacional com ritmo, backlog e risco
+- testar a renderizacao do topo contextual na rota `Hoje`
+
+### Execução
+
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
+- Decisões:
+  - o contexto do topo passou a ser derivado do plano atual do dia em vez de texto editorial fixo
+  - a leitura semanal e mensal foi apresentada como projecao do ritmo observado hoje para manter consistencia com o pedido de contexto "baseado no hoje"
+  - os sinais de atraso consideram tasks vencidas, vencendo hoje, bloqueadas e projetos pausados com carga ainda aberta
+- Riscos:
+  - enquanto a sincronizacao entre rotas continuar local, o contexto refletira a base mock e nao as ultimas edicoes feitas em outras telas em tempo real
+  - a projecao semanal e mensal ainda e heuristica, nao calendario real
+- Dependências:
+  - decisao final sobre persistencia compartilhada
+  - continuidade do hardening visual dos ciclos 6 e 7
+
+### Changelog
+
+- Added:
+  - helper `buildTodayOperationalContext` para consolidar ritmo diario, projecao semanal, janela mensal e sinais de risco
+  - testes unitarios do contexto operacional da tela `Hoje`
+- Changed:
+  - o topo da tela `Hoje` deixou de exibir copy editorial fixa e passou a mostrar cards contextuais baseados na carteira e na carga aberta
+  - o resumo vindo das tarefas passou a alimentar explicitamente a priorizacao da escala e da leitura contextual
+- Fixed:
+  - reduzido o descolamento entre a narrativa da tela e o uso real do produto no mock funcional
+- Removed:
+  - removido o excesso de copy descritiva sem valor operacional no topo da tela `Hoje`
+
+### Evidência de validação
+
+- Build: `pnpm build` passou com a rota `/hoje` compilando o novo topo contextual baseado em dados operacionais
+- Tests: `pnpm vitest run src/modules/today/utils/context.test.ts src/modules/today/utils/planner.test.ts src/modules/today/components/TodayPlannerOverview/index.test.tsx 'src/app/(pages)/hoje/page.test.tsx'` passou com 4 arquivos e 8 testes
+- Observações:
+  - este ciclo complementa o hardening anterior ao focar na utilidade do contexto exibido para o usuario final
+
+### Pendências para próximo ciclo
+
+- validar visual final da tela `Hoje` junto do restante do hardening
+- decidir se o Cycle 7 fecha junto do Cycle 6 ou segue como camada separada de refinamento funcional
+
 ## Convenções de Changelog
 
 Use sempre estas categorias:

@@ -1,13 +1,15 @@
 'use client';
 
-import { CalendarClock, Gauge, Sigma } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Gauge } from 'lucide-react';
 import { useState } from 'react';
 
 import { mockProjects } from '@/modules/projects/mocks/projects';
 import { mockTasks } from '@/modules/tasks/mocks/tasks';
-import { getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
+import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import type { TodayCycleValues } from '@/modules/today/types';
+import { buildTodayOperationalContext } from '@/modules/today/utils/context';
 import { buildSuggestedAllocations, createActualHoursMap, formatHours, formatPlanningMoment } from '@/modules/today/utils/planner';
+import { cn } from '@/shared/utils/cn';
 
 import {
   Card,
@@ -37,11 +39,26 @@ export function TodayPlannerOverview() {
   const [cycleValues, setCycleValues] = useState<TodayCycleValues>(defaultCycleValues);
   const [allocations, setAllocations] = useState(defaultAllocations);
   const [actualHours, setActualHours] = useState<Record<string, number>>(createActualHoursMap(defaultAllocations));
+  const operationalContext = buildTodayOperationalContext({
+    projects: mockProjects,
+    tasks: mockTasks,
+    allocations,
+    actualHours,
+    projectLoadSummary,
+  });
 
   const summary = [
-    { label: 'Horas disponiveis', value: `${cycleValues.availableHours}h`, icon: CalendarClock },
-    { label: 'Projetos no ciclo', value: `${allocations.length}`, icon: Sigma },
-    { label: 'Tasks urgentes', value: `${getUrgentTasksCount(mockTasks)}`, icon: Gauge },
+    {
+      label: 'Horas no dia',
+      value: `${formatHours(operationalContext.actualTodayHours)} / ${formatHours(operationalContext.plannedTodayHours)}`,
+      icon: CalendarClock,
+    },
+    { label: 'Carga aberta', value: formatHours(operationalContext.openEffortHours), icon: Gauge },
+    {
+      label: 'Risco imediato',
+      value: `${operationalContext.overdueTasksCount + operationalContext.dueTodayTasksCount} sinais`,
+      icon: AlertTriangle,
+    },
   ];
 
   function handleSubmitCycle(values: TodayCycleValues) {
@@ -64,16 +81,46 @@ export function TodayPlannerOverview() {
       <div className={todayPlannerOverviewStyles.stack}>
         <SectionIntro
           eyebrow="Hoje"
-          title="Planejamento do ciclo com horas disponiveis, redistribuicao e ajuste real"
-          description="A tela Agora consome a carteira de projetos e a carga aberta das tasks para sugerir a escala do dia. O usuario recalcula o ciclo, compara percentuais e registra as horas reais executadas."
-        />
-        <StateNotice
-          eyebrow="Estado transversal"
-          title="Plano do dia baseado em mocks locais"
-          description="A escala usa a carteira e a carga abertas atuais, mas ainda nao recebe as alteracoes feitas em outras rotas de forma compartilhada."
-          tone="warning"
+          title="Contexto do ciclo a partir do que esta acontecendo hoje"
+          description="A tela Hoje usa a escala montada para ler ritmo, carga futura e risco operacional antes de redistribuir horas e fechar o dia."
         />
         <p className={todayPlannerOverviewStyles.planningMoment}>Momento atual do plano · {formatPlanningMoment(new Date())}</p>
+        <div className={todayPlannerOverviewStyles.contextSignals}>
+          {operationalContext.contextSignals.map((signal) => (
+            <span key={signal} className={todayPlannerOverviewStyles.contextSignal}>
+              {signal}
+            </span>
+          ))}
+        </div>
+
+        <div className={todayPlannerOverviewStyles.contextGrid}>
+          {operationalContext.cards.map((card) => (
+            <Card
+              key={card.id}
+              className={cn(
+                todayPlannerOverviewStyles.contextCard,
+                card.tone === 'positive' && todayPlannerOverviewStyles.contextCardPositive,
+                card.tone === 'warning' && todayPlannerOverviewStyles.contextCardWarning,
+                card.tone === 'danger' && todayPlannerOverviewStyles.contextCardDanger,
+              )}
+            >
+              <CardHeader>
+                <CardDescription>{card.eyebrow}</CardDescription>
+                <CardTitle>{card.title}</CardTitle>
+              </CardHeader>
+              <CardContent className={todayPlannerOverviewStyles.contextCardContent}>
+                <p className={todayPlannerOverviewStyles.contextCardCopy}>{card.description}</p>
+                <div className={todayPlannerOverviewStyles.contextHighlights}>
+                  {card.highlights.map((highlight) => (
+                    <span key={highlight} className={todayPlannerOverviewStyles.contextHighlight}>
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {allocations.length === 0 && (
           <EmptyState
@@ -101,6 +148,13 @@ export function TodayPlannerOverview() {
             );
           })}
         </div>
+
+        <StateNotice
+          eyebrow="Estado transversal"
+          title="Plano do dia ainda roda sobre mocks locais"
+          description="A leitura operacional ja conversa com carteira, carga aberta e atrasos, mas ainda nao sincroniza alteracoes feitas em outras rotas em tempo real."
+          tone="warning"
+        />
 
         <Card>
           <CardHeader>
@@ -157,7 +211,7 @@ export function TodayPlannerOverview() {
         <Card>
           <CardHeader>
             <CardDescription>Resumo de carga vindo das tarefas</CardDescription>
-            <CardTitle>Base para a priorizacao da escala</CardTitle>
+            <CardTitle>Base para a priorizacao da escala e do contexto</CardTitle>
           </CardHeader>
           <CardContent className={todayPlannerOverviewStyles.projectLoadList}>
             {projectLoadSummary.map((item) => (
