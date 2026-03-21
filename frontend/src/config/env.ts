@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  VITE_API_URL: z.string().url(),
+  NEXT_PUBLIC_API_URL: z.string().url(),
 });
 
 const parsedEnv = envSchema.safeParse({
-  VITE_API_URL: import.meta.env.VITE_API_URL ?? 'http://localhost:3333',
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333',
 });
 
 if (!parsedEnv.success) {

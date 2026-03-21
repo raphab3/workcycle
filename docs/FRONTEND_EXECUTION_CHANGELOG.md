@@ -63,7 +63,7 @@ Planned | In Progress | Blocked | Done
 
 ### Status
 
-In Progress
+Done
 
 ### Escopo
 
@@ -78,9 +78,9 @@ In Progress
 - [x] FE-0002 scaffold inicial do frontend em React + TypeScript
 - [x] FE-0003 aplicar arquitetura modular base com `pages/`, `modules/`, `shared/`, `lib/`, `providers/` e `config/`
 - [x] FE-0004 configurar stack visual inicial com Tailwind, primitives reutilizáveis e base de layout
-- [ ] FE-0005 definir e executar a estratégia de alinhamento para Next.js 14 App Router conforme PRD
-- [ ] FE-0006 configurar Vitest + Testing Library
-- [ ] FE-0007 adicionar testes unitários dos componentes e helpers iniciais
+- [x] FE-0005 definir e executar a estratégia de alinhamento para Next.js 14 App Router conforme PRD
+- [x] FE-0006 configurar Vitest + Testing Library
+- [x] FE-0007 adicionar testes unitários dos componentes e helpers iniciais
 
 ### Critérios de teste unitário
 
@@ -93,15 +93,14 @@ In Progress
 - Data: 2026-03-21
 - Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
-  - a base inicial do frontend foi criada em Vite para acelerar o scaffold
-  - a arquitetura modular já foi aplicada desde o início
-  - o alinhamento final com Next.js permanece pendente e precisa ser tratado explicitamente
+  - a base inicial em Vite foi migrada para Next.js App Router para alinhar o frontend ao PRD
+  - a arquitetura modular foi preservada, com orquestração de rota agora feita em `src/app/`
+  - como `src/pages` conflita com o Pages Router do Next, a composição de rota foi movida para os arquivos do App Router e componentes compartilhados
+  - a stack de testes unitários foi padronizada com Vitest + Testing Library
 - Riscos:
-  - o PRD pede Next.js, mas a base inicial está em Vite
-  - os testes unitários ainda não foram configurados, então o ciclo não pode ser fechado
+  - a linha 14.x do Next exibe aviso upstream de vulnerabilidade e deve ser revisitada em hardening ou upgrade futuro
 - Dependências:
-  - decisão sobre migração para Next.js
-  - instalação e configuração da stack de testes
+  - nenhuma para fechamento do ciclo
 
 ### Changelog
 
@@ -110,25 +109,32 @@ In Progress
   - estrutura `backend/` como placeholder
   - páginas base, providers, router e componentes compartilhados iniciais
   - configuração inicial de Tailwind e primitives reutilizáveis
+  - estrutura `src/app/` com App Router do Next.js
+  - configuração de testes com Vitest, Testing Library e setup global
+  - testes unitários para `cn`, `Button`, `Card`, `AppLayout` e rota `/hoje`
 - Changed:
   - substituído o template padrão do Vite por uma estrutura modular alinhada ao projeto
+  - migrada a base do frontend de Vite para Next.js 14 App Router
+  - adaptada a leitura de ambiente de `VITE_API_URL` para `NEXT_PUBLIC_API_URL`
 - Fixed:
-  - nao se aplica neste ciclo ainda
+  - corrigido o conflito entre a pasta `src/pages` e o roteamento nativo do Next
+  - corrigida a configuração do Vitest para transformação de JSX em ambiente Next.js
 - Removed:
   - removido o template default do Vite do app inicial
+  - removidos `vite.config.ts`, `src/main.tsx` e o router baseado em `react-router-dom`
 
 ### Evidência de validação
 
-- Build: `pnpm build` do frontend passou
-- Tests: ainda não configurados
+- Build: `pnpm build` do frontend passou em base Next.js App Router
+- Tests: `pnpm test:run` passou com 5 arquivos e 7 testes
 - Observações:
-  - este ciclo permanece aberto até a stack de testes estar configurada e a decisão sobre Next.js ser executada ou formalmente registrada
+  - o ciclo foi fechado com migração concluída, stack de testes ativa e cobertura inicial obrigatória entregue
 
 ### Pendências para próximo ciclo
 
-- configurar Vitest + Testing Library
-- criar os primeiros testes unitários obrigatórios
-- decidir a migração ou exceção temporária para Next.js
+- iniciar as rotas do MVP `Hoje`, `Semana`, `Tarefas` e `Projetos`
+- consolidar a navegação persistente entre telas
+- revisar o aviso de segurança da linha 14.x do Next em ciclo futuro
 
 ## Cycle 1 — App Shell e Navegação das Telas MVP
 

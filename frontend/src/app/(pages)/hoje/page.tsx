@@ -1,8 +1,7 @@
 import { FeatureGrid, HeroSection } from '@/modules/home';
-
 import { pageStyles } from './styles';
 
-export function HomePage() {
+export default function HojeRoutePage() {
   return (
     <main className={pageStyles.container}>
       <HeroSection />

@@ -1,8 +1,12 @@
-import { Outlet } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 import { appLayoutStyles } from './styles';
 
-export function AppLayout() {
+interface AppLayoutProps {
+  children: ReactNode;
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className={appLayoutStyles.shell}>
       <header className={appLayoutStyles.topBar}>
@@ -17,9 +21,7 @@ export function AppLayout() {
         </div>
       </header>
 
-      <div className={appLayoutStyles.content}>
-        <Outlet />
-      </div>
+      <div className={appLayoutStyles.content}>{children}</div>
     </div>
   );
 }

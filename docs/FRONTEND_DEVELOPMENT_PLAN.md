@@ -41,7 +41,7 @@ Cada ciclo só pode ser fechado quando todos os itens abaixo forem atendidos:
 
 ## Observação de Base Atual
 
-O PRD define `Next.js 14 App Router` como stack final do MVP. A base atual do repositório foi iniciada em React + TypeScript com Vite. O primeiro ciclo deve alinhar essa fundação antes de expandir as telas principais.
+O PRD define `Next.js 14 App Router` como stack final do MVP. Esse alinhamento já foi executado no `Cycle 0`, preservando a arquitetura modular do frontend e adicionando a stack de testes unitários.
 
 ## Roadmap por Ciclo
 
