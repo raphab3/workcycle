@@ -3,7 +3,7 @@ export const taskFiltersStyles = {
   header: 'flex flex-col gap-2',
   title: 'text-lg font-semibold tracking-tight text-foreground',
   description: 'text-sm leading-6 text-muted-foreground',
-  grid: 'grid gap-3 md:grid-cols-3',
+  grid: 'grid gap-3 md:grid-cols-2 xl:grid-cols-4',
   field: 'grid gap-2',
   label: 'text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground',
   select: 'min-h-11 rounded-2xl border border-border/70 bg-background px-4 text-sm text-foreground outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-ring/15',

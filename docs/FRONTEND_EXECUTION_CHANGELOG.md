@@ -646,6 +646,77 @@ Done
 - decidir se o store compartilhado ganha persistencia local entre recargas
 - avaliar se a projecao semanal e mensal passa a usar calendario real e historico de execucao
 
+## Cycle 8 — Planejamento e Execução de Tasks por Cycle
+
+### Status
+
+Done
+
+### Escopo
+
+- conectar a tela `Hoje` com as tasks realmente alocadas no cycle atual
+- permitir concluir tasks ou empurrar itens para o proximo cycle direto do planejamento diario
+- permitir realocar tasks entre backlog, cycle atual e proximo cycle a partir da tela `Tarefas`
+- preparar a base de dados de ciclo para leituras futuras de fechamento mensal e dashboard
+
+### Tasks
+
+- [x] FE-0801 expandir o domínio `tasks` com alocação explícita por cycle
+- [x] FE-0802 ajustar formulário e filtros de tarefas para controlar alocação
+- [x] FE-0803 permitir realocação rápida entre backlog, cycle atual e proximo cycle na listagem
+- [x] FE-0804 montar card de execução na tela `Hoje` com tasks que cabem no ciclo
+- [x] FE-0805 permitir concluir task ou pular para o proximo cycle direto da tela `Hoje`
+
+### Critérios de teste unitário
+
+- testar o helper que monta o plano de tasks do cycle atual
+- testar a renderização do board de execução do cycle e suas ações
+- testar a realocação por cycle na tela `Tarefas`
+
+### Execução
+
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
+- Decisões:
+  - a alocação por cycle foi modelada diretamente em `Task` para simplificar o fluxo entre `Tarefas` e `Hoje`
+  - o board da tela `Hoje` prioriza as tasks do cycle atual e destaca visualmente o que estoura a capacidade disponível do dia
+  - concluir uma task remove o item do cycle operacional e pular para o proximo cycle preserva a task aberta sem perder o contexto
+  - a leitura mensal e o futuro dashboard ficam como continuação natural desse modelo, mas ainda fora do escopo desta entrega
+- Riscos:
+  - a ordenação e o fit do cycle ainda usam heurística local baseada em horas estimadas, não histórico real de execução
+  - o estado continua compartilhado apenas em sessão e reinicia com refresh
+- Dependências:
+  - persistência durável do store compartilhado
+  - modelagem futura de histórico para dashboard e fechamento mensal
+
+### Changelog
+
+- Added:
+  - campo `cycleAssignment` no domínio de tasks com suporte a `backlog`, `current` e `next`
+  - helper `buildCycleTaskPlan` para calcular quais tasks cabem no cycle atual
+  - componente `CycleTasksBoard` na tela `Hoje` com ações operacionais por task
+  - testes unitários para board de cycle, planejamento do cycle e realocação entre cycles
+- Changed:
+  - a tela `Tarefas` passou a permitir reclassificação rápida das tasks entre os cycles operacionais
+  - a tela `Hoje` agora enxerga tasks reais do cycle atual em vez de depender apenas de resumos agregados
+  - o formulário e os filtros de tasks passaram a expor a alocação por cycle como parte do fluxo principal
+- Fixed:
+  - corrigido o descolamento entre o planejamento diário e a fila real de execução
+  - reforçada a coerência entre tarefas abertas, fila futura e conclusão operacional do cycle
+- Removed:
+  - nenhuma remoção estrutural relevante neste ciclo
+
+### Evidência de validação
+
+- Build: `pnpm build` passou com as rotas `/hoje`, `/tarefas`, `/projetos` e `/semana` compilando apos a integracao do Cycle 8
+- Tests: `pnpm vitest run src/modules/today/components/CycleTasksBoard/index.test.tsx src/modules/today/components/TodayPlannerOverview/index.test.tsx src/modules/tasks/components/TasksWorkspace/index.test.tsx src/modules/tasks/utils/tasks.test.ts src/modules/tasks/components/TaskForm/index.test.tsx` passou com 5 arquivos e 18 testes
+- Observações:
+  - este ciclo fecha o elo operacional entre backlog, alocação e execução do dia, preparando o terreno para leitura de fechamento mensal em dashboard futuro
+
+### Pendências para próximo ciclo
+
+- decidir a entrada de persistência local durável antes do dashboard mensal
+
 ## Convenções de Changelog
 
 Use sempre estas categorias:

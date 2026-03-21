@@ -15,6 +15,7 @@ describe('TaskForm', () => {
 
     expect(screen.getByDisplayValue('Ajustar migration de faturamento')).toBeInTheDocument();
     expect(screen.getByDisplayValue('3.5')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Cycle atual')).toBeInTheDocument();
   });
 
   it('submits a valid task', async () => {
@@ -28,7 +29,7 @@ describe('TaskForm', () => {
     await user.click(screen.getByRole('button', { name: 'Adicionar tarefa' }));
 
     expect(onSubmitTask).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Preparar handoff do projeto', projectId: 'fintrack' }),
+      expect.objectContaining({ title: 'Preparar handoff do projeto', projectId: 'fintrack', cycleAssignment: 'backlog' }),
       undefined,
     );
   });

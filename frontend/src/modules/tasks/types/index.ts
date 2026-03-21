@@ -1,4 +1,7 @@
 export type {
+  TaskCycleAssignment,
+  TaskCyclePlan,
+  TaskCyclePlanItem,
   ProjectTaskLoad,
   Task,
   TaskDeadlineState,

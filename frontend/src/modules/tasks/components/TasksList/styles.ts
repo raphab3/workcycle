@@ -21,4 +21,5 @@ export const tasksListStyles = {
   doing: 'bg-sky-100 text-sky-800',
   blocked: 'bg-fuchsia-100 text-fuchsia-800',
   done: 'bg-emerald-100 text-emerald-800',
+  cycleChip: 'bg-indigo-100 text-indigo-800',
 };

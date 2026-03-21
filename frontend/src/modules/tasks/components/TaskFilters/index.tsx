@@ -19,6 +19,13 @@ const statusOptions = [
   { label: 'Done', value: 'done' },
 ] as const;
 
+const cycleOptions = [
+  { label: 'Todos os cycles', value: 'all' },
+  { label: 'Cycle atual', value: 'current' },
+  { label: 'Proximo cycle', value: 'next' },
+  { label: 'Backlog', value: 'backlog' },
+] as const;
+
 export function TaskFilters({ filters, onChange, onReset, projects, visibleTasks }: TaskFiltersProps) {
   return (
     <section className={taskFiltersStyles.wrapper}>
@@ -66,6 +73,20 @@ export function TaskFilters({ filters, onChange, onReset, projects, visibleTasks
             onChange={(event) => onChange({ ...filters, status: event.target.value as TaskFiltersProps['filters']['status'] })}
           >
             {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={taskFiltersStyles.field}>
+          <label className={taskFiltersStyles.label} htmlFor="filter-cycle">Cycle</label>
+          <select
+            className={taskFiltersStyles.select}
+            id="filter-cycle"
+            value={filters.cycleAssignment}
+            onChange={(event) => onChange({ ...filters, cycleAssignment: event.target.value as TaskFiltersProps['filters']['cycleAssignment'] })}
+          >
+            {cycleOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>

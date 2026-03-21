@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import type { Project } from '@/modules/projects/types';
 import type { Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
-import { filterTasks, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
+import { filterTasks, getCycleTaskCount, getCycleTaskHours, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
@@ -20,6 +20,7 @@ const baseFilters: TaskFiltersValues = {
   projectId: 'all',
   priority: 'all',
   status: 'all',
+  cycleAssignment: 'all',
 };
 
 export function TasksWorkspace() {
@@ -30,6 +31,7 @@ export function TasksWorkspace() {
   const addTask = useWorkspaceStore((state) => state.addTask);
   const updateTask = useWorkspaceStore((state) => state.updateTask);
   const toggleTaskDone = useWorkspaceStore((state) => state.toggleTaskDone);
+  const setTaskCycleAssignment = useWorkspaceStore((state) => state.setTaskCycleAssignment);
   const filteredTasks = filterTasks(tasks, filters);
   const projectLoad = getProjectLoadSummary(tasks, projects);
 
@@ -91,6 +93,12 @@ export function TasksWorkspace() {
               <CardTitle className={tasksWorkspaceStyles.metricValue}>{getOpenEffortHours(tasks).toFixed(1).replace('.', ',')}h</CardTitle>
             </CardHeader>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Cycle atual</CardDescription>
+              <CardTitle className={tasksWorkspaceStyles.metricValue}>{getCycleTaskCount(tasks, 'current')} task(s) · {getCycleTaskHours(tasks, 'current').toFixed(1).replace('.', ',')}h</CardTitle>
+            </CardHeader>
+          </Card>
         </div>
 
         <TaskFilters filters={filters} onChange={setFilters} onReset={() => setFilters(baseFilters)} projects={projects} visibleTasks={filteredTasks.length} />
@@ -127,7 +135,7 @@ export function TasksWorkspace() {
         </Card>
       </div>
 
-      <TasksList onEditTask={setEditingTask} onToggleDone={handleToggleDone} projects={projects} tasks={filteredTasks} />
+      <TasksList onAssignCycle={setTaskCycleAssignment} onEditTask={setEditingTask} onToggleDone={handleToggleDone} projects={projects} tasks={filteredTasks} />
     </div>
   );
 }

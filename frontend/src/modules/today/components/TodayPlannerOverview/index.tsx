@@ -3,7 +3,7 @@
 import { AlertTriangle, CalendarClock, Gauge } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
+import { buildCycleTaskPlan, getCycleTaskCount, getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import type { TodayCycleValues } from '@/modules/today/types';
 import { buildTodayOperationalContext } from '@/modules/today/utils/context';
 import { buildSuggestedAllocations, createActualHoursMap, formatHours, formatPlanningMoment, mergeActualHoursWithAllocations } from '@/modules/today/utils/planner';
@@ -21,6 +21,7 @@ import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
+import { CycleTasksBoard } from '../CycleTasksBoard/index';
 import { ExecutionAdjuster } from '../ExecutionAdjuster/index';
 import { SuggestionBanner } from '../SuggestionBanner/index';
 import { TodayCycleForm } from '../TodayCycleForm/index';
@@ -33,6 +34,8 @@ export function TodayPlannerOverview() {
   const storedActualHours = useWorkspaceStore((state) => state.todayActualHours);
   const setTodayCycleValues = useWorkspaceStore((state) => state.setTodayCycleValues);
   const setTodayActualHours = useWorkspaceStore((state) => state.setTodayActualHours);
+  const completeTask = useWorkspaceStore((state) => state.completeTask);
+  const skipTaskToNextCycle = useWorkspaceStore((state) => state.skipTaskToNextCycle);
   const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects]);
   const projectLoadSummary = useMemo(() => getProjectLoadSummary(tasks, activeProjects), [tasks, activeProjects]);
   const allocations = useMemo(
@@ -40,6 +43,7 @@ export function TodayPlannerOverview() {
     [activeProjects, projectLoadSummary, cycleValues],
   );
   const actualHours = useMemo(() => mergeActualHoursWithAllocations(storedActualHours, allocations), [storedActualHours, allocations]);
+  const cycleTaskPlan = useMemo(() => buildCycleTaskPlan(tasks, projects, cycleValues.availableHours), [tasks, projects, cycleValues.availableHours]);
   const operationalContext = buildTodayOperationalContext({
     projects,
     tasks,
@@ -74,6 +78,14 @@ export function TodayPlannerOverview() {
       ...actualHours,
       [projectId]: Math.max(0, Number(((actualHours[projectId] ?? 0) + delta).toFixed(1))),
     });
+  }
+
+  function handleCompleteTask(taskId: string) {
+    completeTask(taskId);
+  }
+
+  function handleSkipTask(taskId: string) {
+    skipTaskToNextCycle(taskId);
   }
 
   return (
@@ -164,6 +176,20 @@ export function TodayPlannerOverview() {
           <CardContent>
             <TodayCycleForm defaultValues={cycleValues} onSubmitCycle={handleSubmitCycle} />
           </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Tasks alocadas no cycle</CardDescription>
+            <CardTitle>O que cabe no dia e o que escapa para o proximo cycle</CardTitle>
+          </CardHeader>
+          <CycleTasksBoard
+            availableHours={cycleValues.availableHours}
+            nextCycleTasksCount={getCycleTaskCount(tasks, 'next')}
+            onCompleteTask={handleCompleteTask}
+            onSkipTask={handleSkipTask}
+            taskPlan={cycleTaskPlan}
+          />
         </Card>
 
         <Card>

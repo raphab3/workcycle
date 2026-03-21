@@ -1,5 +1,19 @@
 import type { Project } from '@/modules/projects/types';
-import type { ProjectTaskLoad, Task, TaskDeadlineState, TaskFiltersValues } from '@/modules/tasks/types';
+import type { ProjectTaskLoad, Task, TaskCycleAssignment, TaskCyclePlan, TaskCyclePlanItem, TaskDeadlineState, TaskFiltersValues } from '@/modules/tasks/types';
+
+const priorityRank = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+} as const;
+
+const statusRank = {
+  doing: 0,
+  todo: 1,
+  blocked: 2,
+  done: 3,
+} as const;
 
 export function getTaskDeadlineState(task: Pick<Task, 'dueInDays'>): TaskDeadlineState {
   if (task.dueInDays < 0) {
@@ -40,8 +54,9 @@ export function filterTasks(tasks: Task[], filters: TaskFiltersValues) {
     const matchesProject = filters.projectId === 'all' || task.projectId === filters.projectId;
     const matchesPriority = filters.priority === 'all' || task.priority === filters.priority;
     const matchesStatus = filters.status === 'all' || task.status === filters.status;
+    const matchesCycle = filters.cycleAssignment === 'all' || task.cycleAssignment === filters.cycleAssignment;
 
-    return matchesProject && matchesPriority && matchesStatus;
+    return matchesProject && matchesPriority && matchesStatus && matchesCycle;
   });
 }
 
@@ -78,4 +93,65 @@ export function getProjectLoadSummary(tasks: Task[], projects: Project[]): Proje
     })
     .filter((projectLoad) => projectLoad.openTasks > 0)
     .sort((left, right) => right.effortHours - left.effortHours);
+}
+
+export function getCycleTaskHours(tasks: Task[], cycleAssignment: TaskCycleAssignment) {
+  return getOpenTasks(tasks)
+    .filter((task) => task.cycleAssignment === cycleAssignment)
+    .reduce((total, task) => total + task.estimatedHours, 0);
+}
+
+export function getCycleTaskCount(tasks: Task[], cycleAssignment: TaskCycleAssignment) {
+  return getOpenTasks(tasks).filter((task) => task.cycleAssignment === cycleAssignment).length;
+}
+
+export function buildCycleTaskPlan(tasks: Task[], projects: Project[], availableHours: number): TaskCyclePlan {
+  const projectMap = new Map(projects.map((project) => [project.id, project]));
+  let accumulatedHours = 0;
+
+  const cycleTasks: TaskCyclePlanItem[] = getOpenTasks(tasks)
+    .filter((task) => task.cycleAssignment === 'current')
+    .sort((left, right) => {
+      if (statusRank[left.status] !== statusRank[right.status]) {
+        return statusRank[left.status] - statusRank[right.status];
+      }
+
+      if (left.dueInDays !== right.dueInDays) {
+        return left.dueInDays - right.dueInDays;
+      }
+
+      if (priorityRank[left.priority] !== priorityRank[right.priority]) {
+        return priorityRank[left.priority] - priorityRank[right.priority];
+      }
+
+      return right.estimatedHours - left.estimatedHours;
+    })
+    .map((task) => {
+      accumulatedHours += task.estimatedHours;
+      const project = projectMap.get(task.projectId);
+
+      return {
+        taskId: task.id,
+        title: task.title,
+        projectId: task.projectId,
+        projectName: project?.name ?? 'Projeto nao encontrado',
+        colorHex: project?.colorHex ?? '#94A3B8',
+        priority: task.priority,
+        status: task.status,
+        estimatedHours: task.estimatedHours,
+        dueLabel: getTaskDeadlineLabel(task),
+        fitsInCycle: accumulatedHours <= availableHours,
+        cumulativeHours: accumulatedHours,
+      };
+    });
+
+  const plannedHours = cycleTasks.reduce((total, task) => total + task.estimatedHours, 0);
+  const fittedHours = cycleTasks.filter((task) => task.fitsInCycle).reduce((total, task) => total + task.estimatedHours, 0);
+
+  return {
+    tasks: cycleTasks,
+    plannedHours,
+    remainingHours: Math.max(0, Number((availableHours - fittedHours).toFixed(1))),
+    overflowHours: Math.max(0, Number((plannedHours - availableHours).toFixed(1))),
+  };
 }

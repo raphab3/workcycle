@@ -56,6 +56,9 @@ interface WorkspaceStoreState {
   addTask: (values: TaskFormValues) => void;
   updateTask: (taskId: string, values: TaskFormValues) => void;
   toggleTaskDone: (taskId: string) => void;
+  setTaskCycleAssignment: (taskId: string, cycleAssignment: Task['cycleAssignment']) => void;
+  completeTask: (taskId: string) => void;
+  skipTaskToNextCycle: (taskId: string) => void;
   setTodayCycleValues: (values: TodayCycleValues) => void;
   setTodayActualHours: (actualHours: Record<string, number>) => void;
   resetWorkspaceStore: () => void;
@@ -98,6 +101,23 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
     tasks: state.tasks.map((task) => (
       task.id === taskId
         ? { ...task, status: task.status === 'done' ? 'todo' : 'done' }
+        : task
+    )),
+  })),
+  setTaskCycleAssignment: (taskId, cycleAssignment) => set((state) => ({
+    tasks: state.tasks.map((task) => (task.id === taskId ? { ...task, cycleAssignment } : task)),
+  })),
+  completeTask: (taskId) => set((state) => ({
+    tasks: state.tasks.map((task) => (
+      task.id === taskId
+        ? { ...task, status: 'done', cycleAssignment: 'backlog' }
+        : task
+    )),
+  })),
+  skipTaskToNextCycle: (taskId) => set((state) => ({
+    tasks: state.tasks.map((task) => (
+      task.id === taskId
+        ? { ...task, cycleAssignment: 'next', status: task.status === 'done' ? 'todo' : task.status }
         : task
     )),
   })),

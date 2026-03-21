@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
@@ -23,6 +23,7 @@ describe('TodayPlannerOverview', () => {
     useWorkspaceStore.getState().addTask({
       title: 'Escalar analise de onboarding',
       projectId: 'cliente-core',
+      cycleAssignment: 'current',
       priority: 'critical',
       status: 'todo',
       dueInDays: 0,
@@ -37,6 +38,8 @@ describe('TodayPlannerOverview', () => {
   it('renders fixed and rotative planning blocks', () => {
     render(<TodayPlannerOverview />);
 
+    expect(screen.getByText('Tasks alocadas no cycle')).toBeInTheDocument();
+    expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
     expect(screen.getByText('Distribuicao inicial do dia')).toBeInTheDocument();
     expect(screen.getAllByText('ClienteCore').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Fixo').length).toBeGreaterThan(0);
@@ -65,5 +68,23 @@ describe('TodayPlannerOverview', () => {
     expect(screen.getByText(/Horas reais registradas: 10h00/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Aumentar ClienteCore' }));
     expect(screen.getByText(/Horas reais registradas: 10h30/i)).toBeInTheDocument();
+  });
+
+  it('allows concluding or skipping tasks from the current cycle', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    const billingTaskCard = screen.getByText('Ajustar migration de faturamento').closest('article');
+    const refinementTaskCard = screen.getByText('Fechar refinamento da sprint').closest('article');
+
+    expect(billingTaskCard).not.toBeNull();
+    expect(refinementTaskCard).not.toBeNull();
+
+    await user.click(within(billingTaskCard as HTMLElement).getByRole('button', { name: 'Pular para proximo cycle' }));
+    expect(screen.queryByText('Ajustar migration de faturamento')).not.toBeInTheDocument();
+
+    await user.click(within(refinementTaskCard as HTMLElement).getByRole('button', { name: 'Concluir task' }));
+    expect(screen.queryByText('Fechar refinamento da sprint')).not.toBeInTheDocument();
   });
 });

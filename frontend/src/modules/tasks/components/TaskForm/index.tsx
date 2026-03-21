@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/shared/components/Button';
 
-import { taskFormSchema, type TaskFormSchemaInput, type TaskFormSchemaOutput, taskPriorityValues, taskStatusValues } from './schema';
+import { taskCycleAssignmentValues, taskFormSchema, type TaskFormSchemaInput, type TaskFormSchemaOutput, taskPriorityValues, taskStatusValues } from './schema';
 import { taskFormStyles } from './styles';
 import type { TaskFormProps } from './types';
 
@@ -15,6 +15,7 @@ const baseValues: TaskFormSchemaInput = {
   projectId: '',
   priority: 'medium',
   status: 'todo',
+  cycleAssignment: 'backlog',
   dueInDays: 2,
   estimatedHours: 1,
 };
@@ -31,6 +32,12 @@ const statusLabels = {
   doing: 'Doing',
   blocked: 'Blocked',
   done: 'Done',
+} as const;
+
+const cycleLabels = {
+  backlog: 'Backlog',
+  current: 'Cycle atual',
+  next: 'Proximo cycle',
 } as const;
 
 export function TaskForm({ defaultValues, onCancelEdit, onSubmitTask, projects }: TaskFormProps) {
@@ -89,6 +96,16 @@ export function TaskForm({ defaultValues, onCancelEdit, onSubmitTask, projects }
               <option key={value} value={value}>{statusLabels[value]}</option>
             ))}
           </select>
+        </div>
+
+        <div className={taskFormStyles.field}>
+          <label className={taskFormStyles.label} htmlFor="task-cycle">Alocacao no cycle</label>
+          <select className={taskFormStyles.select} id="task-cycle" {...register('cycleAssignment')}>
+            {taskCycleAssignmentValues.map((value) => (
+              <option key={value} value={value}>{cycleLabels[value]}</option>
+            ))}
+          </select>
+          <p className={taskFormStyles.helper}>Puxe a task para o cycle atual quando quiser ocupar a folga do dia ou prepare o proximo cycle.</p>
         </div>
 
         <div className={taskFormStyles.field}>

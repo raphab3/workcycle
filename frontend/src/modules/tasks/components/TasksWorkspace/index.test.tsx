@@ -40,4 +40,15 @@ describe('TasksWorkspace', () => {
 
     expect(await screen.findByText('Planejar entrega mobile')).toBeInTheDocument();
   });
+
+  it('reallocates a task to the next cycle', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.click(screen.getAllByRole('button', { name: 'Proximo cycle' })[0]);
+    await user.selectOptions(screen.getAllByLabelText('Cycle')[0], 'next');
+
+    expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+  });
 });
