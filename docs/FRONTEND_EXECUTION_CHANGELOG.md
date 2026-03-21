@@ -434,7 +434,7 @@ Done
 
 ### Status
 
-Planned
+Done
 
 ### Escopo
 
@@ -444,11 +444,11 @@ Planned
 
 ### Tasks
 
-- [ ] FE-0501 criar módulo `weekly-balance`
-- [ ] FE-0502 implementar grade semanal por dia e projeto
-- [ ] FE-0503 criar componentes de status de desvio
-- [ ] FE-0504 construir resumo agregado com horas previstas, realizadas e diferença
-- [ ] FE-0505 tratar cenários de semana incompleta e domingo opcional
+- [x] FE-0501 criar módulo `weekly-balance`
+- [x] FE-0502 implementar grade semanal por dia e projeto
+- [x] FE-0503 criar componentes de status de desvio
+- [x] FE-0504 construir resumo agregado com horas previstas, realizadas e diferença
+- [x] FE-0505 tratar cenários de semana incompleta e domingo opcional
 
 ### Critérios de teste unitário
 
@@ -458,28 +458,45 @@ Planned
 
 ### Execução
 
-- Data:
-- Responsável:
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
+  - a tela `Semana` passou de preview estático para uma leitura funcional de desvios derivada do planejamento e do ajuste real do Cycle 4
+  - as horas previstas e ajustadas foram usadas como baseline para gerar uma semana simulada por projeto e por dia
+  - a classificação semanal foi simplificada em `equilibrado`, `atencao` e `critico` com base no delta acumulado em horas
+  - a grade semanal foi mantida em seis dias (`Seg` a `Sab`) para acompanhar o modelo atual do mock funcional
 - Riscos:
+  - a semana ainda e simulada a partir dos mocks e nao consome uma persistencia compartilhada real
+  - o domingo continua fora do escopo funcional neste ciclo e pode precisar revisao se entrar no fluxo final do produto
 - Dependências:
+  - integracao futura com estado compartilhado ou backend para refletir ajustes reais vindos da tela `Hoje`
+  - refinamento final de responsividade e consistencia visual no Cycle 6
 
 ### Changelog
 
 - Added:
+  - tipos fortes e helpers do domínio `weekly` para linhas, células, resumos e status de desvio
+  - componente `WeeklyBalanceWorkspace` com cards de resumo, grade semanal e leitura operacional
+  - testes unitários para helpers semanais, workspace e rota `/semana`
 - Changed:
+  - a rota `/semana` deixou de renderizar um quadro editorial estático e passou a exibir desvios calculados a partir das horas previstas e ajustadas
+  - a tela agora consolida horas previstas, horas reais, delta e status por projeto
 - Fixed:
+  - corrigido o teste do workspace semanal para evitar ambiguidade em textos repetidos entre grade e cards de insight
 - Removed:
+  - removido o preview estático `WeeklyBalancePreview`
 
 ### Evidência de validação
 
-- Build:
-- Tests:
+- Build: `pnpm build` passou com a rota `/semana` gerando bundle funcional do módulo
+- Tests: `pnpm test:run` passou com 25 arquivos e 47 testes
 - Observações:
+  - o ciclo foi fechado com grade semanal funcional, status de desvio e resumos agregados calculados localmente a partir do baseline do Cycle 4
 
 ### Pendências para próximo ciclo
 
--
+- iniciar o Cycle 6 com refinamento de responsividade, acessibilidade e estados transversais
+- decidir se a persistência compartilhada entra ainda no mock final ou fica explicitamente fora do escopo do MVP frontend
 
 ## Cycle 6 — Hardening e UX Final do MVP Frontend
 
