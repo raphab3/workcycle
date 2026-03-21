@@ -354,7 +354,7 @@ Done
 
 ### Status
 
-Planned
+Done
 
 ### Escopo
 
@@ -362,15 +362,16 @@ Planned
 - receber horas disponíveis e projetos por ciclo
 - exibir a sugestão de redistribuição e a escala do dia
 - permitir ajuste manual de horas reais no encerramento do ciclo
+- Adicionar data e hora atual, banner
 
 ### Tasks
 
-- [ ] FE-0401 criar módulo `today-cycle` com tipos, schema e componentes
-- [ ] FE-0402 implementar formulário de horas disponíveis e projetos por ciclo
-- [ ] FE-0403 criar banner de sugestão de redistribuição percentual
-- [ ] FE-0404 montar cards ou blocos da escala diária
-- [ ] FE-0405 implementar stepper de ajuste de tempo real por projeto
-- [ ] FE-0406 integrar o fluxo visual de encerramento do ciclo
+- [x] FE-0401 criar módulo `today-cycle` com tipos, schema e componentes
+- [x] FE-0402 implementar formulário de horas disponíveis e projetos por ciclo
+- [x] FE-0403 criar banner de sugestão de redistribuição percentual
+- [x] FE-0404 montar cards ou blocos da escala diária
+- [x] FE-0405 implementar stepper de ajuste de tempo real por projeto
+- [x] FE-0406 integrar o fluxo visual de encerramento do ciclo
 
 ### Critérios de teste unitário
 
@@ -382,28 +383,52 @@ Planned
 
 ### Execução
 
-- Data:
-- Responsável:
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
+  - a tela `Hoje` passou de visão estática para fluxo funcional client-side com recalculo do ciclo e ajuste manual
+  - o planejamento reutiliza a carteira ativa de projetos do Cycle 2 e o resumo de carga aberta das tasks do Cycle 3
+  - o banner de redistribuição foi implementado como bloco colapsável para comparar percentual atual e sugerido sem sobrecarregar a leitura principal
+  - o ajuste real foi tratado com stepper incremental de 0.5h por projeto para manter a interação simples no mock
+  - foi adicionada referência temporal do plano com data e hora atuais na própria tela
 - Riscos:
+  - o fluxo ainda usa mocks compartilhados e não persiste entre recargas
+  - como projetos e tasks ainda não compartilham store ou backend, a tela `Hoje` consome o estado base do mock e não as edições feitas nas rotas anteriores em tempo real
 - Dependências:
+  - integração futura com persistência ou camada compartilhada de dados
+  - reaproveitamento do fechamento diário na leitura semanal do Cycle 5
 
 ### Changelog
 
 - Added:
+  - tipos fortes e helpers do domínio `today` para ciclo, distribuição sugerida e horas reais
+  - componente `TodayCycleForm` com React Hook Form + Zod
+  - componente `SuggestionBanner` colapsável com comparação entre percentual atual e sugerido
+  - componente `ExecutionAdjuster` com stepper de ajuste manual por projeto
+  - resumo visual de carga por projeto consumindo a base de tasks abertas
+  - testes unitários para schema do ciclo, helpers do planner e comportamento interativo da tela `Hoje`
 - Changed:
+  - a rota `/hoje` passou a operar como painel funcional de planejamento diário
+  - a escala sugerida agora é recalculada a partir de horas disponíveis, quantidade de projetos no ciclo e carga aberta das tasks
+  - a tela passou a exibir data e hora atuais como referência do plano em execução
 - Fixed:
+  - corrigido o boundary client/server do componente principal da tela `Hoje` para o App Router do Next
+  - corrigidos os testes do planner para refletir a estrutura final da UI e evitar ambiguidades de texto
 - Removed:
+  - removida a visão estática anterior da distribuição editorial do dia
 
 ### Evidência de validação
 
-- Build:
-- Tests:
+- Build: `pnpm build` passou com a rota `/hoje` gerando bundle funcional do módulo
+- Tests: `pnpm test:run` passou com 23 arquivos e 42 testes
 - Observações:
+  - uma tentativa de build em paralelo com a suíte de testes gerou falha transitória de `/_document`; a validação isolada do build passou normalmente
+  - o ciclo foi fechado com formulário do ciclo, banner colapsável, escala sugerida e stepper de horas reais funcionando localmente
 
 ### Pendências para próximo ciclo
 
--
+- iniciar o Cycle 5 na tela `Semana`, reutilizando horas previstas e horas ajustadas como base dos desvios semanais
+- decidir se a persistência compartilhada entra antes da leitura semanal para evitar divergência entre as rotas
 
 ## Cycle 5 — Semana
 

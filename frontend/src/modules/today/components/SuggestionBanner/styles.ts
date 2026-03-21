@@ -1,0 +1,15 @@
+export const suggestionBannerStyles = {
+  wrapper: 'grid gap-4 rounded-[1.5rem] border border-border/60 bg-card/90 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.28)]',
+  top: 'flex flex-col gap-3 md:flex-row md:items-start md:justify-between',
+  title: 'text-lg font-semibold tracking-tight text-foreground',
+  description: 'text-sm leading-6 text-muted-foreground',
+  moment: 'text-xs uppercase tracking-[0.18em] text-muted-foreground',
+  list: 'grid gap-3',
+  item: 'rounded-2xl bg-background/75 px-4 py-3',
+  row: 'flex items-start justify-between gap-3',
+  name: 'text-sm font-medium text-foreground',
+  copy: 'mt-1 text-xs leading-5 text-muted-foreground',
+  positive: 'text-emerald-700',
+  negative: 'text-rose-700',
+  neutral: 'text-slate-700',
+};
