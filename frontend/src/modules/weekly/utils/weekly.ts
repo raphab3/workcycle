@@ -1,18 +1,20 @@
-import { mockProjects } from '@/modules/projects/mocks/projects';
 import type { Project, WeekDay } from '@/modules/projects/types';
-import { mockTasks } from '@/modules/tasks/mocks/tasks';
+import type { Task } from '@/modules/tasks/types';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
-import { buildSuggestedAllocations, createActualHoursMap, formatHours } from '@/modules/today/utils/planner';
-import type { SuggestedAllocation } from '@/modules/today/types';
+import { buildSuggestedAllocations, createActualHoursMap, formatHours, getDefaultCycleValues, mergeActualHoursWithAllocations } from '@/modules/today/utils/planner';
+import type { SuggestedAllocation, TodayCycleValues } from '@/modules/today/types';
 
 import type { WeeklyDayCell, WeeklyDeviationStatus, WeeklyProjectRow, WeeklyScenario } from '../types';
 
 const weekDays: WeekDay[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 const currentDay: WeekDay = 'Qua';
-const defaultCycle = {
-  availableHours: 10,
-  projectsInCycle: 3,
-};
+
+interface BuildWeeklyScenarioParams {
+  projects: Project[];
+  tasks: Task[];
+  cycleValues?: TodayCycleValues;
+  actualHours?: Record<string, number>;
+}
 
 function roundToHalf(value: number) {
   return Math.round(value * 2) / 2;
@@ -93,11 +95,13 @@ function buildRotativeCells(allocation: SuggestedAllocation, actualTodayHours: n
   });
 }
 
-export function buildWeeklyScenario(): WeeklyScenario {
-  const activeProjects = mockProjects.filter((project) => project.status === 'active');
-  const projectLoadSummary = getProjectLoadSummary(mockTasks, activeProjects);
-  const allocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, defaultCycle);
-  const adjustedActualHours = buildAdjustedActualHours(allocations);
+export function buildWeeklyScenario({ projects, tasks, cycleValues, actualHours }: BuildWeeklyScenarioParams): WeeklyScenario {
+  const activeProjects = projects.filter((project) => project.status === 'active');
+  const projectLoadSummary = getProjectLoadSummary(tasks, activeProjects);
+  const allocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, cycleValues ?? getDefaultCycleValues(projects));
+  const adjustedActualHours = actualHours
+    ? mergeActualHoursWithAllocations(actualHours, allocations)
+    : buildAdjustedActualHours(allocations);
   let rotativeIndex = 0;
 
   const rows: WeeklyProjectRow[] = allocations.map((allocation) => {

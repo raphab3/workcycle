@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
+import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { AppLayout } from './index';
 import { ThemeProvider } from '@/shared/theme';
 
@@ -12,6 +13,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('AppLayout', () => {
+  beforeEach(() => {
+    resetWorkspaceStore();
+  });
+
   it('renders sidebar, header and nested content', () => {
     usePathnameMock.mockReturnValue('/hoje');
 

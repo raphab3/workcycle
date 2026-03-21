@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
+
 import { ProjectsWorkspace } from './index';
 
 describe('ProjectsWorkspace', () => {
+  beforeEach(() => {
+    resetWorkspaceStore();
+  });
+
   it('renders the allocation summary and existing projects', () => {
     render(<ProjectsWorkspace />);
 

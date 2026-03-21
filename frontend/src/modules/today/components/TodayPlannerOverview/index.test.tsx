@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
+
 import { TodayPlannerOverview } from './index';
 
 describe('TodayPlannerOverview', () => {
+  beforeEach(() => {
+    resetWorkspaceStore();
+  });
+
   it('renders operational context derived from the current plan', () => {
     render(<TodayPlannerOverview />);
 
@@ -11,6 +17,21 @@ describe('TodayPlannerOverview', () => {
     expect(screen.getByText('Backlog ocupa 5% da janela de 4 semanas')).toBeInTheDocument();
     expect(screen.getByText('3 sinais de atencao ativos')).toBeInTheDocument();
     expect(screen.getByText(/AuthGuard esta pausado/i)).toBeInTheDocument();
+  });
+
+  it('reflects shared task changes from the workspace store', () => {
+    useWorkspaceStore.getState().addTask({
+      title: 'Escalar analise de onboarding',
+      projectId: 'cliente-core',
+      priority: 'critical',
+      status: 'todo',
+      dueInDays: 0,
+      estimatedHours: 6,
+    });
+
+    render(<TodayPlannerOverview />);
+
+    expect(screen.getByText(/Maior pressao atual em ClienteCore/i)).toBeInTheDocument();
   });
 
   it('renders fixed and rotative planning blocks', () => {

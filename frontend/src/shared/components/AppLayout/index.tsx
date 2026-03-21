@@ -6,10 +6,9 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { AppNavigation } from '@/shared/components/AppNavigation/index';
+import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
 import { designSystemTheme, useTheme } from '@/shared/theme';
-
-import { mockProjects } from '@/modules/projects/mocks/projects';
 
 import { appLayoutStyles } from './styles';
 
@@ -22,9 +21,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const projects = useWorkspaceStore((state) => state.projects);
   const activeAllocationPct = useMemo(
-    () => mockProjects.filter((project) => project.status === 'active').reduce((total, project) => total + project.allocationPct, 0),
-    [],
+    () => projects.filter((project) => project.status === 'active').reduce((total, project) => total + project.allocationPct, 0),
+    [projects],
   );
 
   useEffect(() => {

@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
+
 import { TasksWorkspace } from './index';
 
 describe('TasksWorkspace', () => {
+  beforeEach(() => {
+    resetWorkspaceStore();
+  });
+
   it('renders the new tasks workspace and seed tasks', () => {
     render(<TasksWorkspace />);
 

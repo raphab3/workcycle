@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/react';
 
+import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
+
 import { WeeklyBalanceWorkspace } from './index';
 
 describe('WeeklyBalanceWorkspace', () => {
+  beforeEach(() => {
+    resetWorkspaceStore();
+  });
+
   it('renders weekly summary and deviation board', () => {
     render(<WeeklyBalanceWorkspace />);
 

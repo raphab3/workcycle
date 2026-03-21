@@ -1,5 +1,5 @@
 export const appLayoutStyles = {
-  shell: 'min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(102,126,234,0.12),transparent_0_28%),radial-gradient(circle_at_bottom_right,rgba(15,118,110,0.08),transparent_0_24%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(242,246,251,0.96))] text-foreground',
+  shell: 'min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(102,126,234,0.16),transparent_0_28%),radial-gradient(circle_at_bottom_right,rgba(15,118,110,0.12),transparent_0_24%),linear-gradient(180deg,rgb(var(--background)),rgb(var(--background)))] text-foreground',
   skipLink: 'sr-only fixed left-4 top-4 z-50 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
   frame: 'relative min-h-screen lg:grid lg:grid-cols-[auto_minmax(0,1fr)]',
   backdrop: 'fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-sm lg:hidden',

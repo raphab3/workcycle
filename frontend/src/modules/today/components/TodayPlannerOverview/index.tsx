@@ -1,14 +1,12 @@
 'use client';
 
 import { AlertTriangle, CalendarClock, Gauge } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo } from 'react';
 
-import { mockProjects } from '@/modules/projects/mocks/projects';
-import { mockTasks } from '@/modules/tasks/mocks/tasks';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import type { TodayCycleValues } from '@/modules/today/types';
 import { buildTodayOperationalContext } from '@/modules/today/utils/context';
-import { buildSuggestedAllocations, createActualHoursMap, formatHours, formatPlanningMoment } from '@/modules/today/utils/planner';
+import { buildSuggestedAllocations, createActualHoursMap, formatHours, formatPlanningMoment, mergeActualHoursWithAllocations } from '@/modules/today/utils/planner';
 import { cn } from '@/shared/utils/cn';
 
 import {
@@ -21,27 +19,30 @@ import {
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { ExecutionAdjuster } from '../ExecutionAdjuster/index';
 import { SuggestionBanner } from '../SuggestionBanner/index';
 import { TodayCycleForm } from '../TodayCycleForm/index';
 import { todayPlannerOverviewStyles } from './styles';
 
-const activeProjects = mockProjects.filter((project) => project.status === 'active');
-const projectLoadSummary = getProjectLoadSummary(mockTasks, activeProjects);
-const defaultCycleValues: TodayCycleValues = {
-  availableHours: 10,
-  projectsInCycle: Math.min(activeProjects.length, 3),
-};
-const defaultAllocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, defaultCycleValues);
-
 export function TodayPlannerOverview() {
-  const [cycleValues, setCycleValues] = useState<TodayCycleValues>(defaultCycleValues);
-  const [allocations, setAllocations] = useState(defaultAllocations);
-  const [actualHours, setActualHours] = useState<Record<string, number>>(createActualHoursMap(defaultAllocations));
+  const projects = useWorkspaceStore((state) => state.projects);
+  const tasks = useWorkspaceStore((state) => state.tasks);
+  const cycleValues = useWorkspaceStore((state) => state.todayCycleValues);
+  const storedActualHours = useWorkspaceStore((state) => state.todayActualHours);
+  const setTodayCycleValues = useWorkspaceStore((state) => state.setTodayCycleValues);
+  const setTodayActualHours = useWorkspaceStore((state) => state.setTodayActualHours);
+  const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects]);
+  const projectLoadSummary = useMemo(() => getProjectLoadSummary(tasks, activeProjects), [tasks, activeProjects]);
+  const allocations = useMemo(
+    () => buildSuggestedAllocations(activeProjects, projectLoadSummary, cycleValues),
+    [activeProjects, projectLoadSummary, cycleValues],
+  );
+  const actualHours = useMemo(() => mergeActualHoursWithAllocations(storedActualHours, allocations), [storedActualHours, allocations]);
   const operationalContext = buildTodayOperationalContext({
-    projects: mockProjects,
-    tasks: mockTasks,
+    projects,
+    tasks,
     allocations,
     actualHours,
     projectLoadSummary,
@@ -56,7 +57,7 @@ export function TodayPlannerOverview() {
     { label: 'Carga aberta', value: formatHours(operationalContext.openEffortHours), icon: Gauge },
     {
       label: 'Risco imediato',
-      value: `${operationalContext.overdueTasksCount + operationalContext.dueTodayTasksCount} sinais`,
+      value: `${operationalContext.overdueTasksCount + operationalContext.dueTodayTasksCount + operationalContext.blockedTasksCount} sinais`,
       icon: AlertTriangle,
     },
   ];
@@ -64,16 +65,15 @@ export function TodayPlannerOverview() {
   function handleSubmitCycle(values: TodayCycleValues) {
     const nextAllocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, values);
 
-    setCycleValues(values);
-    setAllocations(nextAllocations);
-    setActualHours(createActualHoursMap(nextAllocations));
+    setTodayCycleValues(values);
+    setTodayActualHours(createActualHoursMap(nextAllocations));
   }
 
   function handleAdjustHours(projectId: string, delta: number) {
-    setActualHours((currentActualHours) => ({
-      ...currentActualHours,
-      [projectId]: Math.max(0, Number(((currentActualHours[projectId] ?? 0) + delta).toFixed(1))),
-    }));
+    setTodayActualHours({
+      ...actualHours,
+      [projectId]: Math.max(0, Number(((actualHours[projectId] ?? 0) + delta).toFixed(1))),
+    });
   }
 
   return (
@@ -151,9 +151,9 @@ export function TodayPlannerOverview() {
 
         <StateNotice
           eyebrow="Estado transversal"
-          title="Plano do dia ainda roda sobre mocks locais"
-          description="A leitura operacional ja conversa com carteira, carga aberta e atrasos, mas ainda nao sincroniza alteracoes feitas em outras rotas em tempo real."
-          tone="warning"
+          title="Plano do dia sincronizado com Projetos e Tarefas"
+          description="A leitura operacional agora reage ao que foi editado nas outras rotas do workspace durante a mesma sessao."
+          tone="info"
         />
 
         <Card>

@@ -6,9 +6,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/component
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
 
-import { mockProjects } from '@/modules/projects/mocks/projects';
 import type { Project, ProjectFormValues } from '@/modules/projects/types';
 import { getActiveAllocationTotal, getAllocationDelta, getAllocationTone } from '@/modules/projects/utils/allocation';
 
@@ -16,13 +16,12 @@ import { ProjectForm } from '../ProjectForm/index';
 import { ProjectsList } from '../ProjectsList/index';
 import { projectsWorkspaceStyles } from './styles';
 
-function createProjectId(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-}
-
 export function ProjectsWorkspace() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const projects = useWorkspaceStore((state) => state.projects);
+  const addProject = useWorkspaceStore((state) => state.addProject);
+  const updateProject = useWorkspaceStore((state) => state.updateProject);
+  const toggleProjectStatus = useWorkspaceStore((state) => state.toggleProjectStatus);
 
   const activeProjects = projects.filter((project) => project.status === 'active');
   const allocationTotal = getActiveAllocationTotal(projects);
@@ -35,30 +34,16 @@ export function ProjectsWorkspace() {
 
   function handleSubmitProject(values: ProjectFormValues, projectId?: string) {
     if (projectId) {
-      setProjects((currentProjects) =>
-        currentProjects.map((project) => (project.id === projectId ? { ...project, ...values } : project)),
-      );
+      updateProject(projectId, values);
       setEditingProject(null);
       return;
     }
 
-    setProjects((currentProjects) => [
-      {
-        id: `${createProjectId(values.name)}-${currentProjects.length + 1}`,
-        ...values,
-      },
-      ...currentProjects,
-    ]);
+    addProject(values);
   }
 
   function handleToggleStatus(projectId: string) {
-    setProjects((currentProjects) =>
-      currentProjects.map((project) =>
-        project.id === projectId
-          ? { ...project, status: project.status === 'active' ? 'paused' : 'active' }
-          : project,
-      ),
-    );
+    toggleProjectStatus(projectId);
   }
 
   return (
@@ -72,9 +57,9 @@ export function ProjectsWorkspace() {
 
         <StateNotice
           eyebrow="Estado transversal"
-          title="Carteira local do mock"
-          description="As alteracoes desta tela ainda nao persistem nem sincronizam automaticamente com as demais rotas."
-          tone="warning"
+          title="Carteira compartilhada entre as rotas"
+          description="As alteracoes desta tela agora alimentam Hoje, Semana e Tarefas em tempo real dentro do workspace atual."
+          tone="info"
         />
 
         {projects.length === 0 && (

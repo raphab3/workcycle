@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -8,6 +10,7 @@ import {
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
 
 import { buildWeeklyScenario, formatWeeklyCell } from '@/modules/weekly/utils/weekly';
@@ -21,7 +24,16 @@ const statusLabels = {
 } as const;
 
 export function WeeklyBalanceWorkspace() {
-  const { rows, summary } = buildWeeklyScenario();
+  const projects = useWorkspaceStore((state) => state.projects);
+  const tasks = useWorkspaceStore((state) => state.tasks);
+  const todayCycleValues = useWorkspaceStore((state) => state.todayCycleValues);
+  const todayActualHours = useWorkspaceStore((state) => state.todayActualHours);
+  const { rows, summary } = buildWeeklyScenario({
+    projects,
+    tasks,
+    cycleValues: todayCycleValues,
+    actualHours: todayActualHours,
+  });
 
   return (
     <div className={weeklyBalanceWorkspaceStyles.layout}>
@@ -33,9 +45,9 @@ export function WeeklyBalanceWorkspace() {
 
       <StateNotice
         eyebrow="Estado transversal"
-        title="Semana derivada do plano diario atual"
-        description="A leitura semanal ainda e uma simulacao coerente com o Cycle 4, mas sem persistencia compartilhada entre os modulos."
-        tone="warning"
+        title="Semana conectada ao estado compartilhado do workspace"
+        description="Projetos, tarefas e horas ajustadas do dia agora alimentam a leitura semanal sem depender de mocks isolados por rota."
+        tone="info"
       />
 
       {rows.length === 0 && (

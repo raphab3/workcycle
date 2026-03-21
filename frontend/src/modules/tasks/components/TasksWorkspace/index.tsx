@@ -2,15 +2,14 @@
 
 import { useState } from 'react';
 
-import { mockProjects } from '@/modules/projects/mocks/projects';
 import type { Project } from '@/modules/projects/types';
-import { mockTasks } from '@/modules/tasks/mocks/tasks';
 import type { Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
 import { filterTasks, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { TaskFilters } from '../TaskFilters/index';
 import { TaskForm } from '../TaskForm/index';
@@ -23,37 +22,29 @@ const baseFilters: TaskFiltersValues = {
   status: 'all',
 };
 
-function createTaskId(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-}
-
 export function TasksWorkspace() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filters, setFilters] = useState<TaskFiltersValues>(baseFilters);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-
-  const projects: Project[] = mockProjects;
+  const tasks = useWorkspaceStore((state) => state.tasks);
+  const projects: Project[] = useWorkspaceStore((state) => state.projects);
+  const addTask = useWorkspaceStore((state) => state.addTask);
+  const updateTask = useWorkspaceStore((state) => state.updateTask);
+  const toggleTaskDone = useWorkspaceStore((state) => state.toggleTaskDone);
   const filteredTasks = filterTasks(tasks, filters);
   const projectLoad = getProjectLoadSummary(tasks, projects);
 
   function handleSubmitTask(values: TaskFormValues, taskId?: string) {
     if (taskId) {
-      setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? { ...task, ...values } : task)));
+      updateTask(taskId, values);
       setEditingTask(null);
       return;
     }
 
-    setTasks((currentTasks) => [{ id: `${createTaskId(values.title)}-${currentTasks.length + 1}`, ...values }, ...currentTasks]);
+    addTask(values);
   }
 
   function handleToggleDone(taskId: string) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === taskId
-          ? { ...task, status: task.status === 'done' ? 'todo' : 'done' }
-          : task,
-      ),
-    );
+    toggleTaskDone(taskId);
   }
 
   return (
@@ -67,9 +58,9 @@ export function TasksWorkspace() {
 
         <StateNotice
           eyebrow="Estado transversal"
-          title="Backlog local e derivado da carteira"
-          description="Os filtros e o resumo usam a carteira do mock atual. Sem persistencia compartilhada, a sincronizacao entre telas ainda e parcial."
-          tone="warning"
+          title="Backlog sincronizado com a carteira ativa"
+          description="Projetos, tarefas e contexto operacional agora compartilham o mesmo estado do workspace enquanto o app estiver aberto."
+          tone="info"
         />
 
         {projects.length === 0 && (

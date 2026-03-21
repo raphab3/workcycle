@@ -37,8 +37,26 @@ export function formatHours(hours: number) {
   return toHoursLabel(hours);
 }
 
+export function getDefaultCycleValues(projects: Project[]): TodayCycleValues {
+  const activeProjects = projects.filter((project) => project.status === 'active');
+
+  return {
+    availableHours: 10,
+    projectsInCycle: Math.min(activeProjects.length, 3),
+  };
+}
+
 export function createActualHoursMap(allocations: SuggestedAllocation[]) {
   return Object.fromEntries(allocations.map((allocation) => [allocation.projectId, allocation.plannedHours]));
+}
+
+export function mergeActualHoursWithAllocations(
+  actualHours: Record<string, number>,
+  allocations: SuggestedAllocation[],
+) {
+  return Object.fromEntries(
+    allocations.map((allocation) => [allocation.projectId, actualHours[allocation.projectId] ?? allocation.plannedHours]),
+  );
 }
 
 export function getActualHoursTotal(actualHours: Record<string, number>) {

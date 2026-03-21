@@ -23,19 +23,19 @@
 }
 
 [data-theme='dark'] {
-  --background: 11 19 32;
-  --foreground: 235 241 250;
-  --card: 18 29 46;
+  --background: 6 12 23;
+  --foreground: 236 242 250;
+  --card: 12 20 35;
   --card-foreground: 235 241 250;
-  --panel: 15 24 39;
+  --panel: 9 16 29;
   --panel-foreground: 235 241 250;
-  --muted: 28 41 62;
-  --muted-foreground: 148 163 184;
-  --border: 54 69 92;
+  --muted: 18 28 46;
+  --muted-foreground: 142 155 176;
+  --border: 36 49 70;
   --ring: 148 163 184;
-  --sidebar: 13 22 36;
-  --sidebar-foreground: 148 163 184;
-  --sidebar-border: 31 44 64;
+  --sidebar: 7 14 26;
+  --sidebar-foreground: 145 158 178;
+  --sidebar-border: 22 34 52;
   --accent: 239 243 249;
   --accent-foreground: 15 23 42;
 }

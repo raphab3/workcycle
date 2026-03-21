@@ -1,3 +1,6 @@
+import { mockProjects } from '@/modules/projects/mocks/projects';
+import { mockTasks } from '@/modules/tasks/mocks/tasks';
+
 import { buildAdjustedActualHours, buildWeeklyScenario, formatWeeklyCell, getWeeklyDeviationStatus } from './weekly';
 
 describe('weekly helpers', () => {
@@ -8,7 +11,7 @@ describe('weekly helpers', () => {
   });
 
   it('builds a scenario with weekly rows and summary', () => {
-    const scenario = buildWeeklyScenario();
+    const scenario = buildWeeklyScenario({ projects: mockProjects, tasks: mockTasks });
 
     expect(scenario.rows.length).toBeGreaterThan(0);
     expect(scenario.summary.plannedWeekHours).toBeGreaterThan(0);
@@ -16,7 +19,7 @@ describe('weekly helpers', () => {
   });
 
   it('formats weekly cells and adjusted actual hours', () => {
-    const scenario = buildWeeklyScenario();
+    const scenario = buildWeeklyScenario({ projects: mockProjects, tasks: mockTasks });
     const adjustedHours = buildAdjustedActualHours(
       scenario.rows.map((row) => ({
         projectId: row.projectId,

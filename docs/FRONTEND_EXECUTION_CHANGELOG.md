@@ -502,7 +502,7 @@ Done
 
 ### Status
 
-In Progress
+Done
 
 ### Escopo
 
@@ -514,9 +514,9 @@ In Progress
 
 - [x] FE-0601 revisar responsividade das telas principais
 - [x] FE-0602 revisar acessibilidade de navegação, labels, foco e contraste
-- [ ] FE-0603 finalizar manifest, metadados e assets PWA do frontend
+- [x] FE-0603 finalizar manifest, metadados e assets PWA do frontend
 - [x] FE-0604 revisar loading, erro e empty states de ponta a ponta
-- [ ] FE-0605 executar limpeza final de componentes e dependências do frontend
+- [x] FE-0605 executar limpeza final de componentes e dependências do frontend
 
 ### Critérios de teste unitário
 
@@ -532,12 +532,14 @@ In Progress
   - foi criado um aviso transversal de limitação do mock para deixar explícita a ausência de persistência compartilhada entre rotas
   - a grade semanal recebeu melhoria específica de overflow horizontal e semântica de tabela para reduzir risco mobile e melhorar leitura assistiva
   - o shell passou a expor skip link e landmark de conteúdo para navegação por teclado
+  - o fechamento do ciclo migrou a sincronização entre rotas para Zustand em store compartilhada do workspace, reduzindo a dependência de mocks isolados por tela
+  - o PWA foi fechado via `manifest.ts`, metadata enriquecida e assets SVG dedicados para instalação e atalhos
 - Riscos:
-  - o app continua operando sobre mocks locais, então parte da UX final ainda depende da decisão sobre persistência compartilhada
-  - manifesto PWA, metadados finais e limpeza de dependências continuam pendentes
+  - o estado compartilhado ainda é client-side e reinicia ao recarregar a aplicação
+  - o PWA atual cobre metadata e instalação, mas ainda não inclui service worker offline
 - Dependências:
-  - definição do escopo final de persistência local ou integração real para o fechamento do mock
-  - execução da etapa PWA no restante do Cycle 6
+  - definição do escopo final de persistência local durável ou integração real com backend
+  - possível adição de cache offline em ciclo futuro, caso o produto peça modo desconectado
 
 ### Changelog
 
@@ -546,30 +548,34 @@ In Progress
   - skip link no shell principal para navegação direta ao conteúdo
   - testes unitários de regressão para `StateNotice` e semântica acessível da tela semanal
   - fallbacks de empty state nas telas `Projetos`, `Tarefas`, `Hoje` e `Semana`
+  - store compartilhada com Zustand para projetos, tarefas, ciclo diário e horas ajustadas
+  - manifesto PWA, metadata aprimorada e assets SVG para instalação, ícones e screenshot
 - Changed:
   - `AppLayout` passou a expor landmark de conteúdo focável e badge de status alinhada ao Cycle 6
   - `AppNavigation` foi ajustada para navegação horizontal segura em telas menores
   - a grade da tela `Semana` passou a usar semântica de tabela e overflow horizontal responsivo
   - as telas principais passaram a exibir aviso transversal sobre dados locais e sincronização parcial
+  - `Hoje`, `Semana`, `Projetos`, `Tarefas` e o header passaram a consumir estado compartilhado do workspace em vez de mocks separados
+  - os tokens do tema escuro foram aprofundados para um contraste realmente dark no shell e nos painéis
 - Fixed:
   - reduzido o risco de overflow horizontal no shell e na grade semanal
   - reforçada a navegação por teclado com skip link, foco explícito e landmarks mais claros
   - melhorada a cobertura de estados vazios para evitar telas incoerentes quando a base mock estiver ausente
+  - removido o descolamento entre edições de Projetos e Tarefas e o contexto exibido na tela `Hoje`
 - Removed:
   - nenhuma remoção estrutural relevante nesta etapa parcial do ciclo
 
 ### Evidência de validação
 
-- Build: `pnpm build` passou com o hardening aplicado nas rotas principais
-- Tests: `pnpm test:run` passou com 26 arquivos e 48 testes
+- Build: `pnpm build` passou com `manifest.webmanifest`, assets PWA e rotas compilando com store compartilhado
+- Tests: `pnpm vitest run src/shared/components/AppLayout/index.test.tsx src/shared/components/AppNavigation/index.test.tsx src/modules/projects/components/ProjectsWorkspace/index.test.tsx src/modules/tasks/components/TasksWorkspace/index.test.tsx src/modules/today/components/TodayPlannerOverview/index.test.tsx src/modules/weekly/components/WeeklyBalanceWorkspace/index.test.tsx src/modules/weekly/utils/weekly.test.ts 'src/app/(pages)/hoje/page.test.tsx' 'src/app/(pages)/projetos/page.test.tsx' 'src/app/(pages)/tarefas/page.test.tsx' 'src/app/(pages)/semana/page.test.tsx'` passou com 11 arquivos e 26 testes
 - Observações:
-  - esta etapa cobre a primeira metade prática do Cycle 6: responsividade, acessibilidade e estados transversais
-  - `FE-0603` e `FE-0605` permanecem abertos para fechamento do ciclo
+  - o ciclo foi encerrado ao consolidar responsividade, acessibilidade, PWA, estado transversal e sincronização entre rotas no mesmo shell
 
 ### Pendências para próximo ciclo
 
-- finalizar manifest, metadados e assets PWA do frontend
-- revisar limpeza final de componentes, textos de scaffold e dependências antes do fechamento do MVP frontend
+- avaliar persistência durável do store compartilhado para sobreviver a refresh
+- decidir se entra suporte offline real com service worker no roadmap futuro
 
 ## Cycle 7 — Contexto Operacional da Tela Hoje
 
@@ -605,10 +611,10 @@ Done
   - os sinais de atraso consideram tasks vencidas, vencendo hoje, bloqueadas e projetos pausados com carga ainda aberta
   - a shell principal foi elevada para um layout de produto com sidebar colapsavel, header superior e theme mode persistido em design system tokens
 - Riscos:
-  - enquanto a sincronizacao entre rotas continuar local, o contexto refletira a base mock e nao as ultimas edicoes feitas em outras telas em tempo real
+  - o estado agora e compartilhado entre rotas na mesma sessao, mas ainda reinicia ao recarregar a aplicacao
   - a projecao semanal e mensal ainda e heuristica, nao calendario real
 - Dependências:
-  - decisao final sobre persistencia compartilhada
+  - decisao final sobre persistencia duravel do estado compartilhado
   - continuidade do hardening visual dos ciclos 6 e 7
 
 ### Changelog
@@ -637,8 +643,8 @@ Done
 
 ### Pendências para próximo ciclo
 
-- retomar o fechamento do Cycle 6 com PWA e limpeza final de dependencias e componentes
-- decidir quando a sincronizacao real entre rotas sai do mock local para estado compartilhado
+- decidir se o store compartilhado ganha persistencia local entre recargas
+- avaliar se a projecao semanal e mensal passa a usar calendario real e historico de execucao
 
 ## Convenções de Changelog
 
