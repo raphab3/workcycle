@@ -5,14 +5,39 @@
 @tailwind utilities;
 
 :root {
-  --background: 248 250 252;
-  --foreground: 15 23 42;
+  --background: 242 246 251;
+  --foreground: 20 28 45;
   --card: 255 255 255;
-  --card-foreground: 15 23 42;
-  --muted: 226 232 240;
-  --muted-foreground: 71 85 105;
-  --border: 148 163 184;
-  --ring: 80 97 105;
+  --card-foreground: 20 28 45;
+  --panel: 255 255 255;
+  --panel-foreground: 20 28 45;
+  --muted: 233 238 245;
+  --muted-foreground: 90 102 122;
+  --border: 194 205 220;
+  --ring: 87 102 128;
+  --sidebar: 247 249 252;
+  --sidebar-foreground: 92 105 124;
+  --sidebar-border: 225 232 242;
+  --accent: 22 32 57;
+  --accent-foreground: 247 249 252;
+}
+
+[data-theme='dark'] {
+  --background: 11 19 32;
+  --foreground: 235 241 250;
+  --card: 18 29 46;
+  --card-foreground: 235 241 250;
+  --panel: 15 24 39;
+  --panel-foreground: 235 241 250;
+  --muted: 28 41 62;
+  --muted-foreground: 148 163 184;
+  --border: 54 69 92;
+  --ring: 148 163 184;
+  --sidebar: 13 22 36;
+  --sidebar-foreground: 148 163 184;
+  --sidebar-border: 31 44 64;
+  --accent: 239 243 249;
+  --accent-foreground: 15 23 42;
 }
 
 * {
@@ -34,6 +59,7 @@
     min-width: 320px;
     min-height: 100vh;
     font-family: var(--font-sans, 'Inter', ui-sans-serif, system-ui, sans-serif);
+    transition: background-color 180ms ease, color 180ms ease;
   }
 
   a {

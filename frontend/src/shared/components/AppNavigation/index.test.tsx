@@ -29,4 +29,13 @@ describe('AppNavigation', () => {
     expect(screen.getByRole('link', { name: 'Tarefas' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Hoje' })).not.toHaveAttribute('aria-current');
   });
+
+  it('keeps sidebar labels accessible when collapsed', () => {
+    usePathnameMock.mockReturnValue('/hoje');
+
+    render(<AppNavigation variant="sidebar" collapsed />);
+
+    expect(screen.getByRole('link', { name: 'Hoje' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Projetos' })).toBeInTheDocument();
+  });
 });

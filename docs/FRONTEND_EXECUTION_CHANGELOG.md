@@ -575,7 +575,7 @@ In Progress
 
 ### Status
 
-In Progress
+Done
 
 ### Escopo
 
@@ -588,7 +588,7 @@ In Progress
 - [x] FE-0701 mapear indicadores de hoje, semana e mes a partir de projetos, tasks e escala atual
 - [x] FE-0702 substituir o bloco fixo inicial por cards de contexto operacional
 - [x] FE-0703 expor sinais de atraso, carga futura e projeto sob maior pressao
-- [ ] FE-0704 revisar refinamento visual final junto do restante do hardening
+- [x] FE-0704 revisar refinamento visual final junto do restante do hardening
 
 ### Critérios de teste unitário
 
@@ -603,6 +603,7 @@ In Progress
   - o contexto do topo passou a ser derivado do plano atual do dia em vez de texto editorial fixo
   - a leitura semanal e mensal foi apresentada como projecao do ritmo observado hoje para manter consistencia com o pedido de contexto "baseado no hoje"
   - os sinais de atraso consideram tasks vencidas, vencendo hoje, bloqueadas e projetos pausados com carga ainda aberta
+  - a shell principal foi elevada para um layout de produto com sidebar colapsavel, header superior e theme mode persistido em design system tokens
 - Riscos:
   - enquanto a sincronizacao entre rotas continuar local, o contexto refletira a base mock e nao as ultimas edicoes feitas em outras telas em tempo real
   - a projecao semanal e mensal ainda e heuristica, nao calendario real
@@ -615,25 +616,29 @@ In Progress
 - Added:
   - helper `buildTodayOperationalContext` para consolidar ritmo diario, projecao semanal, janela mensal e sinais de risco
   - testes unitarios do contexto operacional da tela `Hoje`
+  - provider de tema com modos claro e escuro e arquivo central de theme do design system
+  - shell principal com sidebar colapsavel, header superior e controles de busca, notificacao e conta
 - Changed:
   - o topo da tela `Hoje` deixou de exibir copy editorial fixa e passou a mostrar cards contextuais baseados na carteira e na carga aberta
   - o resumo vindo das tarefas passou a alimentar explicitamente a priorizacao da escala e da leitura contextual
+  - o app passou a usar melhor a largura disponivel com content area expandida e grid mais respirado na tela `Hoje`
 - Fixed:
   - reduzido o descolamento entre a narrativa da tela e o uso real do produto no mock funcional
+  - corrigido o shell espremido em desktop e mobile com navegação lateral, header e melhor distribuicao responsiva
 - Removed:
   - removido o excesso de copy descritiva sem valor operacional no topo da tela `Hoje`
 
 ### Evidência de validação
 
-- Build: `pnpm build` passou com a rota `/hoje` compilando o novo topo contextual baseado em dados operacionais
-- Tests: `pnpm vitest run src/modules/today/utils/context.test.ts src/modules/today/utils/planner.test.ts src/modules/today/components/TodayPlannerOverview/index.test.tsx 'src/app/(pages)/hoje/page.test.tsx'` passou com 4 arquivos e 8 testes
+- Build: `pnpm build` passou com shell, provider de tema e rota `/hoje` compilando em producao
+- Tests: `pnpm vitest run src/shared/components/AppLayout/index.test.tsx src/shared/components/AppNavigation/index.test.tsx src/modules/today/components/TodayPlannerOverview/index.test.tsx 'src/app/(pages)/hoje/page.test.tsx'` passou com 4 arquivos e 11 testes
 - Observações:
-  - este ciclo complementa o hardening anterior ao focar na utilidade do contexto exibido para o usuario final
+  - este ciclo complementa o hardening anterior ao focar na utilidade do contexto exibido para o usuario final e na qualidade da shell principal
 
 ### Pendências para próximo ciclo
 
-- validar visual final da tela `Hoje` junto do restante do hardening
-- decidir se o Cycle 7 fecha junto do Cycle 6 ou segue como camada separada de refinamento funcional
+- retomar o fechamento do Cycle 6 com PWA e limpeza final de dependencias e componentes
+- decidir quando a sincronizacao real entre rotas sai do mock local para estado compartilhado
 
 ## Convenções de Changelog
 
