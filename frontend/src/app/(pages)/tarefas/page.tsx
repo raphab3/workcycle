@@ -1,11 +1,11 @@
-import { TasksBoardPreview } from '@/modules/tasks/components/TasksBoardPreview';
+import { TasksWorkspace } from '@/modules/tasks/components/TasksWorkspace/index';
 
 import { pageStyles } from './styles';
 
 export default function TarefasRoutePage() {
   return (
     <main className={pageStyles.container}>
-      <TasksBoardPreview />
+      <TasksWorkspace />
     </main>
   );
 }

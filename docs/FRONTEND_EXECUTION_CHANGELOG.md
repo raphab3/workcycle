@@ -282,7 +282,7 @@ Done
 
 ### Status
 
-Planned
+Done
 
 ### Escopo
 
@@ -292,11 +292,11 @@ Planned
 
 ### Tasks
 
-- [ ] FE-0301 criar módulo `tasks` com tipos, schema e estrutura visual
-- [ ] FE-0302 implementar tabela ou lista editorial de tasks
-- [ ] FE-0303 criar badges e indicadores de atraso, prazo e prioridade
-- [ ] FE-0304 criar filtros por projeto, status e prioridade
-- [ ] FE-0305 preparar resumo de carga por projeto para uso na tela Hoje
+- [x] FE-0301 criar módulo `tasks` com tipos, schema e estrutura visual
+- [x] FE-0302 implementar tabela ou lista editorial de tasks
+- [x] FE-0303 criar badges e indicadores de atraso, prazo e prioridade
+- [x] FE-0304 criar filtros por projeto, status e prioridade
+- [x] FE-0305 preparar resumo de carga por projeto para uso na tela Hoje
 
 ### Critérios de teste unitário
 
@@ -307,28 +307,48 @@ Planned
 
 ### Execução
 
-- Data:
-- Responsável:
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
+  - a tela `Tarefas` passou de preview estático para mock funcional com backlog local, filtros e edição
+  - a carteira de projetos do Cycle 2 foi reaproveitada como fonte de associacao do formulario e dos filtros
+  - o resumo por projeto passou a consolidar apenas tasks abertas para servir de base ao fluxo da tela `Hoje`
+  - o estado segue local ao módulo neste ciclo para manter escopo fechado antes da integracao com backend
 - Riscos:
+  - ainda nao existe persistencia entre recargas
+  - os filtros cobrem projeto, prioridade e status, mas ainda nao incluem busca textual ou ordenacao
 - Dependências:
+  - integracao futura com dados reais de projetos e tarefas
+  - reaproveitamento do resumo de carga na tela `Hoje`
 
 ### Changelog
 
 - Added:
+  - tipos fortes do domínio `tasks`, mocks e helpers de prazo, filtro e resumo de carga
+  - componente `TasksWorkspace` com backlog funcional, resumo e associacao com projetos
+  - componente `TaskForm` com React Hook Form + Zod
+  - componente `TaskFilters` ligado aos projetos do Cycle 2
+  - lista funcional de tarefas com estados de prioridade, prazo e status
+  - testes unitários para schema, helpers, formulário, workspace e rota `/tarefas`
 - Changed:
+  - a rota `/tarefas` deixou de renderizar cards estáticos e passou a operar como painel funcional de backlog
+  - a experiência agora mostra contadores de tasks abertas, urgentes e esforço total em aberto
 - Fixed:
+  - corrigido o teste de filtro para diferenciar explicitamente o campo `Projeto` do filtro e do formulário
 - Removed:
+  - removido o preview estático `TasksBoardPreview`
 
 ### Evidência de validação
 
-- Build:
-- Tests:
+- Build: `pnpm build` passou com a rota `/tarefas` gerando bundle funcional do módulo
+- Tests: `pnpm test:run` passou com 20 arquivos e 35 testes
 - Observações:
+  - o ciclo foi fechado com criação, edição, conclusão, filtros e resumo de carga por projeto funcionando localmente
 
 ### Pendências para próximo ciclo
 
--
+- iniciar o Cycle 4 na tela `Hoje`, consumindo projetos e resumo de carga como insumos do planejamento diário
+- decidir se a persistência temporária de tarefas e projetos entra antes ou junto da integração com backend
 
 ## Cycle 4 — Hoje
 
