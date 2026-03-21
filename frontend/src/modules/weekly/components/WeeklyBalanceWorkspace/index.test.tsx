@@ -10,6 +10,7 @@ describe('WeeklyBalanceWorkspace', () => {
     expect(screen.getByText('Projeto')).toBeInTheDocument();
     expect(screen.getByText('Previsto')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Desvios semanais por projeto' })).toBeInTheDocument();
   });
 
   it('renders project rows and status labels', () => {

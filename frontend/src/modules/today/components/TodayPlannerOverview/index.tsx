@@ -16,7 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/Card';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
+import { StateNotice } from '@/shared/components/StateNotice';
 
 import { ExecutionAdjuster } from '../ExecutionAdjuster/index';
 import { SuggestionBanner } from '../SuggestionBanner/index';
@@ -65,7 +67,22 @@ export function TodayPlannerOverview() {
           title="Planejamento do ciclo com horas disponiveis, redistribuicao e ajuste real"
           description="A tela Agora consome a carteira de projetos e a carga aberta das tasks para sugerir a escala do dia. O usuario recalcula o ciclo, compara percentuais e registra as horas reais executadas."
         />
+        <StateNotice
+          eyebrow="Estado transversal"
+          title="Plano do dia baseado em mocks locais"
+          description="A escala usa a carteira e a carga abertas atuais, mas ainda nao recebe as alteracoes feitas em outras rotas de forma compartilhada."
+          tone="warning"
+        />
         <p className={todayPlannerOverviewStyles.planningMoment}>Momento atual do plano · {formatPlanningMoment(new Date())}</p>
+
+        {allocations.length === 0 && (
+          <EmptyState
+            eyebrow="Hoje"
+            title="Nao ha frentes suficientes para montar a escala"
+            description="Ative projetos e distribua a carteira para liberar o planejamento diario do mock."
+            hint="Este estado protege a tela quando a base de projetos ou tasks estiver vazia."
+          />
+        )}
 
         <div className={todayPlannerOverviewStyles.summaryGrid}>
           {summary.map((item) => {
@@ -146,7 +163,7 @@ export function TodayPlannerOverview() {
             {projectLoadSummary.map((item) => (
               <div key={item.projectId} className={todayPlannerOverviewStyles.projectLoadItem}>
                 <div className={todayPlannerOverviewStyles.projectLoadMeta}>
-                  <span className={todayPlannerOverviewStyles.projectColor} style={{ backgroundColor: item.colorHex }} />
+                  <span aria-hidden="true" className={todayPlannerOverviewStyles.projectColor} style={{ backgroundColor: item.colorHex }} />
                   <div>
                     <p className={todayPlannerOverviewStyles.projectName}>{item.projectName}</p>
                     <p className={todayPlannerOverviewStyles.projectCopy}>{item.openTasks} task(s) abertas</p>

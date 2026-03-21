@@ -8,7 +8,9 @@ import { mockTasks } from '@/modules/tasks/mocks/tasks';
 import type { Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
 import { filterTasks, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
+import { StateNotice } from '@/shared/components/StateNotice';
 
 import { TaskFilters } from '../TaskFilters/index';
 import { TaskForm } from '../TaskForm/index';
@@ -62,6 +64,22 @@ export function TasksWorkspace() {
           title="Gestao editorial de tarefas com prioridade, prazo e associacao por projeto"
           description="A tela agora usa a carteira de projetos como base de associacao e filtro. O objetivo deste ciclo e organizar a carga visivel do backlog antes da redistribuicao da tela Hoje."
         />
+
+        <StateNotice
+          eyebrow="Estado transversal"
+          title="Backlog local e derivado da carteira"
+          description="Os filtros e o resumo usam a carteira do mock atual. Sem persistencia compartilhada, a sincronizacao entre telas ainda e parcial."
+          tone="warning"
+        />
+
+        {projects.length === 0 && (
+          <EmptyState
+            eyebrow="Tarefas"
+            title="Sem projetos para associar tasks"
+            description="A tela de backlog depende da carteira ativa para registrar e agrupar tarefas por projeto."
+            hint="Cadastre projetos primeiro para liberar o fluxo completo desta rota."
+          />
+        )}
 
         <div className={tasksWorkspaceStyles.summaryGrid}>
           <Card>

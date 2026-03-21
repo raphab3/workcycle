@@ -5,7 +5,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/Card';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
+import { StateNotice } from '@/shared/components/StateNotice';
 import { cn } from '@/shared/utils/cn';
 
 import { buildWeeklyScenario, formatWeeklyCell } from '@/modules/weekly/utils/weekly';
@@ -28,6 +30,22 @@ export function WeeklyBalanceWorkspace() {
         title="Leitura semanal de desvios usando horas previstas e horas ajustadas"
         description="A grade semanal deriva do planejamento do dia e do ajuste real do Cycle 4 para indicar onde a execucao ficou equilibrada, em atencao ou critica ao longo da semana corrente."
       />
+
+      <StateNotice
+        eyebrow="Estado transversal"
+        title="Semana derivada do plano diario atual"
+        description="A leitura semanal ainda e uma simulacao coerente com o Cycle 4, mas sem persistencia compartilhada entre os modulos."
+        tone="warning"
+      />
+
+      {rows.length === 0 && (
+        <EmptyState
+          eyebrow="Semana"
+          title="Nao ha dados suficientes para consolidar a semana"
+          description="A grade semanal depende de projetos ativos e de uma distribuicao diaria minima para montar os desvios."
+          hint="Este estado vazio evita que a rota tente renderizar uma semana inconsistente quando a base estiver vazia."
+        />
+      )}
 
       <div className={weeklyBalanceWorkspaceStyles.summaryGrid}>
         <Card>
@@ -56,35 +74,35 @@ export function WeeklyBalanceWorkspace() {
         </Card>
       </div>
 
-      <div className={weeklyBalanceWorkspaceStyles.board}>
-        <div className={cn(weeklyBalanceWorkspaceStyles.row, weeklyBalanceWorkspaceStyles.rowHeader)}>
-          <span>Projeto</span>
-          <span>Seg</span>
-          <span>Ter</span>
-          <span>Qua</span>
-          <span>Qui</span>
-          <span>Sex</span>
-          <span>Sab</span>
-          <span>Previsto</span>
-          <span>Real</span>
-          <span>Delta</span>
-          <span>Status</span>
+      <div aria-label="Desvios semanais por projeto" className={weeklyBalanceWorkspaceStyles.board} role="table">
+        <div className={cn(weeklyBalanceWorkspaceStyles.row, weeklyBalanceWorkspaceStyles.rowHeader)} role="row">
+          <span role="columnheader">Projeto</span>
+          <span role="columnheader">Seg</span>
+          <span role="columnheader">Ter</span>
+          <span role="columnheader">Qua</span>
+          <span role="columnheader">Qui</span>
+          <span role="columnheader">Sex</span>
+          <span role="columnheader">Sab</span>
+          <span role="columnheader">Previsto</span>
+          <span role="columnheader">Real</span>
+          <span role="columnheader">Delta</span>
+          <span role="columnheader">Status</span>
         </div>
 
         {rows.map((row, index) => (
-          <div key={row.projectId} className={cn(weeklyBalanceWorkspaceStyles.row, index % 2 === 0 && weeklyBalanceWorkspaceStyles.rowAlt)}>
-            <span className={weeklyBalanceWorkspaceStyles.projectCell}>
-              <span className={weeklyBalanceWorkspaceStyles.projectColor} style={{ backgroundColor: row.colorHex }} />
+          <div key={row.projectId} className={cn(weeklyBalanceWorkspaceStyles.row, index % 2 === 0 && weeklyBalanceWorkspaceStyles.rowAlt)} role="row">
+            <span className={weeklyBalanceWorkspaceStyles.projectCell} role="cell">
+              <span aria-hidden="true" className={weeklyBalanceWorkspaceStyles.projectColor} style={{ backgroundColor: row.colorHex }} />
               {row.projectName}
             </span>
             {row.cells.map((cell) => (
-              <span key={`${row.projectId}-${cell.day}`} className={cell.plannedHours === 0 && cell.actualHours === 0 ? weeklyBalanceWorkspaceStyles.mutedCell : weeklyBalanceWorkspaceStyles.cell}>
+              <span key={`${row.projectId}-${cell.day}`} className={cell.plannedHours === 0 && cell.actualHours === 0 ? weeklyBalanceWorkspaceStyles.mutedCell : weeklyBalanceWorkspaceStyles.cell} role="cell">
                 {formatWeeklyCell(cell)}
               </span>
             ))}
-            <span className={weeklyBalanceWorkspaceStyles.cell}>{row.plannedWeekHours.toFixed(1).replace('.', ',')}h</span>
-            <span className={weeklyBalanceWorkspaceStyles.cell}>{row.actualWeekHours.toFixed(1).replace('.', ',')}h</span>
-            <span className={weeklyBalanceWorkspaceStyles.cell}>{row.deltaHours > 0 ? '+' : ''}{row.deltaHours.toFixed(1).replace('.', ',')}h</span>
+            <span className={weeklyBalanceWorkspaceStyles.cell} role="cell">{row.plannedWeekHours.toFixed(1).replace('.', ',')}h</span>
+            <span className={weeklyBalanceWorkspaceStyles.cell} role="cell">{row.actualWeekHours.toFixed(1).replace('.', ',')}h</span>
+            <span className={weeklyBalanceWorkspaceStyles.cell} role="cell">{row.deltaHours > 0 ? '+' : ''}{row.deltaHours.toFixed(1).replace('.', ',')}h</span>
             <span
               className={cn(
                 weeklyBalanceWorkspaceStyles.status,
@@ -92,6 +110,7 @@ export function WeeklyBalanceWorkspace() {
                 row.status === 'attention' && weeklyBalanceWorkspaceStyles.statusAttention,
                 row.status === 'critical' && weeklyBalanceWorkspaceStyles.statusCritical,
               )}
+              role="cell"
             >
               {statusLabels[row.status]}
             </span>

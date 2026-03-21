@@ -3,7 +3,9 @@
 import { useState } from 'react';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
+import { StateNotice } from '@/shared/components/StateNotice';
 import { cn } from '@/shared/utils/cn';
 
 import { mockProjects } from '@/modules/projects/mocks/projects';
@@ -67,6 +69,22 @@ export function ProjectsWorkspace() {
           title="Cadastro funcional da carteira com regras de alocacao, sprint e contrato"
           description="Este mock funcional organiza a carteira de trabalho do MVP. O usuario consegue cadastrar projetos, editar dados principais, marcar frentes fixas e visualizar quando a soma percentual semanal sai de 100%."
         />
+
+        <StateNotice
+          eyebrow="Estado transversal"
+          title="Carteira local do mock"
+          description="As alteracoes desta tela ainda nao persistem nem sincronizam automaticamente com as demais rotas."
+          tone="warning"
+        />
+
+        {projects.length === 0 && (
+          <EmptyState
+            eyebrow="Projetos"
+            title="Nenhuma frente cadastrada"
+            description="Cadastre a primeira frente para liberar planejamentos diarios e leitura semanal do mock."
+            hint="Este fallback cobre o estado vazio global do modulo e evita a quebra do fluxo nas telas derivadas."
+          />
+        )}
 
         <div className={projectsWorkspaceStyles.summaryGrid}>
           <Card>

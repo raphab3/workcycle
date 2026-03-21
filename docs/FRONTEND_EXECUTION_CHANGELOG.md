@@ -502,7 +502,7 @@ Done
 
 ### Status
 
-Planned
+In Progress
 
 ### Escopo
 
@@ -512,10 +512,10 @@ Planned
 
 ### Tasks
 
-- [ ] FE-0601 revisar responsividade das telas principais
-- [ ] FE-0602 revisar acessibilidade de navegação, labels, foco e contraste
+- [x] FE-0601 revisar responsividade das telas principais
+- [x] FE-0602 revisar acessibilidade de navegação, labels, foco e contraste
 - [ ] FE-0603 finalizar manifest, metadados e assets PWA do frontend
-- [ ] FE-0604 revisar loading, erro e empty states de ponta a ponta
+- [x] FE-0604 revisar loading, erro e empty states de ponta a ponta
 - [ ] FE-0605 executar limpeza final de componentes e dependências do frontend
 
 ### Critérios de teste unitário
@@ -525,28 +525,51 @@ Planned
 
 ### Execução
 
-- Data:
-- Responsável:
+- Data: 2026-03-21
+- Responsável: GitHub Copilot com direcionamento do usuário
 - Decisões:
+  - o hardening foi iniciado pelo shell compartilhado e pelos estados transversais antes da etapa de PWA e limpeza final
+  - foi criado um aviso transversal de limitação do mock para deixar explícita a ausência de persistência compartilhada entre rotas
+  - a grade semanal recebeu melhoria específica de overflow horizontal e semântica de tabela para reduzir risco mobile e melhorar leitura assistiva
+  - o shell passou a expor skip link e landmark de conteúdo para navegação por teclado
 - Riscos:
+  - o app continua operando sobre mocks locais, então parte da UX final ainda depende da decisão sobre persistência compartilhada
+  - manifesto PWA, metadados finais e limpeza de dependências continuam pendentes
 - Dependências:
+  - definição do escopo final de persistência local ou integração real para o fechamento do mock
+  - execução da etapa PWA no restante do Cycle 6
 
 ### Changelog
 
 - Added:
+  - componente compartilhado `StateNotice` para comunicar estado local, limitação de persistência e consistência do mock
+  - skip link no shell principal para navegação direta ao conteúdo
+  - testes unitários de regressão para `StateNotice` e semântica acessível da tela semanal
+  - fallbacks de empty state nas telas `Projetos`, `Tarefas`, `Hoje` e `Semana`
 - Changed:
+  - `AppLayout` passou a expor landmark de conteúdo focável e badge de status alinhada ao Cycle 6
+  - `AppNavigation` foi ajustada para navegação horizontal segura em telas menores
+  - a grade da tela `Semana` passou a usar semântica de tabela e overflow horizontal responsivo
+  - as telas principais passaram a exibir aviso transversal sobre dados locais e sincronização parcial
 - Fixed:
+  - reduzido o risco de overflow horizontal no shell e na grade semanal
+  - reforçada a navegação por teclado com skip link, foco explícito e landmarks mais claros
+  - melhorada a cobertura de estados vazios para evitar telas incoerentes quando a base mock estiver ausente
 - Removed:
+  - nenhuma remoção estrutural relevante nesta etapa parcial do ciclo
 
 ### Evidência de validação
 
-- Build:
-- Tests:
+- Build: `pnpm build` passou com o hardening aplicado nas rotas principais
+- Tests: `pnpm test:run` passou com 26 arquivos e 48 testes
 - Observações:
+  - esta etapa cobre a primeira metade prática do Cycle 6: responsividade, acessibilidade e estados transversais
+  - `FE-0603` e `FE-0605` permanecem abertos para fechamento do ciclo
 
 ### Pendências para próximo ciclo
 
-- backlog pos-MVP frontend
+- finalizar manifest, metadados e assets PWA do frontend
+- revisar limpeza final de componentes, textos de scaffold e dependências antes do fechamento do MVP frontend
 
 ## Convenções de Changelog
 
