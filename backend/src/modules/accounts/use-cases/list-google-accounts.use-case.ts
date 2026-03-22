@@ -6,7 +6,7 @@ import { AccountsRepository } from '@/modules/accounts/repositories/accounts.rep
 export class ListGoogleAccountsUseCase {
   constructor(private readonly accountsRepository: AccountsRepository) {}
 
-  async execute() {
-    return this.accountsRepository.listAccounts();
+  async execute(userId: string) {
+    return this.accountsRepository.listAccounts(userId);
   }
 }

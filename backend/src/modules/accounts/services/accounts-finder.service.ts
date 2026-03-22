@@ -6,7 +6,7 @@ import { ListGoogleAccountsUseCase } from '@/modules/accounts/use-cases/list-goo
 export class AccountsFinderService {
   constructor(private readonly listGoogleAccountsUseCase: ListGoogleAccountsUseCase) {}
 
-  async listAccounts() {
-    return this.listGoogleAccountsUseCase.execute();
+  async listAccounts(userId: string) {
+    return this.listGoogleAccountsUseCase.execute(userId);
   }
 }

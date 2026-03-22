@@ -34,6 +34,10 @@ Optional variables:
 - `HOST`
 - `PORT`
 - `FRONTEND_ORIGIN`
+- `AUTH_TOKEN_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
 - `LOG_LEVEL`
 
 ## Health Check
