@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T002 concluído em 2026-03-22
-- **Próximo ticket sugerido:** T003 — Revisar contratos backend de Projects
+- **Checkpoint atual:** T003 concluído em 2026-03-22
+- **Próximo ticket sugerido:** T004 — Migrar Projects para integração completa
 
 ## Por Fluxo
 
@@ -20,8 +20,8 @@
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T003 | Revisar contratos backend de Projects | API | S | T001 | Pronto para iniciar |
-| T004 | Migrar Projects para integração completa | FEAT | M | T002, T003 | Backlog |
+| T003 | Revisar contratos backend de Projects | API | S | T001 | Concluído |
+| T004 | Migrar Projects para integração completa | FEAT | M | T002, T003 | Pronto para iniciar |
 
 ### CF-03: Tasks persistidas com board e vínculo ao ciclo diário
 
