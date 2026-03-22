@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
@@ -30,6 +30,10 @@ export class AuthRepository {
         passwordHash: input.passwordHash ?? null,
       })
       .returning();
+
+    if (!user) {
+      throw new InternalServerErrorException('User creation failed.');
+    }
 
     return user;
   }
@@ -115,6 +119,10 @@ export class AuthRepository {
       })
       .returning();
 
+    if (!googleAccount) {
+      throw new InternalServerErrorException('Google account upsert failed.');
+    }
+
     return googleAccount;
   }
 
@@ -130,6 +138,10 @@ export class AuthRepository {
       })
       .where(eq(users.id, input.userId))
       .returning();
+
+    if (!user) {
+      throw new InternalServerErrorException('User update failed.');
+    }
 
     return user;
   }

@@ -117,10 +117,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
 
               <div className={appLayoutStyles.secondaryActions}>
-                <button className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} type="button">
+                <Link className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} href="/configuracoes">
                   <Settings className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Configuracoes</span>}
-                </button>
+                </Link>
                 <button className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} onClick={handleSignOut} type="button">
                   <LogOut className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Sair</span>}
@@ -157,7 +157,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <button aria-label="Notificacoes" className={appLayoutStyles.iconButton} type="button">
                   <Bell className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
-                <button aria-label={authSession ? `Conta de ${authSession.displayName}` : 'Conta do usuario'} className={appLayoutStyles.iconButton} title={authSession?.email} type="button">
+                <button aria-label={authSession ? `Conta de ${authSession.user.displayName}` : 'Conta do usuario'} className={appLayoutStyles.iconButton} title={authSession?.user.email} type="button">
                   <UserCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
                 {isMobileSidebarOpen && (

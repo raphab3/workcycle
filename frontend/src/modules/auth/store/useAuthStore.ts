@@ -2,48 +2,17 @@
 
 import { create } from 'zustand';
 
-import type { AuthSession, AuthSessionStatus } from '@/modules/auth/types';
+import { persistAuthSession, readStoredAuthSession } from '@/modules/auth/storage/authStorage';
 
-const AUTH_STORAGE_KEY = 'workcycle-auth-session';
-
-function readStoredSession() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const rawSession = window.localStorage.getItem(AUTH_STORAGE_KEY);
-
-  if (!rawSession) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(rawSession) as AuthSession;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return null;
-  }
-}
-
-function persistSession(session: AuthSession | null) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  if (!session) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-}
+import type { AuthSessionDTO, AuthSessionStatus, AuthUserDTO, StoredAuthSession } from '@/modules/auth/types';
 
 interface AuthStoreState {
   hasHydrated: boolean;
-  session: AuthSession | null;
+  session: StoredAuthSession | null;
   sessionStatus: AuthSessionStatus;
   hydrateSession: () => void;
-  signIn: (session: AuthSession) => void;
+  signIn: (session: AuthSessionDTO) => void;
+  updateUser: (user: AuthUserDTO) => void;
   signOut: () => void;
 }
 
@@ -52,7 +21,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
   session: null,
   sessionStatus: 'loading',
   hydrateSession: () => {
-    const session = readStoredSession();
+    const session = readStoredAuthSession();
 
     set({
       hasHydrated: true,
@@ -61,7 +30,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
     });
   },
   signIn: (session) => {
-    persistSession(session);
+    persistAuthSession(session);
 
     set({
       hasHydrated: true,
@@ -69,8 +38,25 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       sessionStatus: 'authenticated',
     });
   },
+  updateUser: (user) => set((state) => {
+    if (!state.session) {
+      return state;
+    }
+
+    const nextSession = {
+      ...state.session,
+      user,
+    };
+
+    persistAuthSession(nextSession);
+
+    return {
+      ...state,
+      session: nextSession,
+    };
+  }),
   signOut: () => {
-    persistSession(null);
+    persistAuthSession(null);
 
     set({
       hasHydrated: true,
@@ -81,7 +67,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
 }));
 
 export function resetAuthStore() {
-  persistSession(null);
+  persistAuthSession(null);
 
   useAuthStore.setState({
     hasHydrated: true,

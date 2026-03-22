@@ -102,6 +102,10 @@ export class AuthWriterService {
       userId: user.id,
     });
 
+
+    if (!user) {
+      throw new InternalServerErrorException('Google authentication could not resolve a user.');
+    }
     const session = await this.buildSessionResponse(user.id, user.email, user.displayName, user.authProvider);
 
     if (state.mode === 'link') {

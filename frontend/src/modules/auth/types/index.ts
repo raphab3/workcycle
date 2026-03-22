@@ -1,1 +1,1 @@
-export type { AuthSession, AuthSessionStatus, AuthStatusDTO, GoogleAccountDTO } from './auth';
+export type { AuthSessionDTO, AuthSessionStatus, AuthStatusDTO, AuthUserDTO, GoogleAccountDTO, StoredAuthSession } from './auth';

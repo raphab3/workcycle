@@ -6,14 +6,35 @@ import { LoginWorkspace } from './index';
 
 const signInMock = vi.fn();
 const useAuthStatusQueryMock = vi.fn();
-const useGoogleAccountsQueryMock = vi.fn();
+const loginMutateAsyncMock = vi.fn();
+const registerMutateAsyncMock = vi.fn();
+const replaceMock = vi.fn();
 
 vi.mock('@/modules/auth/queries/useAuthStatusQuery', () => ({
   useAuthStatusQuery: () => useAuthStatusQueryMock(),
 }));
 
-vi.mock('@/modules/auth/queries/useGoogleAccountsQuery', () => ({
-  useGoogleAccountsQuery: () => useGoogleAccountsQueryMock(),
+vi.mock('@/modules/auth/queries/useLoginMutation', () => ({
+  useLoginMutation: () => ({
+    isError: false,
+    isPending: false,
+    mutateAsync: loginMutateAsyncMock,
+  }),
+}));
+
+vi.mock('@/modules/auth/queries/useRegisterMutation', () => ({
+  useRegisterMutation: () => ({
+    isError: false,
+    isPending: false,
+    mutateAsync: registerMutateAsyncMock,
+  }),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: replaceMock,
+  }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('@/modules/auth/services/authService', () => ({
@@ -30,61 +51,85 @@ describe('LoginWorkspace', () => {
   beforeEach(() => {
     signInMock.mockReset();
     useAuthStatusQueryMock.mockReset();
-    useGoogleAccountsQueryMock.mockReset();
+    loginMutateAsyncMock.mockReset();
+    registerMutateAsyncMock.mockReset();
+    replaceMock.mockReset();
 
     useAuthStatusQueryMock.mockReturnValue({
-      data: { oauthConfigured: false, provider: 'google', status: 'pending' },
-      isError: false,
-    });
-
-    useGoogleAccountsQueryMock.mockReturnValue({
-      data: [],
+      data: { emailPasswordEnabled: true, oauthConfigured: false, provider: 'google', status: 'pending' },
       isError: false,
     });
   });
 
-  it('logs into the local fallback flow', async () => {
+  it('logs into the email flow', async () => {
     const user = userEvent.setup();
+
+    loginMutateAsyncMock.mockResolvedValue({
+      token: 'auth-token',
+      user: {
+        authProvider: 'email',
+        displayName: 'Rafa',
+        email: 'rafa@example.com',
+        hasGoogleLinked: false,
+        hasPassword: true,
+        id: 'user-1',
+      },
+    });
 
     render(<LoginWorkspace />);
 
-    await user.click(screen.getByRole('button', { name: 'Entrar em modo local' }));
+    await user.type(screen.getByPlaceholderText('voce@workcycle.dev'), 'rafa@example.com');
+    await user.type(screen.getByPlaceholderText('Digite sua senha'), '12345678');
+    await user.click(screen.getByRole('button', { name: 'Entrar com email' }));
 
     expect(signInMock).toHaveBeenCalledWith({
-      displayName: 'Workspace Local',
-      email: 'local@workcycle.dev',
-      provider: 'local',
-      source: 'local_fallback',
+      token: 'auth-token',
+      user: {
+        authProvider: 'email',
+        displayName: 'Rafa',
+        email: 'rafa@example.com',
+        hasGoogleLinked: false,
+        hasPassword: true,
+        id: 'user-1',
+      },
     });
+    expect(replaceMock).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('logs into a connected google account when available', async () => {
+  it('registers a new email account', async () => {
     const user = userEvent.setup();
 
-    useGoogleAccountsQueryMock.mockReturnValue({
-      data: [
-        {
-          displayName: 'Rafa Barros',
-          email: 'rafa@example.com',
-          id: 'acc-1',
-          isActive: true,
-          tokenExpiresAt: '2026-03-23T10:00:00.000Z',
-          updatedAt: '2026-03-22T10:00:00.000Z',
-        },
-      ],
-      isError: false,
+    registerMutateAsyncMock.mockResolvedValue({
+      token: 'auth-token',
+      user: {
+        authProvider: 'email',
+        displayName: 'Rafa Barros',
+        email: 'rafa@example.com',
+        hasGoogleLinked: false,
+        hasPassword: true,
+        id: 'user-2',
+      },
     });
 
     render(<LoginWorkspace />);
 
-    await user.click(screen.getByRole('button', { name: /Rafa Barros/i }));
+    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await user.type(screen.getByPlaceholderText('Seu nome no workspace'), 'Rafa Barros');
+    await user.type(screen.getByPlaceholderText('voce@workcycle.dev'), 'rafa@example.com');
+    await user.type(screen.getByPlaceholderText('Crie uma senha forte'), '12345678');
+    await user.click(screen.getByRole('button', { name: 'Criar conta com email' }));
 
     expect(signInMock).toHaveBeenCalledWith({
-      accountId: 'acc-1',
-      displayName: 'Rafa Barros',
-      email: 'rafa@example.com',
-      provider: 'google',
-      source: 'connected_account',
+      token: 'auth-token',
+      user: {
+        authProvider: 'email',
+        displayName: 'Rafa Barros',
+        email: 'rafa@example.com',
+        hasGoogleLinked: false,
+        hasPassword: true,
+        id: 'user-2',
+      },
     });
+    expect(replaceMock).toHaveBeenCalledWith('/dashboard');
   });
 });
