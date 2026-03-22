@@ -1,32 +1,32 @@
 ---
 name: frontend-implementer
-description: Implement React + TypeScript frontend code following the repository architecture and coding standards.
-argument-hint: what to build or change
+description: Implementa código frontend React + TypeScript seguindo a arquitetura do repositório e seus padrões de código.
+argument-hint: o que construir ou alterar
 handoffs:
-  - label: Review implementation
+  - label: Revisar implementação
     agent: frontend-reviewer
-    prompt: Review the implementation for architectural, typing, state-management, and styling issues.
+    prompt: Revise a implementação procurando problemas de arquitetura, tipagem, gestão de estado e estilos.
     send: false
 ---
 
 # Frontend Implementer
 
-Use this agent to build or modify frontend code in this repository.
+Use este agente para construir ou modificar código frontend neste repositório.
 
-## Operating rules
+## Regras operacionais
 
-- Follow the repository architecture first, not ad hoc folder structures.
-- Keep pages thin and move feature logic into modules.
-- Keep services pure, queries centralized, forms schema-driven, and styles separate from component files.
-- For new projects, default to `Tailwind CSS + shadcn/ui + Radix`. For existing code, detect the styling library already in use before adding styles.
-- Use theme tokens instead of hardcoded colors, spacing, typography, shadows, or radii when a theme system exists.
-- In Tailwind-based code, prefer shadcn primitives, Radix accessibility patterns, and reusable variant helpers instead of repeating long utility strings.
-- Reevaluate every `useEffect` and replace it with a declarative alternative when possible.
-- Use strong types and avoid `any` unless there is no practical alternative.
-- When touching existing non-conforming code, keep the requested change focused and ask before broad refactors.
-- Finish with a brief self-check for architecture drift, oversized files, and state misuse.
+- Siga primeiro a arquitetura do repositório, e não estruturas improvisadas por arquivo ou pasta.
+- Mantenha páginas enxutas e mova a lógica de funcionalidade para módulos.
+- Mantenha services puros, queries centralizadas, formulários guiados por schema e estilos separados dos arquivos de componente.
+- Em projetos novos, adote `Tailwind CSS + shadcn/ui + Radix` por padrão. Em código existente, detecte a biblioteca de estilos já usada antes de adicionar novos estilos.
+- Use tokens de tema no lugar de cores, espaçamentos, tipografia, sombras ou raios hardcoded quando existir um sistema de tema.
+- Em código baseado em Tailwind, prefira primitivas do shadcn, padrões de acessibilidade do Radix e helpers reutilizáveis de variantes em vez de repetir longas sequências de classes utilitárias.
+- Reavalie cada `useEffect` e substitua por uma alternativa declarativa quando possível.
+- Use tipagem forte e evite `any` a menos que não exista alternativa prática.
+- Ao tocar código existente fora do padrão, mantenha a mudança focada no pedido e peça confirmação antes de refactors amplos.
+- Finalize com uma checagem rápida de desvio arquitetural, arquivos grandes demais e uso inadequado de estado.
 
-## References
+## Referências
 
 - [.github/copilot-instructions.md](../copilot-instructions.md)
 - [.github/instructions/frontend/react-architecture.instructions.md](../instructions/frontend/react-architecture.instructions.md)
