@@ -52,7 +52,6 @@ export function ProjectsWorkspace() {
   const isRefetchingProjects = isAuthenticated && projectsQuery.isRefetching && !projectsQuery.isPending;
   const isSubmittingProject = createProjectMutation.isPending || updateProjectMutation.isPending;
   const isTogglingProjectStatus = toggleProjectStatusMutation.isPending;
-  const isProjectsReadOnly = !isAuthenticated || isSubmittingProject || isRefetchingProjects;
   const requestError = useMemo(
     () => projectsQuery.error ?? createProjectMutation.error ?? updateProjectMutation.error ?? toggleProjectStatusMutation.error,
     [createProjectMutation.error, projectsQuery.error, toggleProjectStatusMutation.error, updateProjectMutation.error],

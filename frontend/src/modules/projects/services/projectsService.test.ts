@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { api } from '@/lib/axios';
 
@@ -113,4 +113,4 @@ describe('projectsService', () => {
 
     patchSpy.mockRestore();
   });
-}
+});
