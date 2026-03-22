@@ -62,3 +62,16 @@ export interface CycleSnapshot {
   completedTaskIds: string[];
   incompleteTaskIds: string[];
 }
+
+export interface PreviousCycleSummary {
+  cycleDate: string;
+  snapshot: CycleSnapshot;
+  activeProjectId: string | null;
+  inProgressTaskIds: string[];
+}
+
+export interface RolloverNotice {
+  previousCycleDate: string;
+  title: string;
+  description: string;
+}

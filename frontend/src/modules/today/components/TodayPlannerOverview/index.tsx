@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Project } from '@/modules/projects/types';
 import { TaskForm } from '@/modules/tasks/components/TaskForm';
@@ -9,12 +9,14 @@ import type { Task } from '@/modules/tasks/types';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import { useActivityPulse } from '@/modules/today/hooks/useActivityPulse';
 import type { PulseRecord, TimeBlock, TodayCycleValues } from '@/modules/today/types';
+import { getCycleBoundaryTimestamp, getLocalISODate, hasCrossedCycleBoundary, isWithinRolloverWindow } from '@/modules/today/utils/boundary';
 import { buildCloseDayReview, getTimeBlockDurationInMinutes } from '@/modules/today/utils/pulse';
 import { buildSuggestedAllocations, formatHours } from '@/modules/today/utils/planner';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { OverlayPanel } from '@/shared/components/OverlayPanel';
+import { StateNotice } from '@/shared/components/StateNotice';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
 
@@ -114,8 +116,11 @@ export function TodayPlannerOverview() {
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [isRolloverPromptOpen, setIsRolloverPromptOpen] = useState(false);
+  const [keepSameProjectOnRollover, setKeepSameProjectOnRollover] = useState(true);
   const [taskDrawerTaskId, setTaskDrawerTaskId] = useState<string | null>(null);
   const [draftActualHours, setDraftActualHours] = useState<Record<string, number>>({});
+  const rolloverPromptCycleRef = useRef<string | null>(null);
 
   const projects = useWorkspaceStore((state) => state.projects);
   const taskColumns = useWorkspaceStore((state) => state.taskColumns);
@@ -131,7 +136,10 @@ export function TodayPlannerOverview() {
   const nextPulseDueAt = useWorkspaceStore((state) => state.nextPulseDueAt);
   const regularizationState = useWorkspaceStore((state) => state.regularizationState);
   const closeDayReview = useWorkspaceStore((state) => state.closeDayReview);
+  const cycleDate = useWorkspaceStore((state) => state.cycleDate);
+  const cycleState = useWorkspaceStore((state) => state.cycleState);
   const cycleSnapshot = useWorkspaceStore((state) => state.cycleSnapshot);
+  const rolloverNotice = useWorkspaceStore((state) => state.rolloverNotice);
   const setTodayCycleValues = useWorkspaceStore((state) => state.setTodayCycleValues);
   const setTodayActualHours = useWorkspaceStore((state) => state.setTodayActualHours);
   const startSession = useWorkspaceStore((state) => state.startSession);
@@ -141,6 +149,10 @@ export function TodayPlannerOverview() {
   const moveTaskOnBoard = useWorkspaceStore((state) => state.moveTaskOnBoard);
   const skipTaskToNextCycle = useWorkspaceStore((state) => state.skipTaskToNextCycle);
   const updateTask = useWorkspaceStore((state) => state.updateTask);
+  const autoCloseCycle = useWorkspaceStore((state) => state.autoCloseCycle);
+  const startNextCycle = useWorkspaceStore((state) => state.startNextCycle);
+  const syncCycleBoundary = useWorkspaceStore((state) => state.syncCycleBoundary);
+  const clearRolloverNotice = useWorkspaceStore((state) => state.clearRolloverNotice);
   const closeDay = useWorkspaceStore((state) => state.closeDay);
   const prepareCloseDayReview = useWorkspaceStore((state) => state.prepareCloseDayReview);
   const openRegularizationPanel = useWorkspaceStore((state) => state.openRegularizationPanel);
@@ -164,6 +176,26 @@ export function TodayPlannerOverview() {
       setIsPlanExpanded(false);
     }
   }, [sessionState]);
+
+  useEffect(() => {
+    const hasActiveSession = sessionState === 'running' || sessionState === 'paused_manual' || sessionState === 'paused_inactivity';
+
+    if (hasCrossedCycleBoundary(currentTime, cycleDate)) {
+      syncCycleBoundary(currentTime.toISOString());
+      setIsRolloverPromptOpen(false);
+      return;
+    }
+
+    if (!hasActiveSession || cycleState === 'AUTO_CLOSED') {
+      return;
+    }
+
+    if (isWithinRolloverWindow(currentTime, cycleDate) && rolloverPromptCycleRef.current !== cycleDate) {
+      rolloverPromptCycleRef.current = cycleDate;
+      setKeepSameProjectOnRollover(Boolean(activeProjectId));
+      setIsRolloverPromptOpen(true);
+    }
+  }, [activeProjectId, currentTime, cycleDate, cycleState, sessionState, syncCycleBoundary]);
 
   const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects]);
   const projectLoadSummary = useMemo(() => getProjectLoadSummary(tasks, activeProjects), [tasks, activeProjects]);
@@ -240,8 +272,47 @@ export function TodayPlannerOverview() {
     updateTask(taskDrawerTaskId, values);
   }
 
+  function handleCloseForTodayAtBoundary() {
+    autoCloseCycle(getCycleBoundaryTimestamp(cycleDate), { deferNextCycleUntilManualStart: true });
+    setIsRolloverPromptOpen(false);
+    openDrawer('close');
+  }
+
+  function handleContinueNextCycle() {
+    const nextDate = getLocalISODate(new Date(currentTime.getTime() + 1_000));
+    const shouldKeepProject = keepSameProjectOnRollover && Boolean(activeProjectId);
+
+    autoCloseCycle(getCycleBoundaryTimestamp(cycleDate));
+    startNextCycle({
+      continueSession: shouldKeepProject,
+      keepActiveProject: shouldKeepProject,
+      nextDate,
+      startedAt: new Date().toISOString(),
+    });
+    setIsRolloverPromptOpen(false);
+  }
+
   return (
     <div className={todayPlannerOverviewStyles.layout}>
+      {rolloverNotice && (
+        <div className={todayPlannerOverviewStyles.noticeStack}>
+          <StateNotice
+            description={rolloverNotice.description}
+            eyebrow="Virada do dia"
+            title={rolloverNotice.title}
+            tone="warning"
+          />
+          <div className={todayPlannerOverviewStyles.noticeActions}>
+            <Button type="button" variant="outline" onClick={() => openDrawer('close')}>
+              Revisar conciliacao
+            </Button>
+            <Button type="button" variant="ghost" onClick={clearRolloverNotice}>
+              Dispensar aviso
+            </Button>
+          </div>
+        </div>
+      )}
+
       <section className={todayPlannerOverviewStyles.sessionRail}>
         <Card
           className={cn(
@@ -585,6 +656,53 @@ export function TodayPlannerOverview() {
           )}
         </>
       )}
+
+      <OverlayPanel
+        description="A virada do dia esta proxima. Escolha se voce encerra por hoje ou se deseja continuar no proximo cycle."
+        isOpen={isRolloverPromptOpen}
+        onClose={() => setIsRolloverPromptOpen(false)}
+        title="Ciclo do dia encerrando"
+      >
+        <div className={todayPlannerOverviewStyles.drawerStack}>
+          <section className={todayPlannerOverviewStyles.drawerSection}>
+            <div className={todayPlannerOverviewStyles.drawerSectionHeader}>
+              <h3 className={todayPlannerOverviewStyles.drawerSectionTitle}>Resumo da virada</h3>
+              <p className={todayPlannerOverviewStyles.drawerSectionCopy}>Confira o que esta em andamento antes da meia-noite.</p>
+            </div>
+            <div className={todayPlannerOverviewStyles.drawerSummaryRollover}>
+              <div className={todayPlannerOverviewStyles.drawerSummaryItem}>
+                <span>Horas registradas hoje</span>
+                <strong>{formatHours(totalTrackedHours)}</strong>
+              </div>
+              <div className={todayPlannerOverviewStyles.drawerSummaryItem}>
+                <span>Projeto ativo</span>
+                <strong>{activeProject?.name ?? 'Sem projeto ativo'}</strong>
+              </div>
+              <div className={todayPlannerOverviewStyles.drawerSummaryItem}>
+                <span>Tasks em andamento</span>
+                <strong>{tasks.filter((task) => task.cycleAssignment === 'current' && task.status !== 'done' && !task.isArchived).length}</strong>
+              </div>
+            </div>
+            <label className={todayPlannerOverviewStyles.rolloverToggle}>
+              <input
+                checked={keepSameProjectOnRollover}
+                onChange={(event) => setKeepSameProjectOnRollover(event.target.checked)}
+                type="checkbox"
+              />
+              <span>Manter o mesmo projeto ativo ao abrir o proximo cycle</span>
+            </label>
+          </section>
+
+          <div className={todayPlannerOverviewStyles.drawerFooter}>
+            <Button type="button" variant="outline" onClick={handleCloseForTodayAtBoundary}>
+              Encerrar por hoje
+            </Button>
+            <Button type="button" onClick={handleContinueNextCycle}>
+              Continuar no proximo cycle
+            </Button>
+          </div>
+        </div>
+      </OverlayPanel>
 
       <OverlayPanel
         description={taskDrawerTask ? 'Abra a task no drawer para revisar descricao, checklist e atualizar o andamento sem sair do Hoje.' : undefined}

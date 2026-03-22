@@ -31,7 +31,6 @@ export function TaskFilters({ filters, onChange, onReset, projects, visibleTasks
     <section className={taskFiltersStyles.wrapper}>
       <div className={taskFiltersStyles.header}>
         <h2 className={taskFiltersStyles.title}>Filtros conectados aos projetos</h2>
-        <p className={taskFiltersStyles.description}>A associacao vem da carteira criada em Projetos. Isso prepara o resumo de carga e o uso futuro na tela Hoje.</p>
       </div>
 
       <div className={taskFiltersStyles.grid}>

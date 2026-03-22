@@ -12,13 +12,16 @@ import type {
   CloseDayReview,
   CycleSnapshot,
   CycleState,
+  PreviousCycleSummary,
   PulseRecord,
   PulseResolution,
   RegularizationState,
+  RolloverNotice,
   SessionState,
   TimeBlock,
   TodayCycleValues,
 } from '@/modules/today/types';
+import { getCycleBoundaryTimestamp, getLocalISODate } from '@/modules/today/utils/boundary';
 import {
   addMinutesToTimestamp,
   applyConfirmedMinutesToTimeBlocks,
@@ -66,11 +69,7 @@ function getColumnIdForStatus(columns: TaskColumn[], status: Task['status']) {
 }
 
 function getTodayISODate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return getLocalISODate(new Date());
 }
 
 function getTomorrowISODate(): string {
@@ -109,6 +108,9 @@ function createInitialWorkspaceState() {
     cycleDate: getTodayISODate(),
     cycleState: 'PLANNED' as CycleState,
     cycleSnapshot: null as CycleSnapshot | null,
+    previousCycleSummary: null as PreviousCycleSummary | null,
+    rolloverNotice: null as RolloverNotice | null,
+    deferNextCycleUntilManualStart: false,
   };
 }
 
@@ -130,11 +132,18 @@ interface WorkspaceStoreState {
   cycleDate: string;
   cycleState: CycleState;
   cycleSnapshot: CycleSnapshot | null;
+  previousCycleSummary: PreviousCycleSummary | null;
+  rolloverNotice: RolloverNotice | null;
+  deferNextCycleUntilManualStart: boolean;
   startSession: (projectId: string) => void;
   pauseSession: (reason: 'manual' | 'inactivity') => void;
   resumeSession: () => void;
   switchActiveProject: (projectId: string) => void;
   closeDay: () => void;
+  autoCloseCycle: (boundaryAt?: string, options?: { deferNextCycleUntilManualStart?: boolean }) => void;
+  startNextCycle: (options?: { continueSession?: boolean; keepActiveProject?: boolean; nextDate?: string; startedAt?: string }) => void;
+  syncCycleBoundary: (currentAt?: string) => void;
+  clearRolloverNotice: () => void;
   setCycleState: (state: CycleState) => void;
   recordPulse: (status: 'confirmed' | 'unconfirmed') => void;
   firePulse: (firedAt?: string) => void;
@@ -168,18 +177,32 @@ interface WorkspaceStoreState {
 export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
   ...createInitialWorkspaceState(),
   startSession: (projectId) => set((state) => {
+    const currentDate = getTodayISODate();
+    const shouldRollToCurrentDate = currentDate > state.cycleDate;
+    const nextDate = shouldRollToCurrentDate ? currentDate : state.cycleDate;
+
     if (state.sessionState !== 'idle') return state;
     const now = new Date().toISOString();
+
+    const activeProjects = state.projects.filter((project) => project.status === 'active');
+    const projectLoadSummary = getProjectLoadSummary(state.tasks, activeProjects);
+    const allocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, state.todayCycleValues);
+
     return {
       sessionState: 'running',
       activeProjectId: projectId,
       sessionStartedAt: now,
+      todayActualHours: createActualHoursMap(allocations),
+      cycleDate: nextDate,
       cycleState: 'ACTIVE',
-      timeBlocks: [...state.timeBlocks, { projectId, startedAt: now, endedAt: null, confirmedMinutes: 0 }],
+      timeBlocks: [{ projectId, startedAt: now, endedAt: null, confirmedMinutes: 0 }],
+      pulseHistory: shouldRollToCurrentDate ? [] : state.pulseHistory,
       activePulse: null,
       nextPulseDueAt: addMinutesToTimestamp(now, DEFAULT_PULSE_INTERVAL_MINUTES),
       regularizationState: { isOpen: false, highlightedPulseIndex: null },
       closeDayReview: null,
+      rolloverNotice: null,
+      deferNextCycleUntilManualStart: false,
     };
   }),
   pauseSession: (reason) => set((state) => {
@@ -245,6 +268,120 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       nextPulseDueAt: null,
     };
   }),
+  autoCloseCycle: (boundaryAt, options) => set((state) => {
+    if (state.cycleState === 'AUTO_CLOSED') {
+      return state;
+    }
+
+    const closedAt = boundaryAt ?? new Date().toISOString();
+    const updatedTimeBlocks = state.timeBlocks.map((block) => (
+      block.endedAt === null ? { ...block, endedAt: closedAt } : block
+    ));
+    const cycleSnapshot = computeCycleSnapshot({
+      tasks: state.tasks,
+      timeBlocks: updatedTimeBlocks,
+      todayCycleValues: state.todayCycleValues,
+    });
+
+    return {
+      sessionState: 'completed',
+      cycleState: 'AUTO_CLOSED',
+      cycleSnapshot,
+      timeBlocks: updatedTimeBlocks,
+      activePulse: null,
+      nextPulseDueAt: null,
+      previousCycleSummary: {
+        cycleDate: state.cycleDate,
+        snapshot: cycleSnapshot,
+        activeProjectId: state.activeProjectId,
+        inProgressTaskIds: state.tasks.filter((task) => task.cycleAssignment === 'current' && task.status !== 'done' && !task.isArchived).map((task) => task.id),
+      },
+      deferNextCycleUntilManualStart: options?.deferNextCycleUntilManualStart ?? false,
+    };
+  }),
+  startNextCycle: (options) => set((state) => {
+    const nextDate = options?.nextDate ?? getTodayISODate();
+    const nextProjectId = options?.keepActiveProject ? state.activeProjectId : null;
+    const shouldContinueSession = Boolean(options?.continueSession && nextProjectId);
+    const startedAt = options?.startedAt ?? new Date().toISOString();
+    const activeProjects = state.projects.filter((project) => project.status === 'active');
+    const projectLoadSummary = getProjectLoadSummary(state.tasks, activeProjects);
+    const allocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, state.todayCycleValues);
+
+    return {
+      todayActualHours: createActualHoursMap(allocations),
+      sessionState: shouldContinueSession ? 'running' : 'idle',
+      sessionStartedAt: shouldContinueSession ? startedAt : null,
+      activeProjectId: nextProjectId,
+      timeBlocks: shouldContinueSession && nextProjectId ? [{ projectId: nextProjectId, startedAt, endedAt: null, confirmedMinutes: 0 }] : [],
+      pulseHistory: [],
+      activePulse: null,
+      nextPulseDueAt: shouldContinueSession ? addMinutesToTimestamp(startedAt, DEFAULT_PULSE_INTERVAL_MINUTES) : null,
+      regularizationState: { isOpen: false, highlightedPulseIndex: null },
+      closeDayReview: null,
+      cycleDate: nextDate,
+      cycleState: shouldContinueSession ? 'ACTIVE' : 'PLANNED',
+      cycleSnapshot: null,
+      rolloverNotice: state.previousCycleSummary
+        ? {
+          previousCycleDate: state.previousCycleSummary.cycleDate,
+          title: 'Cycle anterior encerrado automaticamente',
+          description: 'O dia anterior foi auto-encerrado na virada. Revise a conciliacao se precisar confirmar blocos ou entender o que ficou em andamento.',
+        }
+        : state.rolloverNotice,
+      deferNextCycleUntilManualStart: false,
+    };
+  }),
+  syncCycleBoundary: (currentAt) => set((state) => {
+    const now = currentAt ? new Date(currentAt) : new Date();
+    const currentDate = getLocalISODate(now);
+
+    if (currentDate <= state.cycleDate || state.deferNextCycleUntilManualStart) {
+      return state;
+    }
+
+    const boundaryAt = getCycleBoundaryTimestamp(state.cycleDate);
+    const updatedTimeBlocks = state.timeBlocks.map((block) => (
+      block.endedAt === null ? { ...block, endedAt: boundaryAt } : block
+    ));
+    const cycleSnapshot = computeCycleSnapshot({
+      tasks: state.tasks,
+      timeBlocks: updatedTimeBlocks,
+      todayCycleValues: state.todayCycleValues,
+    });
+    const activeProjects = state.projects.filter((project) => project.status === 'active');
+    const projectLoadSummary = getProjectLoadSummary(state.tasks, activeProjects);
+    const allocations = buildSuggestedAllocations(activeProjects, projectLoadSummary, state.todayCycleValues);
+
+    return {
+      todayActualHours: createActualHoursMap(allocations),
+      sessionState: 'idle',
+      sessionStartedAt: null,
+      activeProjectId: null,
+      timeBlocks: [],
+      pulseHistory: [],
+      activePulse: null,
+      nextPulseDueAt: null,
+      regularizationState: { isOpen: false, highlightedPulseIndex: null },
+      closeDayReview: null,
+      cycleDate: currentDate,
+      cycleState: 'PLANNED',
+      cycleSnapshot: null,
+      previousCycleSummary: {
+        cycleDate: state.cycleDate,
+        snapshot: cycleSnapshot,
+        activeProjectId: state.activeProjectId,
+        inProgressTaskIds: state.tasks.filter((task) => task.cycleAssignment === 'current' && task.status !== 'done' && !task.isArchived).map((task) => task.id),
+      },
+      rolloverNotice: {
+        previousCycleDate: state.cycleDate,
+        title: 'Cycle anterior encerrado automaticamente',
+        description: 'Voce voltou depois da meia-noite. O cycle anterior foi auto-encerrado e o novo dia ja esta pronto para iniciar.',
+      },
+      deferNextCycleUntilManualStart: false,
+    };
+  }),
+  clearRolloverNotice: () => set({ rolloverNotice: null }),
   setCycleState: (cycleState) => set({ cycleState }),
   recordPulse: (status) => set((state) => {
     const now = new Date().toISOString();

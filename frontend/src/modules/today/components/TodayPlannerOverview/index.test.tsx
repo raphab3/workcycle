@@ -124,6 +124,25 @@ describe('TodayPlannerOverview', () => {
     vi.useRealTimers();
   });
 
+  it('shows the rollover prompt for active users near midnight', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 22, 23, 56, 0));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    resetWorkspaceStore();
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    expect(screen.getByRole('dialog', { name: /Ciclo do dia encerrando/i })).toBeInTheDocument();
+    expect(screen.getByText(/Horas registradas hoje/i)).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
   it('opens the close-day drawer from the running state', async () => {
     const user = userEvent.setup();
 

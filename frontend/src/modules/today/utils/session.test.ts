@@ -286,6 +286,56 @@ describe('session store actions', () => {
     });
   });
 
+  describe('day boundary rollover', () => {
+    it('auto-closes the current cycle and freezes a snapshot', () => {
+      useWorkspaceStore.getState().startSession('proj-1');
+
+      useWorkspaceStore.getState().autoCloseCycle('2026-03-22T23:59:59.000Z');
+      const state = useWorkspaceStore.getState();
+
+      expect(state.sessionState).toBe('completed');
+      expect(state.cycleState).toBe('AUTO_CLOSED');
+      expect(state.cycleSnapshot).not.toBeNull();
+      expect(state.timeBlocks.every((block) => block.endedAt !== null)).toBe(true);
+      expect(state.previousCycleSummary?.cycleDate).toBe(state.cycleDate);
+    });
+
+    it('opens the next cycle and optionally continues the same project', () => {
+      useWorkspaceStore.getState().startSession('proj-1');
+      useWorkspaceStore.setState({ cycleDate: '2026-03-22' });
+      useWorkspaceStore.getState().autoCloseCycle('2026-03-22T23:59:59.000Z');
+
+      useWorkspaceStore.getState().startNextCycle({
+        continueSession: true,
+        keepActiveProject: true,
+        nextDate: '2026-03-23',
+        startedAt: '2026-03-23T00:00:10.000Z',
+      });
+      const state = useWorkspaceStore.getState();
+
+      expect(state.cycleDate).toBe('2026-03-23');
+      expect(state.sessionState).toBe('running');
+      expect(state.cycleState).toBe('ACTIVE');
+      expect(state.activeProjectId).toBe('proj-1');
+      expect(state.timeBlocks).toHaveLength(1);
+      expect(state.rolloverNotice?.previousCycleDate).toBe('2026-03-22');
+    });
+
+    it('syncs to a fresh idle cycle when the user returns after midnight', () => {
+      useWorkspaceStore.getState().startSession('proj-1');
+      useWorkspaceStore.setState({ cycleDate: '2026-03-22' });
+
+      useWorkspaceStore.getState().syncCycleBoundary(new Date(2026, 2, 23, 0, 1, 0).toISOString());
+      const state = useWorkspaceStore.getState();
+
+      expect(state.cycleDate).toBe('2026-03-23');
+      expect(state.sessionState).toBe('idle');
+      expect(state.cycleState).toBe('PLANNED');
+      expect(state.rolloverNotice?.previousCycleDate).toBe('2026-03-22');
+      expect(state.previousCycleSummary?.snapshot).not.toBeNull();
+    });
+  });
+
   describe('cycleDate initialization', () => {
     it('uses local date format YYYY-MM-DD matching local time', () => {
       const state = useWorkspaceStore.getState();

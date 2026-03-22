@@ -1,5 +1,7 @@
 export const todayPlannerOverviewStyles = {
   layout: 'grid gap-6 pb-6',
+  noticeStack: 'grid gap-3',
+  noticeActions: 'flex flex-wrap gap-3',
   sessionRail: 'sticky top-24 z-20 grid gap-4',
   sessionBar: 'border-border/70 bg-background/95',
   sessionBarIdle: 'border-2 border-dashed',
@@ -85,5 +87,7 @@ export const todayPlannerOverviewStyles = {
   finalHoursValue: 'min-w-16 text-center text-sm font-semibold text-foreground',
   drawerFooter: 'flex flex-col gap-4 border-t border-border/60 pt-5 md:flex-row md:items-center md:justify-between',
   drawerSummary: 'grid gap-3 sm:grid-cols-2',
+  drawerSummaryRollover: 'grid gap-3 sm:grid-cols-3',
   drawerSummaryItem: 'grid gap-1 rounded-2xl bg-muted/45 px-4 py-3 text-sm text-muted-foreground',
+  rolloverToggle: 'flex items-center gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-4 text-sm text-foreground',
 };

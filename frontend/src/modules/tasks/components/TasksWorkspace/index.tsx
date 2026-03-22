@@ -118,28 +118,7 @@ export function TasksWorkspace() {
         )}
 
         <section className={tasksWorkspaceStyles.toolbar}>
-          <div className={tasksWorkspaceStyles.toolbarCopy}>
-            <h2 className={tasksWorkspaceStyles.toolbarTitle}>Painel de tasks</h2>
-            <p className={tasksWorkspaceStyles.toolbarDescription}>{getOpenTasksCount(tasks)} abertas · {getUrgentTasksCount(tasks)} urgentes · {getCycleTaskCount(tasks, 'current')} no cycle atual</p>
-          </div>
-          <Button type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
-        </section>
-
-        <TasksList
-          onAddColumn={addTaskColumn}
-          onArchiveTask={setPendingArchiveTask}
-          onAssignCycle={setTaskCycleAssignment}
-          onDeleteTask={setPendingDeleteTask}
-          onEditTask={handleOpenEditTask}
-          onMoveTaskToColumn={moveTaskToColumn}
-          onRemoveColumn={(column) => setPendingColumnRemoval(column.id)}
-          onToggleDone={handleToggleDone}
-          projects={projects}
-          taskColumns={taskColumns}
-          tasks={filteredTasks}
-        />
-
-        <div className={tasksWorkspaceStyles.summaryGrid}>
+             <div className={tasksWorkspaceStyles.summaryGrid}>
           <Card>
             <CardHeader>
               <CardDescription>Tasks em aberto</CardDescription>
@@ -165,6 +144,24 @@ export function TasksWorkspace() {
             </CardHeader>
           </Card>
         </div>
+          <Button type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
+        </section>
+
+        <TaskFilters filters={filters} onChange={setFilters} onReset={() => setFilters(baseFilters)} projects={projects} visibleTasks={filteredTasks.length} />
+
+        <TasksList
+          onAddColumn={addTaskColumn}
+          onArchiveTask={setPendingArchiveTask}
+          onAssignCycle={setTaskCycleAssignment}
+          onDeleteTask={setPendingDeleteTask}
+          onEditTask={handleOpenEditTask}
+          onMoveTaskToColumn={moveTaskToColumn}
+          onRemoveColumn={(column) => setPendingColumnRemoval(column.id)}
+          onToggleDone={handleToggleDone}
+          projects={projects}
+          taskColumns={taskColumns}
+          tasks={filteredTasks}
+        />
 
         <div className={tasksWorkspaceStyles.compactLoad}>
           <div className={tasksWorkspaceStyles.compactLoadHeader}>
@@ -186,8 +183,6 @@ export function TasksWorkspace() {
             ))}
           </div>
         </div>
-
-        <TaskFilters filters={filters} onChange={setFilters} onReset={() => setFilters(baseFilters)} projects={projects} visibleTasks={filteredTasks.length} />
       </div>
 
       <OverlayPanel
