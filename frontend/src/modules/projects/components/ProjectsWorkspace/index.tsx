@@ -1,6 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { getApiErrorMessage } from '@/lib/apiError';
+import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useCreateProjectMutation } from '@/modules/projects/queries/useCreateProjectMutation';
+import { useProjectsQuery } from '@/modules/projects/queries/useProjectsQuery';
+import { useToggleProjectStatusMutation } from '@/modules/projects/queries/useToggleProjectStatusMutation';
+import { useUpdateProjectMutation } from '@/modules/projects/queries/useUpdateProjectMutation';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -18,21 +25,59 @@ import { projectsWorkspaceStyles } from './styles';
 
 export function ProjectsWorkspace() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const hasHydratedSession = useAuthStore((state) => state.hasHydrated);
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
   const projects = useWorkspaceStore((state) => state.projects);
+  const replaceProjects = useWorkspaceStore((state) => state.replaceProjects);
   const addProject = useWorkspaceStore((state) => state.addProject);
   const updateProject = useWorkspaceStore((state) => state.updateProject);
   const toggleProjectStatus = useWorkspaceStore((state) => state.toggleProjectStatus);
+  const shouldUseApi = hasHydratedSession && sessionStatus === 'authenticated';
+  const projectsQuery = useProjectsQuery({ enabled: shouldUseApi });
+  const createProjectMutation = useCreateProjectMutation();
+  const updateProjectMutation = useUpdateProjectMutation();
+  const toggleProjectStatusMutation = useToggleProjectStatusMutation();
 
-  const activeProjects = projects.filter((project) => project.status === 'active');
-  const allocationTotal = getActiveAllocationTotal(projects);
-  const allocationDelta = getAllocationDelta(projects);
-  const allocationTone = getAllocationTone(projects);
+  useEffect(() => {
+    if (!projectsQuery.data) {
+      return;
+    }
+
+    replaceProjects(projectsQuery.data);
+  }, [projectsQuery.data, replaceProjects]);
+
+  const visibleProjects = shouldUseApi ? (projectsQuery.data ?? []) : projects;
+  const activeProjects = visibleProjects.filter((project) => project.status === 'active');
+  const allocationTotal = getActiveAllocationTotal(visibleProjects);
+  const allocationDelta = getAllocationDelta(visibleProjects);
+  const allocationTone = getAllocationTone(visibleProjects);
+  const isSyncingProjects = shouldUseApi && projectsQuery.isPending;
+  const isSubmittingProject = createProjectMutation.isPending || updateProjectMutation.isPending;
+  const isTogglingProjectStatus = toggleProjectStatusMutation.isPending;
+  const requestError = useMemo(
+    () => projectsQuery.error ?? createProjectMutation.error ?? updateProjectMutation.error ?? toggleProjectStatusMutation.error,
+    [createProjectMutation.error, projectsQuery.error, toggleProjectStatusMutation.error, updateProjectMutation.error],
+  );
+  const requestErrorMessage = requestError
+    ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar os projetos com o backend.')
+    : null;
 
   function handleCancelEdit() {
     setEditingProject(null);
   }
 
-  function handleSubmitProject(values: ProjectFormValues, projectId?: string) {
+  async function handleSubmitProject(values: ProjectFormValues, projectId?: string) {
+    if (shouldUseApi) {
+      if (projectId) {
+        await updateProjectMutation.mutateAsync({ projectId, values });
+      } else {
+        await createProjectMutation.mutateAsync(values);
+      }
+
+      setEditingProject(null);
+      return;
+    }
+
     if (projectId) {
       updateProject(projectId, values);
       setEditingProject(null);
@@ -43,6 +88,20 @@ export function ProjectsWorkspace() {
   }
 
   function handleToggleStatus(projectId: string) {
+    if (shouldUseApi) {
+      const targetProject = visibleProjects.find((project) => project.id === projectId);
+
+      if (!targetProject) {
+        return;
+      }
+
+      void toggleProjectStatusMutation.mutateAsync({
+        projectId,
+        status: targetProject.status === 'active' ? 'paused' : 'active',
+      });
+      return;
+    }
+
     toggleProjectStatus(projectId);
   }
 
@@ -62,7 +121,25 @@ export function ProjectsWorkspace() {
           tone="info"
         />
 
-        {projects.length === 0 && (
+        {isSyncingProjects && (
+          <StateNotice
+            eyebrow="Sincronizacao"
+            title="Carregando carteira persistida"
+            description="Os projetos autenticados estao sendo recuperados do backend para substituir o estado local temporario."
+            tone="info"
+          />
+        )}
+
+        {requestErrorMessage && (
+          <StateNotice
+            eyebrow="Integracao"
+            title="Falha ao sincronizar projetos"
+            description={requestErrorMessage}
+            tone="warning"
+          />
+        )}
+
+        {!isSyncingProjects && visibleProjects.length === 0 && (
           <EmptyState
             eyebrow="Projetos"
             title="Nenhuma frente cadastrada"
@@ -119,12 +196,22 @@ export function ProjectsWorkspace() {
             <CardTitle>{editingProject ? editingProject.name : 'Adicionar frente de trabalho'}</CardTitle>
           </CardHeader>
           <div className="px-6 pb-6">
-            <ProjectForm defaultValues={editingProject} onCancelEdit={handleCancelEdit} onSubmitProject={handleSubmitProject} />
+            <ProjectForm
+              defaultValues={editingProject}
+              isSubmitting={isSubmittingProject}
+              onCancelEdit={handleCancelEdit}
+              onSubmitProject={handleSubmitProject}
+            />
           </div>
         </Card>
       </div>
 
-      <ProjectsList projects={projects} onEditProject={setEditingProject} onToggleStatus={handleToggleStatus} />
+      <ProjectsList
+        isDisabled={isTogglingProjectStatus}
+        projects={visibleProjects}
+        onEditProject={setEditingProject}
+        onToggleStatus={handleToggleStatus}
+      />
     </div>
   );
 }

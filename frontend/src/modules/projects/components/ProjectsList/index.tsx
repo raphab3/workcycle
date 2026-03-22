@@ -7,7 +7,7 @@ import { formatFixedSchedule } from '@/modules/projects/utils/allocation';
 import { projectsListStyles } from './styles';
 import type { ProjectsListProps } from './types';
 
-export function ProjectsList({ onEditProject, onToggleStatus, projects }: ProjectsListProps) {
+export function ProjectsList({ isDisabled = false, onEditProject, onToggleStatus, projects }: ProjectsListProps) {
   if (projects.length === 0) {
     return (
       <EmptyState
@@ -47,10 +47,10 @@ export function ProjectsList({ onEditProject, onToggleStatus, projects }: Projec
           <div className={projectsListStyles.footer}>
             <p className={projectsListStyles.footerText}>{formatFixedSchedule(project)}</p>
             <div className={projectsListStyles.actions}>
-              <Button type="button" variant="outline" onClick={() => onEditProject(project)}>
+              <Button type="button" variant="outline" onClick={() => onEditProject(project)} disabled={isDisabled}>
                 Editar
               </Button>
-              <Button type="button" variant="ghost" onClick={() => onToggleStatus(project.id)}>
+              <Button type="button" variant="ghost" onClick={() => onToggleStatus(project.id)} disabled={isDisabled}>
                 {project.status === 'active' ? 'Pausar' : 'Reativar'}
               </Button>
             </div>

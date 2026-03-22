@@ -154,6 +154,7 @@ interface WorkspaceStoreState {
   reviewPulse: (pulseIndex: number, resolution: Exclude<PulseResolution, 'pending'>, reviewedAt?: string) => void;
   updateTimeBlock: (timeBlockIndex: number, updates: Partial<TimeBlock>) => void;
   prepareCloseDayReview: () => CloseDayReview;
+  replaceProjects: (projects: Project[]) => void;
   addProject: (values: ProjectFormValues) => void;
   updateProject: (projectId: string, values: ProjectFormValues) => void;
   toggleProjectStatus: (projectId: string) => void;
@@ -540,6 +541,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
 
     return review;
   },
+  replaceProjects: (projects) => set({ projects: projects.map(cloneProject) }),
   addProject: (values) => set((state) => ({
     projects: [
       {

@@ -28,7 +28,7 @@ const baseValues: ProjectFormSchemaInput = {
   fixedHoursPerDay: 0,
 };
 
-export function ProjectForm({ defaultValues, onCancelEdit, onSubmitProject }: ProjectFormProps) {
+export function ProjectForm({ defaultValues, isSubmitting = false, onCancelEdit, onSubmitProject }: ProjectFormProps) {
   const {
     formState: { errors },
     handleSubmit,
@@ -53,8 +53,8 @@ export function ProjectForm({ defaultValues, onCancelEdit, onSubmitProject }: Pr
     setValue('fixedDays', nextDays, { shouldValidate: true, shouldDirty: true });
   }
 
-  function handleSubmitForm(values: ProjectFormSchemaOutput) {
-    onSubmitProject(values, defaultValues?.id);
+  async function handleSubmitForm(values: ProjectFormSchemaOutput) {
+    await onSubmitProject(values, defaultValues?.id);
     reset(baseValues);
   }
 
@@ -153,11 +153,11 @@ export function ProjectForm({ defaultValues, onCancelEdit, onSubmitProject }: Pr
         </p>
         <div className={projectFormStyles.actions}>
           {defaultValues && (
-            <Button type="button" variant="outline" onClick={onCancelEdit}>
+            <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isSubmitting}>
               Cancelar edicao
             </Button>
           )}
-          <Button type="submit">{defaultValues ? 'Salvar alteracoes' : 'Adicionar projeto'}</Button>
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : defaultValues ? 'Salvar alteracoes' : 'Adicionar projeto'}</Button>
         </div>
       </div>
     </form>

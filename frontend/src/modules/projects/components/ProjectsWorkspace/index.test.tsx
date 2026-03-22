@@ -1,9 +1,26 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { ProjectsWorkspace } from './index';
+
+function renderProjectsWorkspace() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ProjectsWorkspace />
+    </QueryClientProvider>,
+  );
+}
 
 describe('ProjectsWorkspace', () => {
   beforeEach(() => {
@@ -11,7 +28,7 @@ describe('ProjectsWorkspace', () => {
   });
 
   it('renders the allocation summary and existing projects', () => {
-    render(<ProjectsWorkspace />);
+    renderProjectsWorkspace();
 
     expect(screen.getByText('Percentual alocado')).toBeInTheDocument();
     expect(screen.getByText('ClienteCore')).toBeInTheDocument();
@@ -21,7 +38,7 @@ describe('ProjectsWorkspace', () => {
   it('creates a new rotative project from the form', async () => {
     const user = userEvent.setup();
 
-    render(<ProjectsWorkspace />);
+    renderProjectsWorkspace();
 
     await user.type(screen.getByLabelText('Nome do projeto'), 'ReportPilot');
     await user.clear(screen.getByLabelText('Alocacao semanal (%)'));
@@ -34,7 +51,7 @@ describe('ProjectsWorkspace', () => {
   it('shows validation for a fixed project without days and hours', async () => {
     const user = userEvent.setup();
 
-    render(<ProjectsWorkspace />);
+    renderProjectsWorkspace();
 
     await user.type(screen.getByLabelText('Nome do projeto'), 'Projeto Fixo');
     await user.click(screen.getByLabelText('Fixo'));
