@@ -69,7 +69,8 @@ describe('TodayPlannerOverview', () => {
     expect(screen.getByRole('heading', { name: /Board operacional de hoje/i })).toBeInTheDocument();
     expect(screen.getByText(/Ajustar migration de faturamento/i)).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText(/Mover Ajustar migration de faturamento/i), 'done');
+    await user.click(screen.getByRole('button', { name: /Abrir acoes de Ajustar migration de faturamento/i }));
+    await user.click(screen.getByRole('button', { name: /^Done$/i }));
 
     const movedTask = useWorkspaceStore.getState().tasks.find((task) => task.id === 'billing-migration');
 
@@ -85,6 +86,8 @@ describe('TodayPlannerOverview', () => {
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /DataVault/i }));
     await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+
+    await user.click(screen.getByRole('button', { name: /Abrir acoes de Ajustar migration de faturamento/i }));
     await user.click(screen.getByRole('button', { name: /Pular para proximo cycle/i }));
     await user.click(screen.getByRole('button', { name: /Manter estagio atual no proximo cycle/i }));
 

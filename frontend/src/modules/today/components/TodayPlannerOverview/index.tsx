@@ -135,8 +135,9 @@ export function TodayPlannerOverview() {
   const pauseSession = useWorkspaceStore((state) => state.pauseSession);
   const resumeSession = useWorkspaceStore((state) => state.resumeSession);
   const switchActiveProject = useWorkspaceStore((state) => state.switchActiveProject);
-  const moveTaskToColumn = useWorkspaceStore((state) => state.moveTaskToColumn);
+  const moveTaskOnBoard = useWorkspaceStore((state) => state.moveTaskOnBoard);
   const skipTaskToNextCycle = useWorkspaceStore((state) => state.skipTaskToNextCycle);
+  const updateTask = useWorkspaceStore((state) => state.updateTask);
   const closeDay = useWorkspaceStore((state) => state.closeDay);
   const prepareCloseDayReview = useWorkspaceStore((state) => state.prepareCloseDayReview);
   const openRegularizationPanel = useWorkspaceStore((state) => state.openRegularizationPanel);
@@ -513,8 +514,10 @@ export function TodayPlannerOverview() {
               </CardHeader>
               <CycleTasksBoard
                 activeProject={activeProject}
-                onMoveTaskToColumn={moveTaskToColumn}
+                onMoveTaskOnBoard={moveTaskOnBoard}
                 onSkipTask={skipTaskToNextCycle}
+                onUpdateTask={updateTask}
+                projects={projects}
                 taskColumns={taskColumns}
                 tasks={tasks}
               />

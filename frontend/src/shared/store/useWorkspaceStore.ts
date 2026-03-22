@@ -153,6 +153,7 @@ interface WorkspaceStoreState {
   addTaskColumn: (values: TaskColumnFormValues) => void;
   removeTaskColumn: (columnId: string) => void;
   moveTaskToColumn: (taskId: string, columnId: string) => void;
+  moveTaskOnBoard: (taskId: string, columnId: string, beforeTaskId?: string) => void;
   archiveTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
   toggleTaskDone: (taskId: string) => void;
@@ -489,6 +490,38 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
           ? { ...task, columnId: targetColumn.id, status: targetColumn.status, nextCycleStartDate: null }
           : task
       )),
+    };
+  }),
+  moveTaskOnBoard: (taskId, columnId, beforeTaskId) => set((state) => {
+    const targetColumn = state.taskColumns.find((column) => column.id === columnId);
+    const sourceTask = state.tasks.find((task) => task.id === taskId);
+
+    if (!targetColumn || !sourceTask || beforeTaskId === taskId) {
+      return state;
+    }
+
+    const movedTask = {
+      ...sourceTask,
+      columnId: targetColumn.id,
+      status: targetColumn.status,
+      nextCycleStartDate: null,
+    };
+
+    const remainingTasks = state.tasks.filter((task) => task.id !== taskId);
+    let insertionIndex = beforeTaskId ? remainingTasks.findIndex((task) => task.id === beforeTaskId) : -1;
+
+    if (insertionIndex < 0) {
+      insertionIndex = remainingTasks.reduce((lastIndex, task, index) => (
+        task.columnId === targetColumn.id ? index + 1 : lastIndex
+      ), 0);
+    }
+
+    return {
+      tasks: [
+        ...remainingTasks.slice(0, insertionIndex),
+        movedTask,
+        ...remainingTasks.slice(insertionIndex),
+      ],
     };
   }),
   archiveTask: (taskId) => set((state) => ({
