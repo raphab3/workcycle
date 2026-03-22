@@ -1,5 +1,6 @@
 export interface AuthStatusDTO {
   emailPasswordEnabled: boolean;
+  firebaseConfigured: boolean;
   oauthConfigured: boolean;
   provider: 'google' | string;
   status: 'pending' | 'ready' | string;

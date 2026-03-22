@@ -43,7 +43,14 @@ async function register(input: { displayName: string; email: string; password: s
   return response.data;
 }
 
+async function exchangeFirebaseIdToken(idToken: string) {
+  const response = await api.post<AuthSessionDTO>('/api/auth/firebase/session', { idToken });
+
+  return response.data;
+}
+
 export const authService = {
+  exchangeFirebaseIdToken,
   getAuthSession,
   getAuthStatus,
   getGoogleAccounts,

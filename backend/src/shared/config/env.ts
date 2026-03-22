@@ -27,6 +27,11 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
   GOOGLE_CLIENT_SECRET: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
   GOOGLE_REDIRECT_URI: z.preprocess(emptyStringToUndefined, z.string().url().optional()),
+  FIREBASE_PROJECT_ID: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
+  FIREBASE_CLIENT_EMAIL: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
+  FIREBASE_PRIVATE_KEY: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
+  FIREBASE_SERVICE_ACCOUNT_PATH: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

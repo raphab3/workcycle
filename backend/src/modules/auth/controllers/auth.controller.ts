@@ -2,7 +2,7 @@ import { Body, Controller, Get, Inject, Post, Query, Res, UseGuards } from '@nes
 
 import type { FastifyReply } from 'fastify';
 
-import { loginSchema, registerSchema } from '@/modules/auth/auth.schemas';
+import { firebaseSessionSchema, loginSchema, registerSchema } from '@/modules/auth/auth.schemas';
 import { AuthFinderService } from '@/modules/auth/services/auth-finder.service';
 import { AuthWriterService } from '@/modules/auth/services/auth-writer.service';
 import { CurrentUser } from '@/shared/decorators/current-user.decorator';
@@ -36,6 +36,13 @@ export class AuthController {
     const input = loginSchema.parse(body);
 
     return this.authWriterService.login(input);
+  }
+
+  @Post('firebase/session')
+  async createFirebaseSession(@Body() body: unknown) {
+    const input = firebaseSessionSchema.parse(body);
+
+    return this.authWriterService.loginWithFirebase(input.idToken);
   }
 
   @UseGuards(AuthGuard)

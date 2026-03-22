@@ -8,6 +8,7 @@ import { CycleModule } from '@/modules/cycle/cycle.module';
 import { EventsModule } from '@/modules/events/events.module';
 import { CacheModule } from '@/shared/providers/cache/cache.module';
 import { DrizzleModule } from '@/shared/database/drizzle.module';
+import { FirebaseModule } from '@/shared/providers/firebase/firebase.module';
 import { QueuesModule } from '@/shared/providers/queues/queues.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { QueuesModule } from '@/shared/providers/queues/queues.module';
     DrizzleModule,
     CacheModule,
     QueuesModule,
+    FirebaseModule,
     AuthModule,
     AccountsModule,
     EventsModule,

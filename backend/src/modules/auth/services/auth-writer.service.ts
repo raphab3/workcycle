@@ -5,10 +5,13 @@ import { GetAuthSessionUseCase } from '@/modules/auth/use-cases/get-auth-session
 import { LoginUserUseCase } from '@/modules/auth/use-cases/login-user.use-case';
 import { RegisterUserUseCase } from '@/modules/auth/use-cases/register-user.use-case';
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
+import { FirebaseAdminService } from '@/shared/providers/firebase/firebase-admin.service';
 import { issueAuthToken } from '@/shared/utils/auth-token';
 import { env } from '@/shared/config';
 
-import type { AuthSessionResponse, AuthTokenPayload, GoogleOauthState } from '@/modules/auth/types/auth';
+import type { DecodedIdToken } from 'firebase-admin/auth';
+
+import type { AuthProvider, AuthSessionResponse, AuthTokenPayload, GoogleOauthState } from '@/modules/auth/types/auth';
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -27,6 +30,8 @@ export class AuthWriterService {
   constructor(
     @Inject(AuthRepository)
     private readonly authRepository: AuthRepository,
+    @Inject(FirebaseAdminService)
+    private readonly firebaseAdminService: FirebaseAdminService,
     @Inject(BuildGoogleLinkUrlUseCase)
     private readonly buildGoogleLinkUrlUseCase: BuildGoogleLinkUrlUseCase,
     @Inject(GetAuthSessionUseCase)
@@ -144,6 +149,38 @@ export class AuthWriterService {
     return this.buildSessionResponse(user.id, user.email, user.displayName, user.authProvider);
   }
 
+  async loginWithFirebase(idToken: string): Promise<AuthSessionResponse> {
+    const decodedToken = await this.firebaseAdminService.verifyIdToken(idToken);
+    const email = decodedToken.email?.trim().toLowerCase();
+
+    if (!email) {
+      throw new UnauthorizedException('Firebase token does not contain a usable email.');
+    }
+
+    const firebaseProvider = this.resolveFirebaseProvider(decodedToken);
+    const displayName = decodedToken.name?.trim() || email.split('@')[0] || 'WorkCycle User';
+    let user = await this.authRepository.findUserByEmail(email);
+
+    if (!user) {
+      user = await this.authRepository.createUser({
+        authProvider: firebaseProvider,
+        displayName,
+        email,
+        passwordHash: null,
+      });
+    } else {
+      user = await this.authRepository.updateUser({
+        authProvider: this.mergeAuthProviders(user.authProvider, firebaseProvider),
+        displayName: user.displayName || displayName,
+        googleLinkedAt: firebaseProvider === 'google' ? user.googleLinkedAt ?? new Date() : user.googleLinkedAt,
+        passwordHash: user.passwordHash,
+        userId: user.id,
+      });
+    }
+
+    return this.buildSessionResponse(user.id, user.email, user.displayName, user.authProvider);
+  }
+
   private async buildSessionResponse(userId: string, email: string, displayName: string, provider: AuthTokenPayload['provider']): Promise<AuthSessionResponse> {
     const user = await this.getAuthSessionUseCase.execute(userId);
 
@@ -192,5 +229,17 @@ export class AuthWriterService {
     }
 
     return response.json() as Promise<GoogleProfileResponse>;
+  }
+
+  private mergeAuthProviders(currentProvider: AuthProvider, nextProvider: 'email' | 'google') {
+    if (currentProvider === 'hybrid' || currentProvider !== nextProvider) {
+      return currentProvider === nextProvider ? currentProvider : 'hybrid';
+    }
+
+    return currentProvider;
+  }
+
+  private resolveFirebaseProvider(decodedToken: DecodedIdToken): 'email' | 'google' {
+    return decodedToken.firebase.sign_in_provider === 'google.com' ? 'google' : 'email';
   }
 }

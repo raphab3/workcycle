@@ -11,5 +11,10 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+export const firebaseSessionSchema = z.object({
+  idToken: z.string().min(1),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type FirebaseSessionInput = z.infer<typeof firebaseSessionSchema>;
