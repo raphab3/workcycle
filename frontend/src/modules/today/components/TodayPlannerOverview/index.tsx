@@ -499,7 +499,7 @@ export function TodayPlannerOverview() {
           {sessionState !== 'idle' && (
             <section className={todayPlannerOverviewStyles.progressGrid} aria-label="Resumo do progresso do dia">
               <Card>
-                <CardHeader>
+                <CardHeader className={todayPlannerOverviewStyles.progressCardHeader}>
                   <CardDescription>Progresso do dia</CardDescription>
                   <CardTitle>{formatHours(totalTrackedHours)} / {formatHours(totalPlannedHours)}</CardTitle>
                 </CardHeader>
@@ -511,7 +511,7 @@ export function TodayPlannerOverview() {
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className={todayPlannerOverviewStyles.progressCardHeader}>
                   <CardDescription>Projeto ativo</CardDescription>
                   <CardTitle>{formatHours(activeProjectTrackedHours)} / {formatHours(activeProjectPlannedHours)}</CardTitle>
                 </CardHeader>
@@ -523,7 +523,7 @@ export function TodayPlannerOverview() {
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className={todayPlannerOverviewStyles.progressCardHeader}>
                   <CardDescription>Ritmo</CardDescription>
                   <CardTitle
                     className={cn(
