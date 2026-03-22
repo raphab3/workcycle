@@ -1,0 +1,49 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '3333:3333'
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3333
+      DATABASE_URL: postgresql://workcycle:workcycle@db:5432/workcycle
+      FRONTEND_ORIGIN: http://localhost:3000
+      LOG_LEVEL: info
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: workcycle
+      POSTGRES_USER: workcycle
+      POSTGRES_PASSWORD: workcycle
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U workcycle -d workcycle']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
