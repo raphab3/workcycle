@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell, LogOut, Menu, MonitorCog, MoonStar, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, SunMedium, UserCircle2, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,6 +21,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpenPath, setMobileSidebarOpenPath] = useState<string | null>(null);
@@ -34,7 +36,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   function handleSignOut() {
     signOut();
-    router.replace('/login');
+    queryClient.clear();
+    router.replace('/login?logout=1');
   }
 
   return (

@@ -9,6 +9,7 @@ const useAuthStatusQueryMock = vi.fn();
 const loginMutateAsyncMock = vi.fn();
 const registerMutateAsyncMock = vi.fn();
 const replaceMock = vi.fn();
+let searchParamsMock = new URLSearchParams();
 
 vi.mock('@/modules/auth/queries/useAuthStatusQuery', () => ({
   useAuthStatusQuery: () => useAuthStatusQueryMock(),
@@ -34,7 +35,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: replaceMock,
   }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParamsMock,
 }));
 
 vi.mock('@/modules/auth/services/authService', () => ({
@@ -49,6 +50,7 @@ vi.mock('@/modules/auth/store/useAuthStore', () => ({
 
 describe('LoginWorkspace', () => {
   beforeEach(() => {
+    searchParamsMock = new URLSearchParams();
     signInMock.mockReset();
     useAuthStatusQueryMock.mockReset();
     loginMutateAsyncMock.mockReset();
@@ -131,5 +133,14 @@ describe('LoginWorkspace', () => {
       },
     });
     expect(replaceMock).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('clears the logout marker before processing auth params again', () => {
+    searchParamsMock = new URLSearchParams('logout=1&authToken=stale-token&authUserId=user-1&authEmail=rafa@example.com&authDisplayName=Rafa&authProvider=email');
+
+    render(<LoginWorkspace />);
+
+    expect(signInMock).not.toHaveBeenCalled();
+    expect(replaceMock).toHaveBeenCalledWith('/login');
   });
 });

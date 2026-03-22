@@ -14,13 +14,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const session = useAuthStore((state) => state.session);
   const signOut = useAuthStore((state) => state.signOut);
   const updateUser = useAuthStore((state) => state.updateUser);
+  const sessionToken = session?.token;
 
   useEffect(() => {
     hydrateSession();
   }, [hydrateSession]);
 
   useEffect(() => {
-    if (!session) {
+    if (!sessionToken) {
       return;
     }
 
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       isActive = false;
     };
-  }, [session, signOut, updateUser]);
+  }, [sessionToken, signOut, updateUser]);
 
   return <>{children}</>;
 }

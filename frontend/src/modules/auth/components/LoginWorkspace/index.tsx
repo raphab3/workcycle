@@ -67,6 +67,11 @@ export function LoginWorkspace() {
   });
 
   useEffect(() => {
+    if (searchParams?.get('logout') === '1') {
+      router.replace('/login');
+      return;
+    }
+
     const authToken = searchParams?.get('authToken');
     const authUserId = searchParams?.get('authUserId');
     const authEmail = searchParams?.get('authEmail');
