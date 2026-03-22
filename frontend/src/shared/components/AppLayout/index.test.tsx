@@ -7,14 +7,19 @@ import { AppLayout } from './index';
 import { ThemeProvider } from '@/shared/theme';
 
 const usePathnameMock = vi.fn();
+const replaceMock = vi.fn();
 
 vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
+  useRouter: () => ({
+    replace: replaceMock,
+  }),
 }));
 
 describe('AppLayout', () => {
   beforeEach(() => {
     resetWorkspaceStore();
+    replaceMock.mockReset();
   });
 
   it('renders sidebar, header and nested content', () => {

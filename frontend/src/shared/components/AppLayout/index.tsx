@@ -2,9 +2,10 @@
 
 import { Bell, LogOut, Menu, MonitorCog, MoonStar, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, SunMedium, UserCircle2, X } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 
+import { useAuthStore } from '@/modules/auth/store/useAuthStore';
 import { AppNavigation } from '@/shared/components/AppNavigation/index';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
@@ -18,15 +19,23 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpenPath, setMobileSidebarOpenPath] = useState<string | null>(null);
+  const authSession = useAuthStore((state) => state.session);
+  const signOut = useAuthStore((state) => state.signOut);
   const projects = useWorkspaceStore((state) => state.projects);
   const isMobileSidebarOpen = mobileSidebarOpenPath === pathname;
   const activeAllocationPct = useMemo(
     () => projects.filter((project) => project.status === 'active').reduce((total, project) => total + project.allocationPct, 0),
     [projects],
   );
+
+  function handleSignOut() {
+    signOut();
+    router.replace('/login');
+  }
 
   return (
     <div className={appLayoutStyles.shell}>
@@ -112,7 +121,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Settings className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Configuracoes</span>}
                 </button>
-                <button className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} type="button">
+                <button className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} onClick={handleSignOut} type="button">
                   <LogOut className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Sair</span>}
                 </button>
@@ -148,7 +157,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <button aria-label="Notificacoes" className={appLayoutStyles.iconButton} type="button">
                   <Bell className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
-                <button aria-label="Conta do usuario" className={appLayoutStyles.iconButton} type="button">
+                <button aria-label={authSession ? `Conta de ${authSession.displayName}` : 'Conta do usuario'} className={appLayoutStyles.iconButton} title={authSession?.email} type="button">
                   <UserCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
                 {isMobileSidebarOpen && (

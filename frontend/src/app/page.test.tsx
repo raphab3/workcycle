@@ -7,11 +7,11 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('RootPage', () => {
-  it('redirects the product entry to the dashboard', async () => {
+  it('redirects the product entry to the login flow', async () => {
     const { default: RootPage } = await import('./page');
 
     RootPage();
 
-    expect(redirectMock).toHaveBeenCalledWith('/dashboard');
+    expect(redirectMock).toHaveBeenCalledWith('/login');
   });
 });

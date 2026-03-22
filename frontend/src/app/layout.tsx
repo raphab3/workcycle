@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 
+import { AuthShell } from '@/modules/auth';
 import { AppProviders } from '@/providers';
-import { AppLayout } from '@/shared/components/AppLayout';
 import '@/shared/styles/global.css';
 
 const inter = Inter({
@@ -58,7 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.variable} ${manrope.variable}`}>
         <AppProviders>
-          <AppLayout>{children}</AppLayout>
+          <AuthShell>{children}</AuthShell>
         </AppProviders>
       </body>
     </html>
