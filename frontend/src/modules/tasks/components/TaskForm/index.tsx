@@ -69,6 +69,7 @@ export function TaskForm({ autosave = false, autosaveDelayMs = 700, columns, def
   });
 
   const selectedColumnId = watch('columnId');
+  const selectedStatus = watch('status');
   const checklist = watch('checklist');
   const watchedValues = watch();
 
@@ -93,10 +94,10 @@ export function TaskForm({ autosave = false, autosaveDelayMs = 700, columns, def
   useEffect(() => {
     const selectedColumn = columns.find((column) => column.id === selectedColumnId);
 
-    if (selectedColumn) {
+    if (selectedColumn && selectedStatus !== selectedColumn.status) {
       setValue('status', selectedColumn.status, { shouldDirty: true, shouldValidate: true });
     }
-  }, [columns, selectedColumnId, setValue]);
+  }, [columns, selectedColumnId, selectedStatus, setValue]);
 
   function handleSubmitForm(values: TaskFormSchemaOutput) {
     onSubmitTask(values, defaultValues?.id);
@@ -201,7 +202,7 @@ export function TaskForm({ autosave = false, autosaveDelayMs = 700, columns, def
 
         <div className={taskFormStyles.field}>
           <label className={taskFormStyles.label} htmlFor="task-status-preview">Fase vinculada</label>
-          <div className={taskFormStyles.preview} id="task-status-preview">{statusLabels[watch('status')]}</div>
+          <div className={taskFormStyles.preview} id="task-status-preview">{statusLabels[selectedStatus]}</div>
           <p className={taskFormStyles.helper}>A fase operacional acompanha a coluna escolhida no board.</p>
         </div>
 

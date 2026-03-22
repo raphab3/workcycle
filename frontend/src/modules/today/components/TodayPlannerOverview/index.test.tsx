@@ -137,7 +137,7 @@ describe('TodayPlannerOverview', () => {
     await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
     await vi.advanceTimersByTimeAsync(1_200);
 
-    expect(screen.getByRole('dialog', { name: /Ciclo do dia encerrando/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /Virada do dia em andamento/i })).toBeInTheDocument();
     expect(screen.getByText(/Horas registradas hoje/i)).toBeInTheDocument();
 
     vi.useRealTimers();

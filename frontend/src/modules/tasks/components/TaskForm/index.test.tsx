@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
@@ -49,14 +49,13 @@ describe('TaskForm', () => {
   });
 
   it('autosaves valid changes when enabled for editing', async () => {
-    vi.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup();
     const onSubmitTask = vi.fn();
 
     render(
       <TaskForm
         autosave
-        autosaveDelayMs={300}
+        autosaveDelayMs={50}
         columns={defaultTaskColumns}
         defaultValues={mockTasks[0]}
         onCancelEdit={vi.fn()}
@@ -67,13 +66,12 @@ describe('TaskForm', () => {
 
     await user.clear(screen.getByLabelText('Titulo da tarefa'));
     await user.type(screen.getByLabelText('Titulo da tarefa'), 'Ajustar migration faturamento v2');
-    await vi.advanceTimersByTimeAsync(350);
 
-    expect(onSubmitTask).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Ajustar migration faturamento v2' }),
-      'billing-migration',
-    );
-
-    vi.useRealTimers();
+    await waitFor(() => {
+      expect(onSubmitTask).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Ajustar migration faturamento v2' }),
+        'billing-migration',
+      );
+    });
   });
 });

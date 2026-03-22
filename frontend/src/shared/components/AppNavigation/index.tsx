@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, CalendarDays, FolderKanban, ListTodo } from 'lucide-react';
+import { BarChart3, CalendarDays, FolderKanban, LayoutDashboard, ListTodo } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
@@ -10,6 +10,7 @@ import { cn } from '@/shared/utils/cn';
 import { appNavigationStyles } from './styles';
 
 export const navigationItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/hoje', label: 'Hoje', icon: CalendarDays },
   { href: '/semana', label: 'Semana', icon: BarChart3 },
   { href: '/tarefas', label: 'Tarefas', icon: ListTodo },
@@ -30,6 +31,7 @@ export function AppNavigation({ variant = 'header', collapsed = false, onNavigat
     <nav aria-label="Navegacao principal" className={cn(appNavigationStyles.nav, isSidebar ? appNavigationStyles.navSidebar : appNavigationStyles.navHeader)}>
       {navigationItems.map((item) => {
         const isActive = pathname === item.href;
+        const isDashboardItem = item.href === '/dashboard';
         const Icon = item.icon;
 
         return (
@@ -41,8 +43,11 @@ export function AppNavigation({ variant = 'header', collapsed = false, onNavigat
             className={cn(
               appNavigationStyles.link,
               isSidebar ? appNavigationStyles.linkSidebar : appNavigationStyles.linkHeader,
+              isDashboardItem && (isSidebar ? appNavigationStyles.linkSidebarPrimary : appNavigationStyles.linkHeaderPrimary),
               collapsed && isSidebar && appNavigationStyles.linkSidebarCollapsed,
-              isActive && (isSidebar ? appNavigationStyles.linkSidebarActive : appNavigationStyles.linkHeaderActive),
+              isActive && (isSidebar
+                ? (isDashboardItem ? appNavigationStyles.linkSidebarPrimaryActive : appNavigationStyles.linkSidebarActive)
+                : (isDashboardItem ? appNavigationStyles.linkHeaderPrimaryActive : appNavigationStyles.linkHeaderActive)),
             )}
           >
             <Icon className={cn(appNavigationStyles.icon, isActive && appNavigationStyles.iconActive)} aria-hidden="true" />

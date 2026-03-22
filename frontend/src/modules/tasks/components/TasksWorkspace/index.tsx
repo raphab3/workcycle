@@ -11,6 +11,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/component
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog/index';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { OverlayPanel } from '@/shared/components/OverlayPanel/index';
+import { SectionIntro } from '@/shared/components/SectionIntro';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { TaskFilters } from '../TaskFilters/index';
@@ -108,6 +109,12 @@ export function TasksWorkspace() {
   return (
     <div className={tasksWorkspaceStyles.layout}>
       <div className={tasksWorkspaceStyles.stack}>
+        <SectionIntro
+          eyebrow="Painel de tasks"
+          title="Gestao editorial de tarefas com prioridade, prazo e associacao por projeto"
+          description="Organize a carteira por projeto, mova tarefas entre colunas e ajuste o cycle sem perder visibilidade da carga aberta e dos riscos imediatos."
+        />
+
         {projects.length === 0 && (
           <EmptyState
             eyebrow="Tarefas"

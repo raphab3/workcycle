@@ -1,0 +1,17 @@
+export const dashboardTimelineChartStyles = {
+  container: 'grid gap-5',
+  copy: 'text-sm leading-6 text-muted-foreground',
+  legend: 'flex flex-wrap gap-3',
+  legendItem: 'inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground',
+  legendDot: 'h-2.5 w-2.5 rounded-full',
+  legendLine: 'h-[2px] w-5 rounded-full bg-slate-900',
+  scroller: 'overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  chartFrame: 'grid gap-3',
+  svg: 'h-[220px] w-full rounded-[1.5rem] bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.72))] p-2',
+  totalLine: 'fill-none stroke-slate-900 stroke-[2.5]',
+  totalPoint: 'fill-slate-900',
+  axis: 'grid auto-cols-[minmax(28px,1fr)] grid-flow-col gap-1',
+  axisItem: 'grid gap-1 text-center',
+  axisLabel: 'text-[11px] uppercase tracking-[0.14em] text-muted-foreground',
+  axisValue: 'text-[11px] text-foreground/78',
+};

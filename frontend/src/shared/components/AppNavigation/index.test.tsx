@@ -10,15 +10,17 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('AppNavigation', () => {
-  it('renders the four main routes', () => {
+  it('renders the five main routes with dashboard first', () => {
     usePathnameMock.mockReturnValue('/hoje');
 
     render(<AppNavigation />);
 
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hoje' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Semana' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tarefas' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Projetos' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link')[0]).toHaveTextContent('Dashboard');
   });
 
   it('marks the current route as active', () => {
@@ -35,6 +37,7 @@ describe('AppNavigation', () => {
 
     render(<AppNavigation variant="sidebar" collapsed />);
 
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hoje' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Projetos' })).toBeInTheDocument();
   });

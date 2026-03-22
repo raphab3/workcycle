@@ -1,7 +1,7 @@
 export const tasksWorkspaceStyles = {
   layout: 'grid gap-6',
   stack: 'grid gap-6',
-  toolbar: 'flex flex-col gap-3 rounded-[1.5rem] border border-border/60 bg-card/90 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.28)] md:flex-row md:items-center md:justify-between',
+  toolbar: 'flex flex-col gap-4 rounded-[1.5rem] border border-border/60 bg-card/90 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.28)] md:flex-row md:items-center md:justify-between',
   toolbarCopy: 'grid gap-2',
   toolbarTitle: 'text-lg font-semibold tracking-tight text-foreground',
   toolbarDescription: 'text-sm leading-6 text-muted-foreground',
@@ -11,7 +11,7 @@ export const tasksWorkspaceStyles = {
   compactLoad: 'rounded-[1.5rem] border border-border/60 bg-card/90 p-4 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.28)]',
   compactLoadHeader: 'mb-4 flex flex-col gap-1',
   compactLoadGrid: 'grid gap-3 md:grid-cols-2 xl:grid-cols-4',
-  projectItem: 'flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-3 py-3',
+  projectItem: 'flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-3 py-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between',
   projectMeta: 'flex items-center gap-3',
   color: 'h-3.5 w-3.5 rounded-full',
   projectName: 'text-sm font-medium text-foreground',

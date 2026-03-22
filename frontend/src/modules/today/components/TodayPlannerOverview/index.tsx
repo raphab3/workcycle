@@ -304,10 +304,10 @@ export function TodayPlannerOverview() {
           />
           <div className={todayPlannerOverviewStyles.noticeActions}>
             <Button type="button" variant="outline" onClick={() => openDrawer('close')}>
-              Revisar conciliacao
+              Revisar fechamento
             </Button>
             <Button type="button" variant="ghost" onClick={clearRolloverNotice}>
-              Dispensar aviso
+              Dispensar por agora
             </Button>
           </div>
         </div>
@@ -658,16 +658,16 @@ export function TodayPlannerOverview() {
       )}
 
       <OverlayPanel
-        description="A virada do dia esta proxima. Escolha se voce encerra por hoje ou se deseja continuar no proximo cycle."
+        description="Faltam poucos minutos para a virada. Decida se este dia deve ser fechado agora ou se voce quer entrar no proximo ciclo mantendo a continuidade do trabalho."
         isOpen={isRolloverPromptOpen}
         onClose={() => setIsRolloverPromptOpen(false)}
-        title="Ciclo do dia encerrando"
+        title="Virada do dia em andamento"
       >
         <div className={todayPlannerOverviewStyles.drawerStack}>
           <section className={todayPlannerOverviewStyles.drawerSection}>
             <div className={todayPlannerOverviewStyles.drawerSectionHeader}>
-              <h3 className={todayPlannerOverviewStyles.drawerSectionTitle}>Resumo da virada</h3>
-              <p className={todayPlannerOverviewStyles.drawerSectionCopy}>Confira o que esta em andamento antes da meia-noite.</p>
+              <h3 className={todayPlannerOverviewStyles.drawerSectionTitle}>O que fica carregado para a virada</h3>
+              <p className={todayPlannerOverviewStyles.drawerSectionCopy}>Confira o estado atual antes de decidir entre fechar este dia ou seguir direto para o novo ciclo.</p>
             </div>
             <div className={todayPlannerOverviewStyles.drawerSummaryRollover}>
               <div className={todayPlannerOverviewStyles.drawerSummaryItem}>
@@ -689,16 +689,16 @@ export function TodayPlannerOverview() {
                 onChange={(event) => setKeepSameProjectOnRollover(event.target.checked)}
                 type="checkbox"
               />
-              <span>Manter o mesmo projeto ativo ao abrir o proximo cycle</span>
+              <span>Entrar no novo ciclo com o mesmo projeto ja ativo</span>
             </label>
           </section>
 
           <div className={todayPlannerOverviewStyles.drawerFooter}>
             <Button type="button" variant="outline" onClick={handleCloseForTodayAtBoundary}>
-              Encerrar por hoje
+              Fechar este dia
             </Button>
             <Button type="button" onClick={handleContinueNextCycle}>
-              Continuar no proximo cycle
+              Seguir para o novo dia
             </Button>
           </div>
         </div>

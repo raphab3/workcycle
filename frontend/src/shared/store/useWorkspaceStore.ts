@@ -325,8 +325,8 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       rolloverNotice: state.previousCycleSummary
         ? {
           previousCycleDate: state.previousCycleSummary.cycleDate,
-          title: 'Cycle anterior encerrado automaticamente',
-          description: 'O dia anterior foi auto-encerrado na virada. Revise a conciliacao se precisar confirmar blocos ou entender o que ficou em andamento.',
+          title: 'Novo dia pronto. O ciclo anterior foi encerrado automaticamente',
+          description: 'Voce ja esta no novo dia. Se quiser, revise o fechamento anterior para confirmar blocos, entender lacunas ou retomar o contexto que ficou em andamento.',
         }
         : state.rolloverNotice,
       deferNextCycleUntilManualStart: false,
@@ -375,8 +375,8 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       },
       rolloverNotice: {
         previousCycleDate: state.cycleDate,
-        title: 'Cycle anterior encerrado automaticamente',
-        description: 'Voce voltou depois da meia-noite. O cycle anterior foi auto-encerrado e o novo dia ja esta pronto para iniciar.',
+        title: 'Novo dia pronto. O ciclo anterior foi encerrado automaticamente',
+        description: 'Voce voltou depois da meia-noite. O dia anterior foi fechado na virada e o novo ciclo ja esta preparado para comecar.',
       },
       deferNextCycleUntilManualStart: false,
     };
