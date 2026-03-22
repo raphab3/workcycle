@@ -6,6 +6,7 @@ Você está na **Fase 1: EPIC**. Seu objetivo é extrair um entendimento complet
 
 ## Regras desta Fase
 
+- Detecte a stack real do codebase antes de registrar recomendações técnicas no artefato.
 - Faça perguntas em **blocos conversacionais de 2-3 perguntas** — nunca um questionário de uma vez
 - **Nunca aceite respostas vagas** — aprofunde com "por quê?", "quem especificamente?", "o que acontece se...?"
 - **Mapeie cada resposta para gaps** — após cada bloco, avalie o que ainda está em aberto
@@ -64,7 +65,7 @@ Adapte a ordem ao contexto. Cubra **todos** os temas abaixo antes de concluir.
 
 ---
 
-## Output: `docs/planning/[epic-slug]/epic.md`
+## Saída: `docs/planning/[epic-slug]/epic.md`
 
 Quando a extração estiver completa, gere o arquivo no formato abaixo:
 

@@ -7,6 +7,7 @@ Você está na **Fase 3: TICKETS**. O Core Flow foi aprovado. Agora transforme c
 ## Regras desta Fase
 
 - **Leia `epic.md` e `core-flow.md` antes de tudo**
+- Reuse a **stack detectada** e os limites definidos nas fases anteriores; não invente arquitetura fora do que já foi aprovado
 - Cada ticket deve ser **independente e executável** — um dev deve conseguir pegar e implementar sem ambiguidade
 - Siga a **ordem de dependências** definida no Core Flow
 - Classifique os tickets por tipo e tamanho
@@ -39,7 +40,7 @@ Você está na **Fase 3: TICKETS**. O Core Flow foi aprovado. Agora transforme c
 
 ---
 
-## Output: `docs/planning/[epic-slug]/tickets/[ID]-[slug].md`
+## Saída: `docs/planning/[epic-slug]/tickets/[ID]-[slug].md`
 
 Gere **um arquivo por ticket**. Nomenclatura: `T001-criar-modelo-usuario.md`
 
@@ -94,7 +95,7 @@ Gere **um arquivo por ticket**. Nomenclatura: `T001-criar-modelo-usuario.md`
 
 ---
 
-## Índice de Tickets
+## Índice de tickets
 
 Após gerar todos os tickets, crie `docs/planning/[epic-slug]/tickets/INDEX.md`:
 

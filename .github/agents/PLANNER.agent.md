@@ -7,6 +7,14 @@ handoffs:
     agent: frontend-reviewer
     prompt: Revise os tickets e o plano frontend aprovados, apontando lacunas, riscos arquiteturais e validações faltantes antes da implementação.
     send: false
+  - label: Planejar implementação backend
+    agent: backend-architect
+    prompt: Transforme os tickets aprovados em um plano de implementação backend alinhado à arquitetura modular do repositório.
+    send: false
+  - label: Iniciar implementação backend
+    agent: backend-implementer
+    prompt: Implemente os tickets aprovados seguindo a arquitetura backend do repositório e os artefatos em docs/planning/.
+    send: false
   - label: Planejar implementação frontend
     agent: frontend-architect
     prompt: Transforme os tickets aprovados em um plano de implementação frontend alinhado à arquitetura do repositório.
@@ -48,8 +56,10 @@ Use este agente para conduzir planejamento guiado por especificação antes da i
 ## Referências
 
 - [.github/instructions/planning/spec-driven-planning.instructions.md](../instructions/planning/spec-driven-planning.instructions.md)
+- [backend/docs/ARCHITECTURE-WorkCycle.md](../../backend/docs/ARCHITECTURE-WorkCycle.md)
 - [.github/prompts/0-kickoff.prompt.md](../prompts/0-kickoff.prompt.md)
 - [.github/prompts/1-epic.prompt.md](../prompts/1-epic.prompt.md)
 - [.github/prompts/2-core-flow.prompt.md](../prompts/2-core-flow.prompt.md)
 - [.github/prompts/3-tickets.prompt.md](../prompts/3-tickets.prompt.md)
+
 

@@ -7,6 +7,7 @@ Você está na **Fase 2: CORE FLOW**. O Epic foi aprovado. Agora decomponha o si
 ## Regras desta Fase
 
 - **Leia o `epic.md` antes de tudo** — todo Core Flow deriva do Epic aprovado
+- Reuse a **stack detectada no Epic** e só complemente detalhes técnicos quando eles estiverem suportados pelo codebase ou pelo usuário
 - Identifique entre **3 e 8 fluxos** (menos = granularidade insuficiente, mais = excesso de complexidade)
 - Para cada fluxo, defina: o que faz, quem usa, componentes envolvidos, dependências
 - Gere um **diagrama Mermaid** para o fluxo principal e para arquitetura geral
@@ -14,7 +15,7 @@ Você está na **Fase 2: CORE FLOW**. O Epic foi aprovado. Agora decomponha o si
 
 ---
 
-## Estrutura de Decomposição
+## Estrutura de decomposição
 
 ### 1. Fluxos do Usuário (User Flows)
 Mapeie a jornada do usuário pelos principais cenários:
@@ -75,7 +76,7 @@ sequenceDiagram
 
 ---
 
-## Output: `docs/planning/[epic-slug]/core-flow.md`
+## Saída: `docs/planning/[epic-slug]/core-flow.md`
 
 ```markdown
 # Core Flow: [Nome do Epic]
