@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T001 concluído em 2026-03-22
-- **Próximo ticket sugerido:** T002 — Ajustar camada HTTP e cache do frontend
+- **Checkpoint atual:** T002 concluído em 2026-03-22
+- **Próximo ticket sugerido:** T003 — Revisar contratos backend de Projects
 
 ## Por Fluxo
 
@@ -14,13 +14,13 @@
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
 | T001 | Consolidar contrato auth e envelope HTTP | API | M | — | Concluído |
-| T002 | Ajustar camada HTTP e cache do frontend | INT | M | T001 | Pronto para iniciar |
+| T002 | Ajustar camada HTTP e cache do frontend | INT | M | T001 | Concluído |
 
 ### CF-02: Projects como primeiro domínio persistido de ponta a ponta
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T003 | Revisar contratos backend de Projects | API | S | T001 | Backlog |
+| T003 | Revisar contratos backend de Projects | API | S | T001 | Pronto para iniciar |
 | T004 | Migrar Projects para integração completa | FEAT | M | T002, T003 | Backlog |
 
 ### CF-03: Tasks persistidas com board e vínculo ao ciclo diário

@@ -18,6 +18,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 
 import type { AuthSessionDTO } from '@/modules/auth/types';
 
+type SearchParamsLike = ReturnType<typeof useSearchParams>;
+
 import { loginWorkspaceStyles } from './styles';
 
 function decodeBase64Url(value: string) {
@@ -27,7 +29,7 @@ function decodeBase64Url(value: string) {
   return window.atob(`${normalized}${padding}`);
 }
 
-function buildLegacySession(searchParams: ReadonlyURLSearchParams | null): AuthSessionDTO | null {
+function buildLegacySession(searchParams: SearchParamsLike): AuthSessionDTO | null {
   const authToken = searchParams?.get('authToken');
   const authUserId = searchParams?.get('authUserId');
   const authEmail = searchParams?.get('authEmail');

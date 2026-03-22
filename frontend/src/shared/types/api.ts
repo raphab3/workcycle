@@ -21,6 +21,7 @@ export interface PaginationParams {
 }
 
 export interface ApiError {
+  code?: string;
   statusCode: number;
   message: string;
   errors?: Record<string, string[]>;

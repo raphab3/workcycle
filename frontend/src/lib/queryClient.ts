@@ -2,7 +2,13 @@ import axios from 'axios';
 
 import { QueryClient } from '@tanstack/react-query';
 
-function shouldRetryRequest(failureCount: number, error: unknown) {
+export const httpClientPolicy = {
+  authFailureMode: 'refresh-and-retry' as const,
+  defaultRetry: 1,
+  defaultStaleTimeMs: 1000 * 60 * 5,
+};
+
+export function shouldRetryRequest(failureCount: number, error: unknown) {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
 
@@ -11,15 +17,16 @@ function shouldRetryRequest(failureCount: number, error: unknown) {
     }
   }
 
-  return failureCount < 1;
+  return failureCount < httpClientPolicy.defaultRetry;
 }
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: httpClientPolicy.defaultStaleTimeMs,
       gcTime: 1000 * 60 * 30,
       retry: shouldRetryRequest,
+      refetchOnReconnect: false,
       refetchOnWindowFocus: false,
     },
     mutations: {
