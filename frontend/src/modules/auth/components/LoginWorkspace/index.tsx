@@ -14,9 +14,6 @@ import { authService } from '@/modules/auth/services/authService';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
-import { SectionIntro } from '@/shared/components/SectionIntro';
-import { StateNotice } from '@/shared/components/StateNotice';
-
 import { loginWorkspaceStyles } from './styles';
 
 const featureCards = [
@@ -166,30 +163,6 @@ export function LoginWorkspace() {
               <CardTitle>Escolha como entrar no workspace</CardTitle>
             </CardHeader>
             <CardContent className={loginWorkspaceStyles.stack}>
-              <SectionIntro
-                eyebrow="Workspace access"
-                title="Email e senha primeiro, Google quando fizer sentido"
-                description="O fluxo principal agora cria e autentica usuarios por email. O Google continua disponivel como entrada opcional e como integracao complementar dentro das configuracoes."
-              />
-
-              {authStatusQuery.isError && (
-                <StateNotice
-                  eyebrow="Falha na leitura do backend"
-                  title="Nao foi possivel verificar o estado da autenticacao"
-                  description="A API de auth nao respondeu corretamente. Resolva isso antes de confiar no login desta sessao."
-                  tone="warning"
-                />
-              )}
-
-              {!authStatusQuery.isError && !oauthConfigured && (
-                <StateNotice
-                  eyebrow="OAuth pendente"
-                  title="Google login ainda depende da conclusao do backend"
-                  description="O frontend ja esta pronto para consumir o endpoint de OAuth assim que ele existir. Ate la, contas conectadas entram direto e o modo local cobre o restante."
-                  tone="info"
-                />
-              )}
-
               <div className={loginWorkspaceStyles.actions}>
                 <Button onClick={() => setAuthMode('login')} size="sm" type="button" variant={authMode === 'login' ? 'default' : 'outline'}>
                   Entrar

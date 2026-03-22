@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell, LogOut, Menu, MonitorCog, MoonStar, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, SunMedium, UserCircle2, X } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
@@ -20,7 +20,6 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -37,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   function handleSignOut() {
     signOut();
     queryClient.clear();
-    router.replace('/login?logout=1');
+    setMobileSidebarOpenPath(null);
   }
 
   return (
@@ -124,10 +123,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Settings className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Configuracoes</span>}
                 </Link>
-                <button className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} onClick={handleSignOut} type="button">
+                <Link className={cn(appLayoutStyles.secondaryAction, isSidebarCollapsed && appLayoutStyles.secondaryActionCollapsed)} href="/login?logout=1" onClick={handleSignOut}>
                   <LogOut className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                   {!isSidebarCollapsed && <span>Sair</span>}
-                </button>
+                </Link>
               </div>
             </div>
           </div>

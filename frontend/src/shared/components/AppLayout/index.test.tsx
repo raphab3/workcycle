@@ -9,7 +9,6 @@ import { AppLayout } from './index';
 import { ThemeProvider } from '@/shared/theme';
 
 const usePathnameMock = vi.fn();
-const replaceMock = vi.fn();
 
 function renderAppLayout() {
   const queryClient = new QueryClient({
@@ -33,16 +32,12 @@ function renderAppLayout() {
 
 vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
-  useRouter: () => ({
-    replace: replaceMock,
-  }),
 }));
 
 describe('AppLayout', () => {
   beforeEach(() => {
     resetAuthStore();
     resetWorkspaceStore();
-    replaceMock.mockReset();
   });
 
   it('renders sidebar, header and nested content', () => {
@@ -101,10 +96,10 @@ describe('AppLayout', () => {
 
     renderAppLayout();
 
-    await user.click(screen.getByRole('button', { name: 'Sair' }));
+    await user.click(screen.getByRole('link', { name: 'Sair' }));
 
     expect(useAuthStore.getState().session).toBeNull();
     expect(useAuthStore.getState().sessionStatus).toBe('unauthenticated');
-    expect(replaceMock).toHaveBeenCalledWith('/login?logout=1');
+    expect(screen.getByRole('link', { name: 'Sair' })).toHaveAttribute('href', '/login?logout=1');
   });
 });
