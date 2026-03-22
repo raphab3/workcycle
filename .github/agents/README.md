@@ -6,12 +6,23 @@ Este diretório reúne agentes especializados para planejamento, implementação
 
 ### PLANNER
 - Arquivo: [PLANNER.agent.md](./PLANNER.agent.md)
-- Use quando a ideia ainda estiver vaga e você precisar sair de problema aberto para artefatos em `docs/planning/`.
-- Fluxo principal: `Kickoff -> Epic -> Core Flow -> Tickets`.
-- O agente foi configurado para `target: vscode`, usando `vscode/askQuestions` para rodadas curtas com opções clicáveis sempre que houver escolhas delimitadas.
-- Após aprovação de cada fase, use os handoffs clicáveis para seguir para `CORE FLOW`, `TICKETS` ou para agentes de revisão e execução.
-- Assim que o `EPIC` for aprovado, o agente deve criar `docs/planning/[epic-slug]/` automaticamente e salvar `epic.md` nessa pasta.
-- O `epic-slug` deve ser gerado automaticamente a partir do título do Epic em formato kebab-case ASCII.
+- Use como launcher do workflow de especificação.
+- Ele encaminha para os agentes de fase corretos em vez de concentrar toda a lógica de descoberta, decomposição e tickets no mesmo lugar.
+
+### Epic
+- Arquivo: [Epic.agent.md](./Epic.agent.md)
+- Use para a Fase 1, quando a iniciativa ainda precisa ser extraída, clarificada e transformada em um EPIC aprovado.
+- Faz rodadas curtas com perguntas na UI, rejeita respostas vagas e cria `docs/planning/[epic-slug]/epic.md` após aprovação.
+
+### Core Flow
+- Arquivo: [Core-Flow.agent.md](./Core-Flow.agent.md)
+- Use para a Fase 2, quando já existir um EPIC aprovado e você precisar decompor a solução em fluxos, módulos e dependências.
+- Tem handoff para voltar ao EPIC com feedback ou avançar para tickets.
+
+### Tickets
+- Arquivo: [Tickets.agent.md](./Tickets.agent.md)
+- Use para a Fase 3, quando já existir um CORE FLOW aprovado e você precisar gerar tickets detalhados e executáveis.
+- Tem handoffs para voltar ao CORE FLOW, revisar tickets e iniciar planejamento ou implementação.
 
 ### frontend-architect
 - Arquivo: [frontend-architect.agent.md](./frontend-architect.agent.md)
@@ -35,14 +46,20 @@ Este diretório reúne agentes especializados para planejamento, implementação
 
 ## Sequências comuns
 
-1. Descoberta e especificação: `PLANNER`
-2. Planejamento técnico frontend: `frontend-architect`
-3. Implementação frontend: `frontend-implementer`
-4. Revisão frontend: `frontend-reviewer`
+1. Entrada do workflow: `PLANNER`
+2. Fase 1: `Epic`
+3. Fase 2: `Core Flow`
+4. Fase 3: `Tickets`
+5. Planejamento técnico frontend: `frontend-architect`
+6. Implementação frontend: `frontend-implementer`
+7. Revisão frontend: `frontend-reviewer`
 
-1. Descoberta e especificação: `PLANNER`
-2. Planejamento técnico backend: `backend-architect`
-3. Implementação backend: `backend-implementer`
+1. Entrada do workflow: `PLANNER`
+2. Fase 1: `Epic`
+3. Fase 2: `Core Flow`
+4. Fase 3: `Tickets`
+5. Planejamento técnico backend: `backend-architect`
+6. Implementação backend: `backend-implementer`
 
 ## Referências relacionadas
 
