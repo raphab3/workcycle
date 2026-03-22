@@ -145,8 +145,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </div>
               </div>
 
-              <AppNavigation variant="header" />
-
               <div className={appLayoutStyles.headerRight}>
                 <label className={appLayoutStyles.searchField}>
                   <Search className="h-4 w-4" aria-hidden="true" />

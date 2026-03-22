@@ -46,7 +46,7 @@ describe('AppLayout', () => {
     renderAppLayout();
 
     expect(screen.getByText('WorkCycle')).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Hoje' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Hoje' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Pular para o conteudo' })).toBeInTheDocument();
     expect(screen.getByLabelText('Buscar projeto')).toBeInTheDocument();
     expect(screen.getByText('Conteudo do ciclo')).toBeInTheDocument();
