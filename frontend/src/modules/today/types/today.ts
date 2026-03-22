@@ -15,3 +15,27 @@ export interface SuggestedAllocation {
   effortHours: number;
   reason: string;
 }
+
+export type SessionState = 'idle' | 'running' | 'paused_manual' | 'paused_inactivity' | 'completed';
+
+export interface TimeBlock {
+  projectId: string;
+  startedAt: string;
+  endedAt: string | null;
+  confirmedMinutes: number;
+}
+
+export interface PulseRecord {
+  firedAt: string;
+  respondedAt: string | null;
+  status: 'confirmed' | 'unconfirmed';
+}
+
+export type CycleState = 'PLANNED' | 'ACTIVE' | 'CLOSED' | 'AUTO_CLOSED' | 'RECONCILED';
+
+export interface CycleSnapshot {
+  plannedHours: number;
+  actualHours: number;
+  completedTaskIds: string[];
+  incompleteTaskIds: string[];
+}

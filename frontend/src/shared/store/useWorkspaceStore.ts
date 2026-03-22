@@ -7,8 +7,9 @@ import type { Project, ProjectFormValues } from '@/modules/projects/types';
 import { defaultTaskColumns } from '@/modules/tasks/mocks/taskColumns';
 import { mockTasks } from '@/modules/tasks/mocks/tasks';
 import type { Task, TaskColumn, TaskColumnFormValues, TaskFormValues } from '@/modules/tasks/types';
-import type { TodayCycleValues } from '@/modules/today/types';
+import type { CycleSnapshot, CycleState, PulseRecord, SessionState, TimeBlock, TodayCycleValues } from '@/modules/today/types';
 import { buildSuggestedAllocations, createActualHoursMap, getDefaultCycleValues } from '@/modules/today/utils/planner';
+import { computeCycleSnapshot } from '@/modules/today/utils/session';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 
 function cloneProject(project: Project): Project {
@@ -46,6 +47,14 @@ function getColumnIdForStatus(columns: TaskColumn[], status: Task['status']) {
   return columns.find((column) => column.status === status)?.id ?? columns[0]?.id ?? 'backlog';
 }
 
+function getTodayISODate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function createInitialWorkspaceState() {
   const projects = mockProjects.map(cloneProject);
   const taskColumns = defaultTaskColumns.map(cloneTaskColumn);
@@ -61,6 +70,14 @@ function createInitialWorkspaceState() {
     tasks,
     todayCycleValues,
     todayActualHours: createActualHoursMap(allocations),
+    sessionState: 'idle' as SessionState,
+    sessionStartedAt: null as string | null,
+    activeProjectId: null as string | null,
+    timeBlocks: [] as TimeBlock[],
+    pulseHistory: [] as PulseRecord[],
+    cycleDate: getTodayISODate(),
+    cycleState: 'PLANNED' as CycleState,
+    cycleSnapshot: null as CycleSnapshot | null,
   };
 }
 
@@ -70,6 +87,21 @@ interface WorkspaceStoreState {
   tasks: Task[];
   todayCycleValues: TodayCycleValues;
   todayActualHours: Record<string, number>;
+  sessionState: SessionState;
+  sessionStartedAt: string | null;
+  activeProjectId: string | null;
+  timeBlocks: TimeBlock[];
+  pulseHistory: PulseRecord[];
+  cycleDate: string;
+  cycleState: CycleState;
+  cycleSnapshot: CycleSnapshot | null;
+  startSession: (projectId: string) => void;
+  pauseSession: (reason: 'manual' | 'inactivity') => void;
+  resumeSession: () => void;
+  switchActiveProject: (projectId: string) => void;
+  closeDay: () => void;
+  setCycleState: (state: CycleState) => void;
+  recordPulse: (status: 'confirmed' | 'unconfirmed') => void;
   addProject: (values: ProjectFormValues) => void;
   updateProject: (projectId: string, values: ProjectFormValues) => void;
   toggleProjectStatus: (projectId: string) => void;
@@ -91,6 +123,77 @@ interface WorkspaceStoreState {
 
 export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
   ...createInitialWorkspaceState(),
+  startSession: (projectId) => set((state) => {
+    if (state.sessionState !== 'idle') return state;
+    const now = new Date().toISOString();
+    return {
+      sessionState: 'running',
+      activeProjectId: projectId,
+      sessionStartedAt: now,
+      cycleState: 'ACTIVE',
+      timeBlocks: [...state.timeBlocks, { projectId, startedAt: now, endedAt: null, confirmedMinutes: 0 }],
+    };
+  }),
+  pauseSession: (reason) => set((state) => {
+    if (state.sessionState !== 'running') return state;
+    const now = new Date().toISOString();
+    return {
+      sessionState: reason === 'manual' ? 'paused_manual' : 'paused_inactivity',
+      timeBlocks: state.timeBlocks.map((block) =>
+        block.endedAt === null ? { ...block, endedAt: now } : block,
+      ),
+    };
+  }),
+  resumeSession: () => set((state) => {
+    if (state.sessionState !== 'paused_manual' && state.sessionState !== 'paused_inactivity') return state;
+    if (!state.activeProjectId) return state;
+    const now = new Date().toISOString();
+    return {
+      sessionState: 'running',
+      timeBlocks: [...state.timeBlocks, { projectId: state.activeProjectId, startedAt: now, endedAt: null, confirmedMinutes: 0 }],
+    };
+  }),
+  switchActiveProject: (projectId) => set((state) => {
+    if (state.sessionState !== 'running') {
+      return { activeProjectId: projectId };
+    }
+    if (projectId === state.activeProjectId) {
+      return state;
+    }
+    const now = new Date().toISOString();
+    const timeBlocks = state.timeBlocks.map((block) =>
+      block.endedAt === null ? { ...block, endedAt: now } : block,
+    );
+    return {
+      activeProjectId: projectId,
+      timeBlocks: [...timeBlocks, { projectId, startedAt: now, endedAt: null, confirmedMinutes: 0 }],
+    };
+  }),
+  closeDay: () => set((state) => {
+    if (state.sessionState !== 'running' && state.sessionState !== 'paused_manual' && state.sessionState !== 'paused_inactivity') return state;
+    const now = new Date().toISOString();
+    const updatedTimeBlocks = state.timeBlocks.map((block) =>
+      block.endedAt === null ? { ...block, endedAt: now } : block,
+    );
+    const cycleSnapshot = computeCycleSnapshot({
+      tasks: state.tasks,
+      timeBlocks: updatedTimeBlocks,
+      todayCycleValues: state.todayCycleValues,
+    });
+    return {
+      sessionState: 'completed',
+      cycleState: 'CLOSED',
+      cycleSnapshot,
+      timeBlocks: updatedTimeBlocks,
+    };
+  }),
+  setCycleState: (cycleState) => set({ cycleState }),
+  recordPulse: (status) => set((state) => {
+    const now = new Date().toISOString();
+    return {
+      pulseHistory: [...state.pulseHistory, { firedAt: now, respondedAt: status === 'confirmed' ? now : null, status }],
+    };
+  }),
   addProject: (values) => set((state) => ({
     projects: [
       {
