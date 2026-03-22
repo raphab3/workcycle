@@ -1,8 +1,9 @@
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-import { databaseConfig, env } from '@/config';
-import * as schema from '@/database/schema';
+import { databaseConfig, env } from '@/shared/config';
+import * as schema from '@/shared/database/schema';
 
 export type AppDatabase = ReturnType<typeof createDatabase>['db'];
 
@@ -31,10 +32,12 @@ if (env.NODE_ENV !== 'production') {
   globalDatabase.drizzleSql = database.client;
 }
 
-export const drizzleService = {
-  db: database.db,
-  client: database.client,
-  close: async () => {
+@Injectable()
+export class DrizzleService implements OnModuleDestroy {
+  readonly db = database.db;
+  readonly client = database.client;
+
+  async onModuleDestroy() {
     await database.client.end({ timeout: 5 });
-  },
-};
+  }
+}

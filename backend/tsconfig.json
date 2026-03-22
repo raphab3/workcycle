@@ -6,6 +6,8 @@
     "outDir": "dist",
     "rootDir": "src",
     "baseUrl": ".",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
       "@/*": [
         "src/*"
@@ -24,7 +26,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "src/@types/**/*.d.ts"
+    "src/**/*.d.ts"
   ],
   "exclude": [
     "dist",

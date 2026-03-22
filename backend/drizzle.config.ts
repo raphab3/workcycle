@@ -7,8 +7,8 @@ export default defineConfig({
     url: databaseUrl,
   },
   dialect: 'postgresql',
-  out: './src/database/migrations',
-  schema: './src/database/schema/index.ts',
+  out: './src/shared/database/migrations',
+  schema: './src/shared/database/schema/index.ts',
   strict: true,
   verbose: true,
 });
