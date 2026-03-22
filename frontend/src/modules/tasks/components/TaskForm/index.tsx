@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckSquare2, Plus, Square } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/shared/components/Button';
@@ -44,9 +44,11 @@ const cycleLabels = {
   next: 'Proximo cycle',
 } as const;
 
-export function TaskForm({ columns, defaultValues, onCancelEdit, onSubmitTask, projects }: TaskFormProps) {
+export function TaskForm({ autosave = false, autosaveDelayMs = 700, columns, defaultValues, onCancelEdit, onSubmitTask, projects }: TaskFormProps) {
   const fallbackColumn = columns[0];
   const [checklistDraft, setChecklistDraft] = useState('');
+  const previousTaskIdRef = useRef<string | null>(null);
+  const lastAutosavedSignatureRef = useRef<string | null>(null);
   const emptyValues = useMemo<TaskFormSchemaInput>(() => ({
     ...baseValues,
     columnId: fallbackColumn?.id ?? baseValues.columnId,
@@ -62,14 +64,29 @@ export function TaskForm({ columns, defaultValues, onCancelEdit, onSubmitTask, p
     watch,
   } = useForm<TaskFormSchemaInput, undefined, TaskFormSchemaOutput>({
     resolver: zodResolver(taskFormSchema),
+    mode: autosave ? 'onChange' : 'onSubmit',
     defaultValues: defaultValues ?? emptyValues,
   });
 
   const selectedColumnId = watch('columnId');
   const checklist = watch('checklist');
+  const watchedValues = watch();
 
   useEffect(() => {
-    reset(defaultValues ?? emptyValues);
+    if (defaultValues) {
+      if (previousTaskIdRef.current !== defaultValues.id) {
+        reset(defaultValues);
+        setChecklistDraft('');
+        previousTaskIdRef.current = defaultValues.id;
+        lastAutosavedSignatureRef.current = JSON.stringify(taskFormSchema.parse(defaultValues));
+      }
+
+      return;
+    }
+
+    previousTaskIdRef.current = null;
+    lastAutosavedSignatureRef.current = null;
+    reset(emptyValues);
     setChecklistDraft('');
   }, [defaultValues, emptyValues, reset]);
 
@@ -107,6 +124,33 @@ export function TaskForm({ columns, defaultValues, onCancelEdit, onSubmitTask, p
   function handleRemoveChecklistItem(index: number) {
     setValue('checklist', checklist.filter((_, itemIndex) => itemIndex !== index), { shouldDirty: true, shouldValidate: true });
   }
+
+  useEffect(() => {
+    if (!autosave || !defaultValues) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const parsedValues = taskFormSchema.safeParse(watchedValues);
+
+      if (!parsedValues.success) {
+        return;
+      }
+
+      const autosaveSignature = JSON.stringify(parsedValues.data);
+
+      if (autosaveSignature === lastAutosavedSignatureRef.current) {
+        return;
+      }
+
+      onSubmitTask(parsedValues.data, defaultValues.id);
+      lastAutosavedSignatureRef.current = autosaveSignature;
+    }, autosaveDelayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [autosave, autosaveDelayMs, defaultValues, onSubmitTask, watchedValues]);
 
   return (
     <form className={taskFormStyles.form} onSubmit={handleSubmit(handleSubmitForm)}>
@@ -222,16 +266,22 @@ export function TaskForm({ columns, defaultValues, onCancelEdit, onSubmitTask, p
 
       <div className={taskFormStyles.footer}>
         <p className={taskFormStyles.footerText}>
-          {defaultValues ? 'Edite a tarefa selecionada sem perder a associacao com o projeto.' : 'Cadastre tarefas associando prioridade, prazo e esforco previsto.'}
+          {autosave && defaultValues
+            ? 'Alteracoes validas sao salvas automaticamente neste drawer.'
+            : defaultValues
+              ? 'Edite a tarefa selecionada sem perder a associacao com o projeto.'
+              : 'Cadastre tarefas associando prioridade, prazo e esforco previsto.'}
         </p>
-        <div className={taskFormStyles.actions}>
-          {defaultValues && (
-            <Button type="button" variant="outline" onClick={onCancelEdit}>
-              Cancelar edicao
-            </Button>
-          )}
-          <Button type="submit">{defaultValues ? 'Salvar tarefa' : 'Adicionar tarefa'}</Button>
-        </div>
+        {!autosave && (
+          <div className={taskFormStyles.actions}>
+            {defaultValues && (
+              <Button type="button" variant="outline" onClick={onCancelEdit}>
+                Cancelar edicao
+              </Button>
+            )}
+            <Button type="submit">{defaultValues ? 'Salvar tarefa' : 'Adicionar tarefa'}</Button>
+          </div>
+        )}
       </div>
     </form>
   );

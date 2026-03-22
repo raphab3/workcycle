@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
@@ -97,6 +98,30 @@ describe('TodayPlannerOverview', () => {
 
     expect(movedTask?.cycleAssignment).toBe('next');
     expect(movedTask?.nextCycleStartDate).toBeTruthy();
+  });
+
+  it('autosaves task changes in the page drawer without closing it', async () => {
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /DataVault/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+    await user.click(screen.getByRole('button', { name: /Abrir acoes de Ajustar migration de faturamento/i }));
+    await user.click(screen.getByRole('button', { name: /Abrir tarefa/i }));
+
+    expect(screen.getByRole('dialog', { name: /Ajustar migration de faturamento/i })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Titulo da tarefa'));
+    await user.type(screen.getByLabelText('Titulo da tarefa'), 'Ajustar migration faturamento v2');
+    await vi.advanceTimersByTimeAsync(750);
+
+    expect(screen.getByRole('dialog', { name: /Ajustar migration faturamento v2/i })).toBeInTheDocument();
+    expect(useWorkspaceStore.getState().tasks.find((task) => task.id === 'billing-migration')?.title).toBe('Ajustar migration faturamento v2');
+
+    vi.useRealTimers();
   });
 
   it('opens the close-day drawer from the running state', async () => {

@@ -1,12 +1,9 @@
 import Link from 'next/link';
 import { CheckSquare2, MoreHorizontal } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import { TaskForm } from '@/modules/tasks/components/TaskForm';
-import type { TaskFormValues } from '@/modules/tasks/types';
 import { Button } from '@/shared/components/Button';
 import { CardContent } from '@/shared/components/Card';
-import { OverlayPanel } from '@/shared/components/OverlayPanel';
 import { getTaskDeadlineLabel } from '@/modules/tasks/utils/tasks';
 import { getTodayBoardColumns, getTodayBoardTasks } from '@/modules/today/utils/taskBoard';
 import { cn } from '@/shared/utils/cn';
@@ -27,16 +24,14 @@ const columnToneClassNames = {
   done: cycleTasksBoardStyles.doneTone,
 } as const;
 
-export function CycleTasksBoard({ activeProject, onMoveTaskOnBoard, onSkipTask, onUpdateTask, projects, taskColumns, tasks }: CycleTasksBoardProps) {
+export function CycleTasksBoard({ activeProject, onMoveTaskOnBoard, onOpenTask, onSkipTask, taskColumns, tasks }: CycleTasksBoardProps) {
   const [activeMenuTaskId, setActiveMenuTaskId] = useState<string | null>(null);
   const [pendingSkipTaskId, setPendingSkipTaskId] = useState<string | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ columnKey: keyof typeof columnToneClassNames; beforeTaskId: string | null } | null>(null);
   const boardColumns = getTodayBoardColumns(taskColumns);
   const boardTasks = getTodayBoardTasks(tasks, taskColumns, activeProject.id);
   const totalTaskCount = boardColumns.reduce((total, column) => total + boardTasks[column.key].length, 0);
-  const editingTask = useMemo(() => tasks.find((task) => task.id === editingTaskId) ?? null, [editingTaskId, tasks]);
 
   function handleMoveTask(taskId: string, columnKey: keyof typeof columnToneClassNames, beforeTaskId?: string) {
     const targetColumn = boardColumns.find((candidate) => candidate.key === columnKey);
@@ -48,15 +43,6 @@ export function CycleTasksBoard({ activeProject, onMoveTaskOnBoard, onSkipTask, 
     onMoveTaskOnBoard(taskId, targetColumn.targetColumnId, beforeTaskId);
     setActiveMenuTaskId(null);
     setDropTarget(null);
-  }
-
-  function handleSubmitTask(values: TaskFormValues) {
-    if (!editingTask) {
-      return;
-    }
-
-    onUpdateTask(editingTask.id, values);
-    setEditingTaskId(null);
   }
 
   return (
@@ -167,7 +153,7 @@ export function CycleTasksBoard({ activeProject, onMoveTaskOnBoard, onSkipTask, 
                               <div className={cycleTasksBoardStyles.menu}>
                                 <p className={cycleTasksBoardStyles.menuLabel}>Task</p>
                                 <button className={cycleTasksBoardStyles.menuAction} onClick={() => {
-                                  setEditingTaskId(task.id);
+                                  onOpenTask(task.id);
                                   setActiveMenuTaskId(null);
                                 }} type="button">Abrir tarefa</button>
                                 <p className={cycleTasksBoardStyles.menuLabel}>Mover para</p>
@@ -245,23 +231,6 @@ export function CycleTasksBoard({ activeProject, onMoveTaskOnBoard, onSkipTask, 
           ))}
         </div>
       )}
-
-      <OverlayPanel
-        description={editingTask ? 'Abra a task no drawer para revisar descricao, checklist e atualizar o andamento sem sair do Hoje.' : undefined}
-        isOpen={Boolean(editingTask)}
-        onClose={() => setEditingTaskId(null)}
-        title={editingTask ? editingTask.title : 'Task'}
-      >
-        {editingTask ? (
-          <TaskForm
-            columns={taskColumns}
-            defaultValues={editingTask}
-            onCancelEdit={() => setEditingTaskId(null)}
-            onSubmitTask={handleSubmitTask}
-            projects={projects}
-          />
-        ) : null}
-      </OverlayPanel>
     </CardContent>
   );
 }

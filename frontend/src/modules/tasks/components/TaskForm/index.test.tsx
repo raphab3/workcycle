@@ -47,4 +47,33 @@ describe('TaskForm', () => {
       undefined,
     );
   });
+
+  it('autosaves valid changes when enabled for editing', async () => {
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSubmitTask = vi.fn();
+
+    render(
+      <TaskForm
+        autosave
+        autosaveDelayMs={300}
+        columns={defaultTaskColumns}
+        defaultValues={mockTasks[0]}
+        onCancelEdit={vi.fn()}
+        onSubmitTask={onSubmitTask}
+        projects={mockProjects}
+      />, 
+    );
+
+    await user.clear(screen.getByLabelText('Titulo da tarefa'));
+    await user.type(screen.getByLabelText('Titulo da tarefa'), 'Ajustar migration faturamento v2');
+    await vi.advanceTimersByTimeAsync(350);
+
+    expect(onSubmitTask).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Ajustar migration faturamento v2' }),
+      'billing-migration',
+    );
+
+    vi.useRealTimers();
+  });
 });

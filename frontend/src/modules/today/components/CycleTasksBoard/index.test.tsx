@@ -14,9 +14,8 @@ describe('CycleTasksBoard', () => {
       <CycleTasksBoard
         activeProject={mockProjects[2]!}
         onMoveTaskOnBoard={vi.fn()}
+        onOpenTask={vi.fn()}
         onSkipTask={vi.fn()}
-        onUpdateTask={vi.fn()}
-        projects={mockProjects}
         taskColumns={defaultTaskColumns}
         tasks={mockTasks}
       />,
@@ -31,17 +30,17 @@ describe('CycleTasksBoard', () => {
     expect(screen.queryByText('Fechar refinamento da sprint')).not.toBeInTheDocument();
   });
 
-  it('opens the action menu, opens the task drawer, and sends the selected skip strategy', async () => {
+  it('opens the action menu, triggers task opening, and sends the selected skip strategy', async () => {
     const user = userEvent.setup();
+    const onOpenTask = vi.fn();
     const onSkipTask = vi.fn();
 
     render(
       <CycleTasksBoard
         activeProject={mockProjects[2]!}
         onMoveTaskOnBoard={vi.fn()}
+        onOpenTask={onOpenTask}
         onSkipTask={onSkipTask}
-        onUpdateTask={vi.fn()}
-        projects={mockProjects}
         taskColumns={defaultTaskColumns}
         tasks={mockTasks}
       />,
@@ -50,10 +49,8 @@ describe('CycleTasksBoard', () => {
     await user.click(screen.getByRole('button', { name: /Abrir acoes de Ajustar migration de faturamento/i }));
     await user.click(screen.getByRole('button', { name: /Abrir tarefa/i }));
 
-    expect(screen.getByRole('dialog', { name: /Ajustar migration de faturamento/i })).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/Fechar a migration principal do faturamento/i)).toBeInTheDocument();
+    expect(onOpenTask).toHaveBeenCalledWith('billing-migration');
 
-    await user.click(screen.getAllByRole('button', { name: /Fechar painel/i })[1]!);
     await user.click(screen.getByRole('button', { name: /Abrir acoes de Ajustar migration de faturamento/i }));
     await user.click(screen.getByRole('button', { name: /Pular para proximo cycle/i }));
     expect(screen.getByText(/Escolha como essa task deve entrar no proximo dia/i)).toBeInTheDocument();
@@ -70,9 +67,8 @@ describe('CycleTasksBoard', () => {
       <CycleTasksBoard
         activeProject={mockProjects[1]!}
         onMoveTaskOnBoard={onMoveTaskOnBoard}
+        onOpenTask={vi.fn()}
         onSkipTask={vi.fn()}
-        onUpdateTask={vi.fn()}
-        projects={mockProjects}
         taskColumns={defaultTaskColumns}
         tasks={mockTasks}
       />,

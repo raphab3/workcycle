@@ -4,6 +4,8 @@ import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Project } from '@/modules/projects/types';
+import { TaskForm } from '@/modules/tasks/components/TaskForm';
+import type { Task } from '@/modules/tasks/types';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import { useActivityPulse } from '@/modules/today/hooks/useActivityPulse';
 import type { PulseRecord, TimeBlock, TodayCycleValues } from '@/modules/today/types';
@@ -112,6 +114,7 @@ export function TodayPlannerOverview() {
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [taskDrawerTaskId, setTaskDrawerTaskId] = useState<string | null>(null);
   const [draftActualHours, setDraftActualHours] = useState<Record<string, number>>({});
 
   const projects = useWorkspaceStore((state) => state.projects);
@@ -186,6 +189,7 @@ export function TodayPlannerOverview() {
   const pulseLabel = activePulse ? 'Resposta do pulso' : 'Proximo pulso';
   const activeProjectTrackedHours = activeProjectId ? trackedHoursByProject[activeProjectId] ?? 0 : 0;
   const activeProjectPlannedHours = activeAllocation?.plannedHours ?? 0;
+  const taskDrawerTask = useMemo<Task | null>(() => tasks.find((task) => task.id === taskDrawerTaskId) ?? null, [taskDrawerTaskId, tasks]);
 
   function handleSubmitCycle(values: TodayCycleValues) {
     setTodayCycleValues(values);
@@ -226,6 +230,14 @@ export function TodayPlannerOverview() {
       ...currentHours,
       [projectId]: Math.max(0, Number(((currentHours[projectId] ?? trackedHoursByProject[projectId] ?? 0) + delta).toFixed(1))),
     }));
+  }
+
+  function handleSubmitTaskUpdate(values: Parameters<typeof updateTask>[1]) {
+    if (!taskDrawerTaskId) {
+      return;
+    }
+
+    updateTask(taskDrawerTaskId, values);
   }
 
   return (
@@ -515,9 +527,8 @@ export function TodayPlannerOverview() {
               <CycleTasksBoard
                 activeProject={activeProject}
                 onMoveTaskOnBoard={moveTaskOnBoard}
+                onOpenTask={setTaskDrawerTaskId}
                 onSkipTask={skipTaskToNextCycle}
-                onUpdateTask={updateTask}
-                projects={projects}
                 taskColumns={taskColumns}
                 tasks={tasks}
               />
@@ -574,6 +585,24 @@ export function TodayPlannerOverview() {
           )}
         </>
       )}
+
+      <OverlayPanel
+        description={taskDrawerTask ? 'Abra a task no drawer para revisar descricao, checklist e atualizar o andamento sem sair do Hoje.' : undefined}
+        isOpen={Boolean(taskDrawerTask)}
+        onClose={() => setTaskDrawerTaskId(null)}
+        title={taskDrawerTask ? taskDrawerTask.title : 'Task'}
+      >
+        {taskDrawerTask ? (
+          <TaskForm
+            autosave
+            columns={taskColumns}
+            defaultValues={taskDrawerTask}
+            onCancelEdit={() => setTaskDrawerTaskId(null)}
+            onSubmitTask={handleSubmitTaskUpdate}
+            projects={projects}
+          />
+        ) : null}
+      </OverlayPanel>
 
       <OverlayPanel
         isOpen={drawerMode !== null}
