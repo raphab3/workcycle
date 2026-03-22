@@ -740,6 +740,10 @@ Done
 - [x] FE-0906 substituir o formulário inline por drawer global com comportamento de bottom sheet no mobile
 - [x] FE-0907 adicionar menu contextual por card com ações de mover, editar, concluir, arquivar e excluir
 - [x] FE-0908 compactar o resumo por projeto e posicioná-lo acima dos filtros
+- [x] FE-0909 mover o board para o topo da tela e reduzir ruído antes dos cards
+- [x] FE-0910 adicionar descrição e checklist no domínio e no drawer de task
+- [x] FE-0911 migrar movimentação de coluna e cycle para selects dentro do menu contextual
+- [x] FE-0912 permitir remoção de coluna com realocação segura das tasks para backlog
 
 ### Critérios de teste unitário
 
@@ -778,19 +782,24 @@ Done
   - a criação de task passou a acontecer por CTA dedicado abrindo o drawer global, liberando mais área útil para o kanban
   - o resumo por projeto ficou mais compacto e foi reposicionado acima dos filtros para melhorar leitura do fluxo
   - cada card do kanban passou a concentrar ações em um menu contextual de três pontos, reduzindo ruído visual permanente
+  - o board passou a abrir a tela `Tarefas` antes dos blocos de resumo, deixando os cards como foco imediato da rota
+  - as actions de mover coluna e trocar cycle migraram para selects dentro do menu contextual do card
+  - os cards agora mostram trecho da descrição e progresso do checklist para reduzir a necessidade de abrir o drawer a todo momento
 - Fixed:
   - reduzido o risco de quebra visual quando a quantidade de tasks ultrapassa a massa mock inicial
   - removida a dependência da coluna lateral como área principal de criação para a tela `Tarefas`
   - melhor aproveitamento de espaço no desktop e no mobile com foco no board como área principal de trabalho
+  - o menu contextual agora fecha ao clicar fora, evitando estados presos na interação do board
+  - a remoção de colunas passou a realocar tasks para backlog em vez de perder contexto
 - Removed:
   - removida a composição principal em duas colunas entre backlog e formulário na rota `Tarefas`
 
 ### Evidência de validação
 
-- Build: `pnpm build` passou com a rota `/tarefas` e o restante do app compilando após a troca para kanban
-- Tests: arquivos de teste atualizados para `TaskForm`, `TasksWorkspace` e `TodayPlannerOverview`; o runner do Vitest no terminal compartilhado foi interrompido antes de retornar um resumo limpo desta rodada
+- Build: `pnpm build` passou com a rota `/tarefas` e o restante do app compilando após a rodada de descrição, checklist, remoção de coluna e reorganização visual
+- Tests: `pnpm vitest run src/modules/tasks/components/TaskForm/index.test.tsx src/modules/tasks/components/TasksWorkspace/index.test.tsx src/modules/today/components/TodayPlannerOverview/index.test.tsx` passou com 17 testes
 - Observações:
-  - os diagnósticos do editor nos arquivos alterados ficaram sem erros
+  - o teste de `TaskForm` ainda emite um warning de `act(...)` por causa da sincronização automática de `status` com a coluna no `useEffect`, mas a suíte fecha verde
 
 ### Pendências para próximo ciclo
 

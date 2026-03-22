@@ -1,12 +1,13 @@
  'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/shared/components/Button';
 import { cn } from '@/shared/utils/cn';
 
-import { getTaskDeadlineLabel, getTaskDeadlineState } from '@/modules/tasks/utils/tasks';
+import type { Task } from '@/modules/tasks/types';
+import { getTaskChecklistProgress, getTaskDeadlineLabel, getTaskDeadlineState } from '@/modules/tasks/utils/tasks';
 
 import { tasksListStyles } from './styles';
 import type { TasksListProps } from './types';
@@ -31,7 +32,7 @@ const cycleLabels = {
   backlog: 'Backlog',
 } as const;
 
-export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteTask, onEditTask, onMoveTaskToColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
+export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteTask, onEditTask, onMoveTaskToColumn, onRemoveColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
   const [columnTitle, setColumnTitle] = useState('');
   const [columnStatus, setColumnStatus] = useState<TasksListProps['taskColumns'][number]['status']>('todo');
   const [activeMenuTaskId, setActiveMenuTaskId] = useState<string | null>(null);
@@ -55,10 +56,12 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
 
   return (
     <section className={tasksListStyles.board}>
+      {activeMenuTaskId ? <button aria-label="Fechar opcoes" className="fixed inset-0 z-10 cursor-default" onClick={() => setActiveMenuTaskId(null)} type="button" /> : null}
+
       <div className={tasksListStyles.boardHeader}>
         <div className={tasksListStyles.boardCopy}>
-          <h2 className={tasksListStyles.boardTitle}>Quadro kanban da carteira</h2>
-          <p className={tasksListStyles.boardDescription}>O board agora cresce horizontalmente no estilo Trello, sem depender de uma coluna lateral para suportar mais cards. Filtros, prioridade, cycle e edicao continuam ativos.</p>
+          <h2 className={tasksListStyles.boardTitle}>Tasks</h2>
+          <p className={tasksListStyles.boardDescription}>Abra a task no drawer, mova por select e deixe o restante das acoes concentrado no menu do card.</p>
         </div>
 
         <div className={tasksListStyles.actions}>
@@ -78,7 +81,14 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                     <h3 className={tasksListStyles.columnTitle}>{column.title}</h3>
                     <p className={tasksListStyles.columnCount}>{columnTasks.length} card(s)</p>
                   </div>
-                  <span className={tasksListStyles.columnTone}>{statusLabels[column.status]}</span>
+                  <div className={tasksListStyles.columnActions}>
+                    <span className={tasksListStyles.columnTone}>{statusLabels[column.status]}</span>
+                    {taskColumns.length > 1 ? (
+                      <button aria-label={`Remover coluna ${column.title}`} className={tasksListStyles.columnRemoveButton} onClick={() => onRemoveColumn(column)} type="button">
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className={tasksListStyles.columnList}>
@@ -92,11 +102,13 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                       return (
                         <article key={task.id} className={tasksListStyles.item}>
                           <div className={tasksListStyles.top}>
-                            <div>
-                              <h2 className={tasksListStyles.title}>{task.title}</h2>
+                            <div className={tasksListStyles.body}>
+                              <button className={tasksListStyles.title} onClick={() => onEditTask(task)} type="button">{task.title}</button>
                               <p className={tasksListStyles.meta}>
                                 {project?.name ?? 'Projeto nao encontrado'} · {getTaskDeadlineLabel(task)} · {task.estimatedHours.toFixed(1).replace('.', ',')}h previstas
                               </p>
+                              <p className={tasksListStyles.description}>{task.description}</p>
+                              <p className={tasksListStyles.checklistSummary}>{getTaskChecklistProgress(task)}</p>
                             </div>
 
                             <div className={tasksListStyles.menuWrap}>
@@ -106,12 +118,20 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
 
                               {activeMenuTaskId === task.id ? (
                                 <div className={tasksListStyles.menu}>
+                                  <p className={tasksListStyles.menuLabel}>Abrir</p>
+                                  <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onEditTask(task))} type="button">Abrir task</button>
                                   <p className={tasksListStyles.menuLabel}>Mover para</p>
-                                  {taskColumns.map((option) => (
-                                    <button key={option.id} className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onMoveTaskToColumn(task.id, option.id))} type="button">
-                                      {option.title}
-                                    </button>
-                                  ))}
+                                  <select aria-label={`Mover ${task.title}`} className={tasksListStyles.menuSelect} value={task.columnId} onChange={(event) => handleMenuAction(() => onMoveTaskToColumn(task.id, event.target.value))}>
+                                    {taskColumns.map((option) => (
+                                      <option key={option.id} value={option.id}>{option.title}</option>
+                                    ))}
+                                  </select>
+                                  <p className={tasksListStyles.menuLabel}>Cycle</p>
+                                  <select aria-label={`Cycle ${task.title}`} className={tasksListStyles.menuSelect} value={task.cycleAssignment} onChange={(event) => handleMenuAction(() => onAssignCycle(task.id, event.target.value as Task['cycleAssignment']))}>
+                                    {Object.entries(cycleLabels).map(([value, label]) => (
+                                      <option key={value} value={value}>{label}</option>
+                                    ))}
+                                  </select>
                                   <p className={tasksListStyles.menuLabel}>Acoes</p>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onEditTask(task))} type="button">Editar</button>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onToggleDone(task.id))} type="button">{task.status === 'done' ? 'Reabrir' : 'Concluir'}</button>
@@ -130,11 +150,7 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                           </div>
 
                           <div className={tasksListStyles.footer}>
-                            <div className={tasksListStyles.footerRow}>
-                              <Button type="button" size="sm" variant={task.cycleAssignment === 'current' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'current')}>Cycle atual</Button>
-                              <Button type="button" size="sm" variant={task.cycleAssignment === 'next' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'next')}>Proximo cycle</Button>
-                              <Button type="button" size="sm" variant={task.cycleAssignment === 'backlog' ? 'default' : 'outline'} onClick={() => onAssignCycle(task.id, 'backlog')}>Backlog</Button>
-                            </div>
+                            <p className={tasksListStyles.footerText}>Abra a task para editar descricao e checklist. Mude coluna e cycle pelo menu do card.</p>
                           </div>
                         </article>
                       );

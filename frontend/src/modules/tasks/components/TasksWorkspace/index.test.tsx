@@ -13,11 +13,13 @@ describe('TasksWorkspace', () => {
   it('renders the new tasks workspace and seed tasks', () => {
     render(<TasksWorkspace />);
 
+    expect(screen.getByText('Painel de tasks')).toBeInTheDocument();
     expect(screen.getByText('Tasks em aberto')).toBeInTheDocument();
-    expect(screen.getByText('Backlog')).toBeInTheDocument();
-    expect(screen.getByText('In Progress')).toBeInTheDocument();
-    expect(screen.getByText('CodeReview')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Backlog' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'In Progress' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'CodeReview' })).toBeInTheDocument();
     expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+    expect(screen.getByText(/Fechar a migration principal do faturamento/i)).toBeInTheDocument();
     expect(screen.getByText('Carga aberta da carteira atual')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Nova task/i })).toBeInTheDocument();
   });
@@ -40,10 +42,14 @@ describe('TasksWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: /Nova task/i }));
     await user.type(screen.getByLabelText('Titulo da tarefa'), 'Planejar entrega mobile');
-    await user.selectOptions(screen.getByLabelText('Projeto'), 'cliente-core');
+    await user.type(screen.getByLabelText('Descricao'), 'Detalhar milestones, handoff e riscos do fluxo mobile antes da reuniao com o time.');
+    await user.selectOptions(screen.getAllByLabelText('Projeto')[1], 'cliente-core');
+    await user.type(screen.getByLabelText('Novo item do checklist'), 'Conferir dependencias');
+    await user.click(screen.getByRole('button', { name: /Adicionar item/i }));
     await user.click(screen.getByRole('button', { name: 'Adicionar tarefa' }));
 
     expect(await screen.findByText('Planejar entrega mobile')).toBeInTheDocument();
+    expect(screen.getByText(/Detalhar milestones, handoff e riscos/i)).toBeInTheDocument();
   });
 
   it('reallocates a task to the next cycle', async () => {
@@ -51,10 +57,14 @@ describe('TasksWorkspace', () => {
 
     render(<TasksWorkspace />);
 
-    await user.click(screen.getAllByRole('button', { name: 'Proximo cycle' })[0]);
-    await user.selectOptions(screen.getAllByLabelText('Cycle')[0], 'next');
+    const taskCard = screen.getByText('Ajustar migration de faturamento').closest('article');
 
-    expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+    expect(taskCard).not.toBeNull();
+
+    await user.click(within(taskCard as HTMLElement).getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    await user.selectOptions(screen.getByLabelText('Cycle Ajustar migration de faturamento'), 'next');
+
+    expect(within(taskCard as HTMLElement).getByText('Proximo cycle')).toBeInTheDocument();
   });
 
   it('creates a new dynamic kanban column', async () => {
@@ -77,12 +87,50 @@ describe('TasksWorkspace', () => {
     await user.type(screen.getByLabelText('Nome da coluna'), 'Waiting QA');
     await user.click(screen.getByRole('button', { name: 'Criar coluna' }));
     await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
-    await user.click(screen.getByRole('button', { name: 'Waiting QA' }));
+    await user.selectOptions(screen.getByLabelText('Mover Ajustar migration de faturamento'), 'waiting-qa-5');
 
     const customColumn = screen.getByText('Waiting QA').closest('section');
 
     expect(customColumn).not.toBeNull();
     expect(within(customColumn as HTMLElement).getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+  });
+
+  it('opens a task in the drawer and closes the menu when clicking outside', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    expect(screen.getByRole('button', { name: 'Abrir task' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Fechar opcoes' }));
+    expect(screen.queryByRole('button', { name: 'Abrir task' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    await user.click(screen.getByRole('button', { name: 'Abrir task' }));
+
+    expect(screen.getByRole('heading', { name: 'Editar Ajustar migration de faturamento' })).toBeInTheDocument();
+    expect(screen.getByText('Revisar indexes')).toBeInTheDocument();
+  });
+
+  it('removes a custom column and reassigns its tasks to backlog', async () => {
+    const user = userEvent.setup();
+
+    render(<TasksWorkspace />);
+
+    await user.type(screen.getByLabelText('Nome da coluna'), 'Waiting QA');
+    await user.click(screen.getByRole('button', { name: 'Criar coluna' }));
+    await user.click(screen.getByRole('button', { name: 'Abrir opcoes de Ajustar migration de faturamento' }));
+    await user.selectOptions(screen.getByLabelText('Mover Ajustar migration de faturamento'), 'waiting-qa-5');
+    await user.click(screen.getByRole('button', { name: 'Remover coluna Waiting QA' }));
+
+    const dialog = screen.getByRole('alertdialog', { name: 'Remover coluna' });
+    await user.click(within(dialog).getByRole('button', { name: 'Remover coluna' }));
+
+    expect(screen.queryByText('Waiting QA')).not.toBeInTheDocument();
+
+    const backlogColumn = screen.getByRole('heading', { name: 'Backlog' }).closest('section');
+    expect(backlogColumn).not.toBeNull();
+    expect(within(backlogColumn as HTMLElement).getByText('Ajustar migration de faturamento')).toBeInTheDocument();
   });
 
   it('archives a task after confirmation', async () => {

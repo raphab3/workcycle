@@ -38,6 +38,10 @@ function createTaskColumnId(title: string, currentColumns: TaskColumn[]) {
   return `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${currentColumns.length + 1}`;
 }
 
+function createChecklistItemId(label: string, index: number) {
+  return `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`;
+}
+
 function getColumnIdForStatus(columns: TaskColumn[], status: Task['status']) {
   return columns.find((column) => column.status === status)?.id ?? columns[0]?.id ?? 'backlog';
 }
@@ -72,6 +76,7 @@ interface WorkspaceStoreState {
   addTask: (values: TaskFormValues) => void;
   updateTask: (taskId: string, values: TaskFormValues) => void;
   addTaskColumn: (values: TaskColumnFormValues) => void;
+  removeTaskColumn: (columnId: string) => void;
   moveTaskToColumn: (taskId: string, columnId: string) => void;
   archiveTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
@@ -111,12 +116,27 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
         id: createTaskId(values.title, state.tasks),
         isArchived: false,
         ...values,
+        checklist: values.checklist.map((item, index) => ({
+          ...item,
+          id: item.id || createChecklistItemId(item.label, index),
+        })),
       },
       ...state.tasks,
     ],
   })),
   updateTask: (taskId, values) => set((state) => ({
-    tasks: state.tasks.map((task) => (task.id === taskId ? { ...task, ...values } : task)),
+    tasks: state.tasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          ...values,
+          checklist: values.checklist.map((item, index) => ({
+            ...item,
+            id: item.id || createChecklistItemId(item.label, index),
+          })),
+        }
+        : task
+    )),
   })),
   addTaskColumn: (values) => set((state) => ({
     taskColumns: [
@@ -127,6 +147,24 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set) => ({
       },
     ],
   })),
+  removeTaskColumn: (columnId) => set((state) => {
+    const remainingColumns = state.taskColumns.filter((column) => column.id !== columnId);
+
+    if (remainingColumns.length === 0) {
+      return state;
+    }
+
+    const fallbackColumn = remainingColumns.find((column) => column.status === 'todo') ?? remainingColumns[0];
+
+    return {
+      taskColumns: remainingColumns,
+      tasks: state.tasks.map((task) => (
+        task.columnId === columnId
+          ? { ...task, columnId: fallbackColumn.id, status: fallbackColumn.status }
+          : task
+      )),
+    };
+  }),
   moveTaskToColumn: (taskId, columnId) => set((state) => {
     const targetColumn = state.taskColumns.find((column) => column.id === columnId);
 

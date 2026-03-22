@@ -22,8 +22,10 @@ describe('TodayPlannerOverview', () => {
   it('reflects shared task changes from the workspace store', () => {
     useWorkspaceStore.getState().addTask({
       title: 'Escalar analise de onboarding',
+      description: 'Detalhar gargalos de onboarding e preparar resposta para o proximo ciclo.',
       projectId: 'cliente-core',
       columnId: 'backlog',
+      checklist: [],
       cycleAssignment: 'current',
       priority: 'critical',
       status: 'todo',

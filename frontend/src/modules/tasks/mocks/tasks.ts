@@ -4,9 +4,15 @@ export const mockTasks: Task[] = [
   {
     id: 'billing-migration',
     title: 'Ajustar migration de faturamento',
+    description: 'Fechar a migration principal do faturamento, revisar indexes e validar o impacto nas consultas legadas antes do deploy.',
     projectId: 'datavault',
     columnId: 'backlog',
     isArchived: false,
+    checklist: [
+      { id: 'billing-migration-1', label: 'Revisar indexes', done: true },
+      { id: 'billing-migration-2', label: 'Rodar em staging', done: false },
+      { id: 'billing-migration-3', label: 'Validar rollback', done: false },
+    ],
     priority: 'critical',
     status: 'todo',
     cycleAssignment: 'current',
@@ -16,9 +22,14 @@ export const mockTasks: Task[] = [
   {
     id: 'sprint-refinement',
     title: 'Fechar refinamento da sprint',
+    description: 'Consolidar escopo, dependencias e riscos para fechar a proxima sprint com handoff tecnico claro.',
     projectId: 'fintrack',
     columnId: 'in-progress',
     isArchived: false,
+    checklist: [
+      { id: 'sprint-refinement-1', label: 'Atualizar notas', done: true },
+      { id: 'sprint-refinement-2', label: 'Conferir dependencias', done: false },
+    ],
     priority: 'high',
     status: 'doing',
     cycleAssignment: 'current',
@@ -28,9 +39,13 @@ export const mockTasks: Task[] = [
   {
     id: 'daily-contract',
     title: 'Revisar daily contract baseline',
+    description: 'Registrar pontos fixos do contrato diario e confirmar janelas minimas de atendimento para o ciclo seguinte.',
     projectId: 'cliente-core',
     columnId: 'backlog',
     isArchived: false,
+    checklist: [
+      { id: 'daily-contract-1', label: 'Conferir janela contratual', done: false },
+    ],
     priority: 'medium',
     status: 'todo',
     cycleAssignment: 'next',
@@ -40,9 +55,14 @@ export const mockTasks: Task[] = [
   {
     id: 'auth-audit',
     title: 'Auditar backlog de autenticacao',
+    description: 'Mapear pendencias do fluxo de autenticacao antes da rodada de review e definir proximos owners.',
     projectId: 'authguard',
     columnId: 'code-review',
     isArchived: false,
+    checklist: [
+      { id: 'auth-audit-1', label: 'Listar bugs em aberto', done: true },
+      { id: 'auth-audit-2', label: 'Classificar riscos', done: false },
+    ],
     priority: 'low',
     status: 'blocked',
     cycleAssignment: 'backlog',
@@ -52,9 +72,13 @@ export const mockTasks: Task[] = [
   {
     id: 'retro-notes',
     title: 'Fechar notas da retro',
+    description: 'Consolidar aprendizados da retro e publicar um resumo final para consulta do time.',
     projectId: 'fintrack',
     columnId: 'done',
     isArchived: false,
+    checklist: [
+      { id: 'retro-notes-1', label: 'Publicar resumo', done: true },
+    ],
     priority: 'low',
     status: 'done',
     cycleAssignment: 'backlog',

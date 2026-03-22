@@ -7,12 +7,10 @@ import type { Project } from '@/modules/projects/types';
 import type { Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
 import { filterTasks, getCycleTaskCount, getCycleTaskHours, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
 import { Button } from '@/shared/components/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog/index';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { OverlayPanel } from '@/shared/components/OverlayPanel/index';
-import { SectionIntro } from '@/shared/components/SectionIntro';
-import { StateNotice } from '@/shared/components/StateNotice';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { TaskFilters } from '../TaskFilters/index';
@@ -32,6 +30,7 @@ export function TasksWorkspace() {
   const [filters, setFilters] = useState<TaskFiltersValues>(baseFilters);
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
   const [pendingArchiveTask, setPendingArchiveTask] = useState<Task | null>(null);
+  const [pendingColumnRemoval, setPendingColumnRemoval] = useState<string | null>(null);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<Task | null>(null);
   const tasks = useWorkspaceStore((state) => state.tasks);
   const taskColumns = useWorkspaceStore((state) => state.taskColumns);
@@ -41,6 +40,7 @@ export function TasksWorkspace() {
   const archiveTask = useWorkspaceStore((state) => state.archiveTask);
   const deleteTask = useWorkspaceStore((state) => state.deleteTask);
   const moveTaskToColumn = useWorkspaceStore((state) => state.moveTaskToColumn);
+  const removeTaskColumn = useWorkspaceStore((state) => state.removeTaskColumn);
   const updateTask = useWorkspaceStore((state) => state.updateTask);
   const toggleTaskDone = useWorkspaceStore((state) => state.toggleTaskDone);
   const setTaskCycleAssignment = useWorkspaceStore((state) => state.setTaskCycleAssignment);
@@ -96,22 +96,18 @@ export function TasksWorkspace() {
     setPendingDeleteTask(null);
   }
 
+  function handleConfirmRemoveColumn() {
+    if (!pendingColumnRemoval) {
+      return;
+    }
+
+    removeTaskColumn(pendingColumnRemoval);
+    setPendingColumnRemoval(null);
+  }
+
   return (
     <div className={tasksWorkspaceStyles.layout}>
       <div className={tasksWorkspaceStyles.stack}>
-        <SectionIntro
-          eyebrow="Tarefas"
-          title="Gestao editorial de tarefas com prioridade, prazo e associacao por projeto"
-          description="A tela agora usa a carteira de projetos como base de associacao e filtro. O objetivo deste ciclo e organizar a carga visivel do backlog antes da redistribuicao da tela Hoje."
-        />
-
-        <StateNotice
-          eyebrow="Estado transversal"
-          title="Backlog sincronizado com a carteira ativa"
-          description="Projetos, tarefas e contexto operacional agora compartilham o mesmo estado do workspace enquanto o app estiver aberto."
-          tone="info"
-        />
-
         {projects.length === 0 && (
           <EmptyState
             eyebrow="Tarefas"
@@ -120,6 +116,28 @@ export function TasksWorkspace() {
             hint="Cadastre projetos primeiro para liberar o fluxo completo desta rota."
           />
         )}
+
+        <section className={tasksWorkspaceStyles.toolbar}>
+          <div className={tasksWorkspaceStyles.toolbarCopy}>
+            <h2 className={tasksWorkspaceStyles.toolbarTitle}>Painel de tasks</h2>
+            <p className={tasksWorkspaceStyles.toolbarDescription}>{getOpenTasksCount(tasks)} abertas · {getUrgentTasksCount(tasks)} urgentes · {getCycleTaskCount(tasks, 'current')} no cycle atual</p>
+          </div>
+          <Button type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
+        </section>
+
+        <TasksList
+          onAddColumn={addTaskColumn}
+          onArchiveTask={setPendingArchiveTask}
+          onAssignCycle={setTaskCycleAssignment}
+          onDeleteTask={setPendingDeleteTask}
+          onEditTask={handleOpenEditTask}
+          onMoveTaskToColumn={moveTaskToColumn}
+          onRemoveColumn={(column) => setPendingColumnRemoval(column.id)}
+          onToggleDone={handleToggleDone}
+          projects={projects}
+          taskColumns={taskColumns}
+          tasks={filteredTasks}
+        />
 
         <div className={tasksWorkspaceStyles.summaryGrid}>
           <Card>
@@ -169,28 +187,7 @@ export function TasksWorkspace() {
           </div>
         </div>
 
-        <section className={tasksWorkspaceStyles.toolbar}>
-          <div className={tasksWorkspaceStyles.toolbarCopy}>
-            <h2 className={tasksWorkspaceStyles.toolbarTitle}>Kanban com acao rapida</h2>
-            <p className={tasksWorkspaceStyles.toolbarDescription}>Abra o painel global para criar ou editar tasks sem sacrificar espaco do board. No mobile ele vira bottom sheet.</p>
-          </div>
-          <Button type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
-        </section>
-
         <TaskFilters filters={filters} onChange={setFilters} onReset={() => setFilters(baseFilters)} projects={projects} visibleTasks={filteredTasks.length} />
-
-        <TasksList
-          onAddColumn={addTaskColumn}
-          onArchiveTask={setPendingArchiveTask}
-          onAssignCycle={setTaskCycleAssignment}
-          onDeleteTask={setPendingDeleteTask}
-          onEditTask={handleOpenEditTask}
-          onMoveTaskToColumn={moveTaskToColumn}
-          onToggleDone={handleToggleDone}
-          projects={projects}
-          taskColumns={taskColumns}
-          tasks={filteredTasks}
-        />
       </div>
 
       <OverlayPanel
@@ -222,6 +219,17 @@ export function TasksWorkspace() {
         title="Excluir task"
       >
         {pendingDeleteTask?.title}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        confirmLabel="Remover coluna"
+        description="As tasks desta coluna voltam para o backlog para evitar perda de contexto no board."
+        isOpen={Boolean(pendingColumnRemoval)}
+        onCancel={() => setPendingColumnRemoval(null)}
+        onConfirm={handleConfirmRemoveColumn}
+        title="Remover coluna"
+      >
+        {taskColumns.find((column) => column.id === pendingColumnRemoval)?.title}
       </ConfirmDialog>
     </div>
   );

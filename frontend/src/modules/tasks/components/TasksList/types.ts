@@ -8,6 +8,7 @@ export interface TasksListProps {
   onDeleteTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onMoveTaskToColumn: (taskId: string, columnId: string) => void;
+  onRemoveColumn: (column: TaskColumn) => void;
   onToggleDone: (taskId: string) => void;
   projects: Project[];
   taskColumns: TaskColumn[];

@@ -49,6 +49,16 @@ export function getTaskDeadlineLabel(task: Pick<Task, 'dueInDays'>) {
   return `vence em ${task.dueInDays} dias`;
 }
 
+export function getTaskChecklistProgress(task: Pick<Task, 'checklist'>) {
+  if (task.checklist.length === 0) {
+    return 'Sem checklist';
+  }
+
+  const completedItems = task.checklist.filter((item) => item.done).length;
+
+  return `${completedItems}/${task.checklist.length} checklist`;
+}
+
 export function filterTasks(tasks: Task[], filters: TaskFiltersValues) {
   return tasks.filter((task) => {
     if (task.isArchived) {

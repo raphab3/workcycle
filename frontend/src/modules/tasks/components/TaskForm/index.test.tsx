@@ -15,9 +15,11 @@ describe('TaskForm', () => {
     );
 
     expect(screen.getByDisplayValue('Ajustar migration de faturamento')).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Fechar a migration principal do faturamento/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue('3.5')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Cycle atual')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Backlog')).toBeInTheDocument();
+    expect(screen.getByText('Revisar indexes')).toBeInTheDocument();
   });
 
   it('submits a valid task', async () => {
@@ -27,11 +29,21 @@ describe('TaskForm', () => {
     render(<TaskForm columns={defaultTaskColumns} onCancelEdit={vi.fn()} onSubmitTask={onSubmitTask} projects={mockProjects} />);
 
     await user.type(screen.getByLabelText('Titulo da tarefa'), 'Preparar handoff do projeto');
+    await user.type(screen.getByLabelText('Descricao'), 'Consolidar contexto, checklist e pontos de transicao antes do handoff para o time.');
     await user.selectOptions(screen.getByLabelText('Projeto'), 'fintrack');
+    await user.type(screen.getByLabelText('Novo item do checklist'), 'Validar criterio final');
+    await user.click(screen.getByRole('button', { name: /Adicionar item/i }));
     await user.click(screen.getByRole('button', { name: 'Adicionar tarefa' }));
 
     expect(onSubmitTask).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Preparar handoff do projeto', projectId: 'fintrack', cycleAssignment: 'backlog', columnId: 'backlog' }),
+      expect.objectContaining({
+        title: 'Preparar handoff do projeto',
+        description: 'Consolidar contexto, checklist e pontos de transicao antes do handoff para o time.',
+        projectId: 'fintrack',
+        cycleAssignment: 'backlog',
+        columnId: 'backlog',
+        checklist: [expect.objectContaining({ label: 'Validar criterio final', done: false })],
+      }),
       undefined,
     );
   });
