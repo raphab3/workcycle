@@ -73,6 +73,15 @@ function getTodayISODate(): string {
   return `${year}-${month}-${day}`;
 }
 
+function getTomorrowISODate(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const day = String(tomorrow.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function createInitialWorkspaceState() {
   const projects = mockProjects.map(cloneProject);
   const taskColumns = defaultTaskColumns.map(cloneTaskColumn);
@@ -149,7 +158,7 @@ interface WorkspaceStoreState {
   toggleTaskDone: (taskId: string) => void;
   setTaskCycleAssignment: (taskId: string, cycleAssignment: Task['cycleAssignment']) => void;
   completeTask: (taskId: string) => void;
-  skipTaskToNextCycle: (taskId: string) => void;
+  skipTaskToNextCycle: (taskId: string, strategy?: 'reset-to-backlog' | 'keep-stage') => void;
   setTodayCycleValues: (values: TodayCycleValues) => void;
   setTodayActualHours: (actualHours: Record<string, number>) => void;
   resetWorkspaceStore: () => void;
@@ -477,7 +486,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
     return {
       tasks: state.tasks.map((task) => (
         task.id === taskId
-          ? { ...task, columnId: targetColumn.id, status: targetColumn.status }
+          ? { ...task, columnId: targetColumn.id, status: targetColumn.status, nextCycleStartDate: null }
           : task
       )),
     };
@@ -485,7 +494,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
   archiveTask: (taskId) => set((state) => ({
     tasks: state.tasks.map((task) => (
       task.id === taskId
-        ? { ...task, isArchived: true, cycleAssignment: 'backlog' }
+        ? { ...task, isArchived: true, cycleAssignment: 'backlog', nextCycleStartDate: null }
         : task
     )),
   })),
@@ -500,26 +509,47 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
           status: task.status === 'done' ? 'todo' : 'done',
           columnId: getColumnIdForStatus(state.taskColumns, task.status === 'done' ? 'todo' : 'done'),
           isArchived: false,
+          nextCycleStartDate: null,
         }
         : task
     )),
   })),
   setTaskCycleAssignment: (taskId, cycleAssignment) => set((state) => ({
-    tasks: state.tasks.map((task) => (task.id === taskId ? { ...task, cycleAssignment } : task)),
+    tasks: state.tasks.map((task) => (
+      task.id === taskId
+        ? { ...task, cycleAssignment, nextCycleStartDate: cycleAssignment === 'next' ? task.nextCycleStartDate ?? null : null }
+        : task
+    )),
   })),
   completeTask: (taskId) => set((state) => ({
     tasks: state.tasks.map((task) => (
       task.id === taskId
-        ? { ...task, status: 'done', columnId: getColumnIdForStatus(state.taskColumns, 'done'), cycleAssignment: 'backlog', isArchived: false }
+        ? { ...task, status: 'done', columnId: getColumnIdForStatus(state.taskColumns, 'done'), cycleAssignment: 'backlog', isArchived: false, nextCycleStartDate: null }
         : task
     )),
   })),
-  skipTaskToNextCycle: (taskId) => set((state) => ({
-    tasks: state.tasks.map((task) => (
-      task.id === taskId
-        ? { ...task, cycleAssignment: 'next', status: task.status === 'done' ? 'todo' : task.status }
-        : task
-    )),
+  skipTaskToNextCycle: (taskId, strategy = 'keep-stage') => set((state) => ({
+    tasks: state.tasks.map((task) => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      if (strategy === 'reset-to-backlog') {
+        return {
+          ...task,
+          cycleAssignment: 'next',
+          status: 'todo',
+          columnId: getColumnIdForStatus(state.taskColumns, 'todo'),
+          nextCycleStartDate: getTomorrowISODate(),
+        };
+      }
+
+      return {
+        ...task,
+        cycleAssignment: 'next',
+        nextCycleStartDate: getTomorrowISODate(),
+      };
+    }),
   })),
   setTodayCycleValues: (values) => set({ todayCycleValues: values }),
   setTodayActualHours: (actualHours) => set({ todayActualHours: actualHours }),

@@ -57,6 +57,45 @@ describe('TodayPlannerOverview', () => {
     expect(screen.getByText(/^FinTrack$/i)).toBeInTheDocument();
   });
 
+  it('renders the project-filtered Today board and moves a task to done', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /DataVault/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+
+    expect(screen.getByRole('heading', { name: /Board operacional de hoje/i })).toBeInTheDocument();
+    expect(screen.getByText(/Ajustar migration de faturamento/i)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/Mover Ajustar migration de faturamento/i), 'done');
+
+    const movedTask = useWorkspaceStore.getState().tasks.find((task) => task.id === 'billing-migration');
+
+    expect(movedTask?.status).toBe('done');
+    expect(movedTask?.columnId).toBe('done');
+  });
+
+  it('schedules a task to the next cycle from the Today board', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /DataVault/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+    await user.click(screen.getByRole('button', { name: /Pular para proximo cycle/i }));
+    await user.click(screen.getByRole('button', { name: /Manter estagio atual no proximo cycle/i }));
+
+    expect(screen.getByText(/Nenhuma task do projeto DataVault entrou no cycle atual/i)).toBeInTheDocument();
+
+    const movedTask = useWorkspaceStore.getState().tasks.find((task) => task.id === 'billing-migration');
+
+    expect(movedTask?.cycleAssignment).toBe('next');
+    expect(movedTask?.nextCycleStartDate).toBeTruthy();
+  });
+
   it('opens the close-day drawer from the running state', async () => {
     const user = userEvent.setup();
 

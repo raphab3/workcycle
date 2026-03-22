@@ -27,6 +27,7 @@ export interface Task {
   description: string;
   projectId: string;
   columnId: string;
+  nextCycleStartDate?: string | null;
   isArchived: boolean;
   checklist: TaskChecklistItem[];
   priority: TaskPriority;
@@ -41,6 +42,7 @@ export interface TaskFormValues {
   description: string;
   projectId: string;
   columnId: string;
+  nextCycleStartDate?: string | null;
   checklist: TaskChecklistItem[];
   priority: TaskPriority;
   status: TaskStatus;

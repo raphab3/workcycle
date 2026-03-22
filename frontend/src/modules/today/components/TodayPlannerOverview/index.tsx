@@ -16,6 +16,7 @@ import { OverlayPanel } from '@/shared/components/OverlayPanel';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
 
+import { CycleTasksBoard } from '../CycleTasksBoard/index';
 import { TodayCycleForm } from '../TodayCycleForm/index';
 import { todayPlannerOverviewStyles } from './styles';
 
@@ -114,6 +115,7 @@ export function TodayPlannerOverview() {
   const [draftActualHours, setDraftActualHours] = useState<Record<string, number>>({});
 
   const projects = useWorkspaceStore((state) => state.projects);
+  const taskColumns = useWorkspaceStore((state) => state.taskColumns);
   const tasks = useWorkspaceStore((state) => state.tasks);
   const cycleValues = useWorkspaceStore((state) => state.todayCycleValues);
   const todayActualHours = useWorkspaceStore((state) => state.todayActualHours);
@@ -133,6 +135,8 @@ export function TodayPlannerOverview() {
   const pauseSession = useWorkspaceStore((state) => state.pauseSession);
   const resumeSession = useWorkspaceStore((state) => state.resumeSession);
   const switchActiveProject = useWorkspaceStore((state) => state.switchActiveProject);
+  const moveTaskToColumn = useWorkspaceStore((state) => state.moveTaskToColumn);
+  const skipTaskToNextCycle = useWorkspaceStore((state) => state.skipTaskToNextCycle);
   const closeDay = useWorkspaceStore((state) => state.closeDay);
   const prepareCloseDayReview = useWorkspaceStore((state) => state.prepareCloseDayReview);
   const openRegularizationPanel = useWorkspaceStore((state) => state.openRegularizationPanel);
@@ -493,6 +497,27 @@ export function TodayPlannerOverview() {
                   Planejado {formatHours(activeProjectPlannedHours)} · Real {formatHours(activeProjectTrackedHours)}
                 </p>
               </CardContent>
+            </Card>
+          )}
+
+          {activeProject && sessionState !== 'idle' && sessionState !== 'completed' && (
+            <Card>
+              <CardHeader className={todayPlannerOverviewStyles.cardHeaderInline}>
+                <div>
+                  <CardDescription>Tasks do projeto ativo</CardDescription>
+                  <CardTitle>Board operacional de hoje</CardTitle>
+                </div>
+                <p className={todayPlannerOverviewStyles.activeProjectCopy}>
+                  Somente tasks do projeto ativo e do cycle atual aparecem aqui.
+                </p>
+              </CardHeader>
+              <CycleTasksBoard
+                activeProject={activeProject}
+                onMoveTaskToColumn={moveTaskToColumn}
+                onSkipTask={skipTaskToNextCycle}
+                taskColumns={taskColumns}
+                tasks={tasks}
+              />
             </Card>
           )}
 

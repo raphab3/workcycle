@@ -2,95 +2,50 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
+import { mockProjects } from '@/modules/projects/mocks/projects';
+import { defaultTaskColumns } from '@/modules/tasks/mocks/taskColumns';
+import { mockTasks } from '@/modules/tasks/mocks/tasks';
+
 import { CycleTasksBoard } from './index';
 
 describe('CycleTasksBoard', () => {
-  it('renders tasks that fit and overflow the cycle', () => {
+  it('renders the fixed columns and project-filtered tasks', () => {
     render(
       <CycleTasksBoard
-        availableHours={4}
-        nextCycleTasksCount={2}
-        onCompleteTask={vi.fn()}
+        activeProject={mockProjects[2]!}
+        onMoveTaskToColumn={vi.fn()}
         onSkipTask={vi.fn()}
-        taskPlan={{
-          plannedHours: 5.5,
-          remainingHours: 0,
-          overflowHours: 1.5,
-          tasks: [
-            {
-              taskId: 'one',
-              title: 'Fechar refinamento da sprint',
-              projectId: 'fintrack',
-              projectName: 'FinTrack',
-              colorHex: '#1D4ED8',
-              priority: 'high',
-              status: 'doing',
-              estimatedHours: 2,
-              dueLabel: 'vence em 2 dias',
-              fitsInCycle: true,
-              cumulativeHours: 2,
-            },
-            {
-              taskId: 'two',
-              title: 'Ajustar migration de faturamento',
-              projectId: 'datavault',
-              projectName: 'DataVault',
-              colorHex: '#0F766E',
-              priority: 'critical',
-              status: 'todo',
-              estimatedHours: 3.5,
-              dueLabel: 'vence hoje',
-              fitsInCycle: false,
-              cumulativeHours: 5.5,
-            },
-          ],
-        }}
+        taskColumns={defaultTaskColumns}
+        tasks={mockTasks}
       />,
     );
 
-    expect(screen.getByText('Fechar refinamento da sprint')).toBeInTheDocument();
-    expect(screen.getByText(/Cabe no cycle ate 2h00/i)).toBeInTheDocument();
-    expect(screen.getByText(/Excede o cycle em 1h30/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Backlog' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'In Progress' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Done' })).toBeInTheDocument();
+    expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
+    expect(screen.queryByText('Fechar refinamento da sprint')).not.toBeInTheDocument();
   });
 
-  it('triggers complete and skip actions', async () => {
+  it('opens quick confirm and sends the selected skip strategy', async () => {
     const user = userEvent.setup();
-    const onCompleteTask = vi.fn();
     const onSkipTask = vi.fn();
 
     render(
       <CycleTasksBoard
-        availableHours={4}
-        nextCycleTasksCount={0}
-        onCompleteTask={onCompleteTask}
+        activeProject={mockProjects[2]!}
+        onMoveTaskToColumn={vi.fn()}
         onSkipTask={onSkipTask}
-        taskPlan={{
-          plannedHours: 2,
-          remainingHours: 2,
-          overflowHours: 0,
-          tasks: [
-            {
-              taskId: 'one',
-              title: 'Fechar refinamento da sprint',
-              projectId: 'fintrack',
-              projectName: 'FinTrack',
-              colorHex: '#1D4ED8',
-              priority: 'high',
-              status: 'doing',
-              estimatedHours: 2,
-              dueLabel: 'vence em 2 dias',
-              fitsInCycle: true,
-              cumulativeHours: 2,
-            },
-          ],
-        }}
+        taskColumns={defaultTaskColumns}
+        tasks={mockTasks}
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Concluir task' }));
     await user.click(screen.getByRole('button', { name: 'Pular para proximo cycle' }));
+    expect(screen.getByText(/Escolha como essa task deve entrar no proximo dia/i)).toBeInTheDocument();
 
-    expect(onCompleteTask).toHaveBeenCalledWith('one');
-    expect(onSkipTask).toHaveBeenCalledWith('one');
+    await user.click(screen.getByRole('button', { name: /Resetar para Backlog no proximo dia/i }));
+
+    expect(onSkipTask).toHaveBeenCalledWith('billing-migration', 'reset-to-backlog');
   });
 });

@@ -1,9 +1,10 @@
-import type { TaskCyclePlan } from '@/modules/tasks/types';
+import type { Project } from '@/modules/projects/types';
+import type { Task, TaskColumn } from '@/modules/tasks/types';
 
 export interface CycleTasksBoardProps {
-  availableHours: number;
-  nextCycleTasksCount: number;
-  onCompleteTask: (taskId: string) => void;
-  onSkipTask: (taskId: string) => void;
-  taskPlan: TaskCyclePlan;
+  activeProject: Project;
+  taskColumns: TaskColumn[];
+  tasks: Task[];
+  onMoveTaskToColumn: (taskId: string, columnId: string) => void;
+  onSkipTask: (taskId: string, strategy: 'reset-to-backlog' | 'keep-stage') => void;
 }
