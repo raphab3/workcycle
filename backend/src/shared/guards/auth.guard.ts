@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 
-import { verifyAuthToken } from '@/shared/utils/auth-token';
+import { verifyAccessToken } from '@/shared/utils/auth-token';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -13,7 +13,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const token = authorizationHeader.replace('Bearer ', '').trim();
-    const user = verifyAuthToken(token);
+    const user = verifyAccessToken(token);
 
     if (!user) {
       throw new UnauthorizedException('Authentication token is invalid or expired.');

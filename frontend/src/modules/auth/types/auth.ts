@@ -24,13 +24,29 @@ export interface AuthUserDTO {
   id: string;
 }
 
+export interface RefreshTokenPolicyDTO {
+  endpoint: '/api/auth/refresh' | string;
+  rotation: 'rotate' | string;
+  transport: 'body' | string;
+}
+
 export interface AuthSessionDTO {
-  token: string;
+  accessToken: string | null;
+  accessTokenExpiresAt: string | null;
+  refreshToken: string | null;
+  refreshTokenExpiresAt: string | null;
+  refreshTokenPolicy: RefreshTokenPolicyDTO;
+  tokenType: 'Bearer';
   user: AuthUserDTO;
 }
 
 export interface StoredAuthSession {
-  token: string;
+  accessToken: string | null;
+  accessTokenExpiresAt: string | null;
+  refreshToken: string | null;
+  refreshTokenExpiresAt: string | null;
+  refreshTokenPolicy: RefreshTokenPolicyDTO;
+  tokenType: 'Bearer';
   user: AuthUserDTO;
 }
 

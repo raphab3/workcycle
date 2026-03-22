@@ -2,7 +2,15 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
 
-import type { AuthUserResponse } from '@/modules/auth/types/auth';
+import type { AuthSessionResponse } from '@/modules/auth/types/auth';
+
+function buildRefreshTokenPolicy() {
+  return {
+    endpoint: '/api/auth/refresh' as const,
+    rotation: 'rotate' as const,
+    transport: 'body' as const,
+  };
+}
 
 @Injectable()
 export class GetAuthSessionUseCase {
@@ -11,7 +19,8 @@ export class GetAuthSessionUseCase {
     private readonly authRepository: AuthRepository,
   ) {}
 
-  async execute(userId: string): Promise<AuthUserResponse> {
+  async execute(input: { accessTokenExpiresAt?: string | null; userId: string }): Promise<AuthSessionResponse> {
+    const { accessTokenExpiresAt = null, userId } = input;
     const user = await this.authRepository.findUserById(userId);
 
     if (!user) {
@@ -21,12 +30,20 @@ export class GetAuthSessionUseCase {
     const googleAccount = await this.authRepository.findGoogleAccountByEmail(user.email);
 
     return {
-      authProvider: user.authProvider,
-      displayName: user.displayName,
-      email: user.email,
-      hasGoogleLinked: Boolean(googleAccount),
-      hasPassword: Boolean(user.passwordHash),
-      id: user.id,
+      accessToken: null,
+      accessTokenExpiresAt,
+      refreshToken: null,
+      refreshTokenExpiresAt: null,
+      refreshTokenPolicy: buildRefreshTokenPolicy(),
+      tokenType: 'Bearer',
+      user: {
+        authProvider: user.authProvider,
+        displayName: user.displayName,
+        email: user.email,
+        hasGoogleLinked: Boolean(googleAccount),
+        hasPassword: Boolean(user.passwordHash),
+        id: user.id,
+      },
     };
   }
 }

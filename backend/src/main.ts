@@ -6,6 +6,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { AppModule } from '@/app.module';
 import { appConfig } from '@/shared/config';
+import { ApiExceptionFilter } from '@/shared/filters/api-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -22,6 +23,7 @@ async function bootstrap() {
     credentials: true,
     origin: appConfig.frontendOrigin,
   });
+  app.useGlobalFilters(new ApiExceptionFilter());
 
   await app.listen(appConfig.port, appConfig.host);
 }

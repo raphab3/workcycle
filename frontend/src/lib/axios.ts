@@ -15,8 +15,8 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const storedSession = readStoredAuthSession();
 
-  if (storedSession?.token) {
-    config.headers.Authorization = `Bearer ${storedSession.token}`;
+  if (storedSession?.accessToken) {
+    config.headers.Authorization = `Bearer ${storedSession.accessToken}`;
   }
 
   return config;

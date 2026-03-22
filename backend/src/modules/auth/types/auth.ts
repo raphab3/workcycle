@@ -1,11 +1,20 @@
 export type AuthProvider = 'email' | 'google' | 'hybrid';
 
+export type AuthTokenType = 'access' | 'refresh';
+
+export interface RefreshTokenPolicyResponse {
+  endpoint: '/api/auth/refresh';
+  rotation: 'rotate';
+  transport: 'body';
+}
+
 export interface AuthTokenPayload {
   displayName: string;
   email: string;
   exp: number;
   provider: AuthProvider;
   sub: string;
+  tokenType: AuthTokenType;
 }
 
 export interface AuthUserResponse {
@@ -18,7 +27,12 @@ export interface AuthUserResponse {
 }
 
 export interface AuthSessionResponse {
-  token: string;
+  accessToken: string | null;
+  accessTokenExpiresAt: string | null;
+  refreshToken: string | null;
+  refreshTokenExpiresAt: string | null;
+  refreshTokenPolicy: RefreshTokenPolicyResponse;
+  tokenType: 'Bearer';
   user: AuthUserResponse;
 }
 

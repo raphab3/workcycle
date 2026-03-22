@@ -22,7 +22,10 @@ export class AuthFinderService {
   }
 
   async getSession(user: AuthTokenPayload) {
-    return this.getAuthSessionUseCase.execute(user.sub);
+    return this.getAuthSessionUseCase.execute({
+      accessTokenExpiresAt: new Date(user.exp * 1_000).toISOString(),
+      userId: user.sub,
+    });
   }
 
   async getGoogleConnections(user: AuthTokenPayload) {

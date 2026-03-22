@@ -1,7 +1,7 @@
 import { api } from '@/lib/axios';
 import { env } from '@/config/env';
 
-import type { AuthSessionDTO, AuthStatusDTO, AuthUserDTO, GoogleAccountDTO } from '@/modules/auth/types';
+import type { AuthSessionDTO, AuthStatusDTO, GoogleAccountDTO } from '@/modules/auth/types';
 
 async function getAuthStatus() {
   const response = await api.get<AuthStatusDTO>('/api/auth/status');
@@ -10,7 +10,7 @@ async function getAuthStatus() {
 }
 
 async function getAuthSession() {
-  const response = await api.get<AuthUserDTO>('/api/auth/session');
+  const response = await api.get<AuthSessionDTO>('/api/auth/session');
 
   return response.data;
 }
@@ -49,6 +49,12 @@ async function exchangeFirebaseIdToken(idToken: string) {
   return response.data;
 }
 
+async function refreshSession(refreshToken: string) {
+  const response = await api.post<AuthSessionDTO>('/api/auth/refresh', { refreshToken });
+
+  return response.data;
+}
+
 export const authService = {
   exchangeFirebaseIdToken,
   getAuthSession,
@@ -57,5 +63,6 @@ export const authService = {
   getGoogleLinkUrl,
   getGoogleLoginUrl,
   login,
+  refreshSession,
   register,
 };

@@ -11,6 +11,7 @@ interface AuthStoreState {
   session: StoredAuthSession | null;
   sessionStatus: AuthSessionStatus;
   hydrateSession: () => void;
+  mergeSession: (session: AuthSessionDTO) => void;
   signIn: (session: AuthSessionDTO) => void;
   updateUser: (user: AuthUserDTO) => void;
   signOut: () => void;
@@ -29,6 +30,25 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       sessionStatus: session ? 'authenticated' : 'unauthenticated',
     });
   },
+  mergeSession: (session) => set((state) => {
+    const nextSession: StoredAuthSession = {
+      accessToken: session.accessToken ?? state.session?.accessToken ?? null,
+      accessTokenExpiresAt: session.accessTokenExpiresAt ?? state.session?.accessTokenExpiresAt ?? null,
+      refreshToken: session.refreshToken ?? state.session?.refreshToken ?? null,
+      refreshTokenExpiresAt: session.refreshTokenExpiresAt ?? state.session?.refreshTokenExpiresAt ?? null,
+      refreshTokenPolicy: session.refreshTokenPolicy,
+      tokenType: session.tokenType,
+      user: session.user,
+    };
+
+    persistAuthSession(nextSession);
+
+    return {
+      hasHydrated: true,
+      session: nextSession,
+      sessionStatus: 'authenticated',
+    };
+  }),
   signIn: (session) => {
     persistAuthSession(session);
 

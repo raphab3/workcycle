@@ -83,7 +83,16 @@ describe('AppLayout', () => {
 
     usePathnameMock.mockReturnValue('/hoje');
     useAuthStore.getState().signIn({
-      token: 'auth-token',
+      accessToken: 'auth-token',
+      accessTokenExpiresAt: '2026-03-22T12:00:00.000Z',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: '2026-03-29T12:00:00.000Z',
+      refreshTokenPolicy: {
+        endpoint: '/api/auth/refresh',
+        rotation: 'rotate',
+        transport: 'body',
+      },
+      tokenType: 'Bearer',
       user: {
         authProvider: 'email',
         displayName: 'Rafa',

@@ -16,7 +16,51 @@ import { useAuthStore } from '@/modules/auth/store/useAuthStore';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 
+import type { AuthSessionDTO } from '@/modules/auth/types';
+
 import { loginWorkspaceStyles } from './styles';
+
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
+
+  return window.atob(`${normalized}${padding}`);
+}
+
+function buildLegacySession(searchParams: ReadonlyURLSearchParams | null): AuthSessionDTO | null {
+  const authToken = searchParams?.get('authToken');
+  const authUserId = searchParams?.get('authUserId');
+  const authEmail = searchParams?.get('authEmail');
+  const authDisplayName = searchParams?.get('authDisplayName');
+  const authProvider = searchParams?.get('authProvider');
+  const authHasGoogleLinked = searchParams?.get('authHasGoogleLinked');
+  const authHasPassword = searchParams?.get('authHasPassword');
+
+  if (!authToken || !authUserId || !authEmail || !authDisplayName || !authProvider) {
+    return null;
+  }
+
+  return {
+    accessToken: authToken,
+    accessTokenExpiresAt: null,
+    refreshToken: null,
+    refreshTokenExpiresAt: null,
+    refreshTokenPolicy: {
+      endpoint: '/api/auth/refresh',
+      rotation: 'rotate',
+      transport: 'body',
+    },
+    tokenType: 'Bearer',
+    user: {
+      authProvider: authProvider as 'email' | 'google' | 'hybrid',
+      displayName: authDisplayName,
+      email: authEmail,
+      hasGoogleLinked: authHasGoogleLinked === 'true',
+      hasPassword: authHasPassword === 'true',
+      id: authUserId,
+    },
+  };
+}
 
 export function LoginWorkspace() {
   const router = useRouter();
@@ -52,29 +96,24 @@ export function LoginWorkspace() {
       return;
     }
 
-    const authToken = searchParams?.get('authToken');
-    const authUserId = searchParams?.get('authUserId');
-    const authEmail = searchParams?.get('authEmail');
-    const authDisplayName = searchParams?.get('authDisplayName');
-    const authProvider = searchParams?.get('authProvider');
-    const authHasGoogleLinked = searchParams?.get('authHasGoogleLinked');
-    const authHasPassword = searchParams?.get('authHasPassword');
+    const encodedAuthSession = searchParams?.get('authSession');
+    let nextSession: AuthSessionDTO | null = null;
 
-    if (!authToken || !authUserId || !authEmail || !authDisplayName || !authProvider) {
+    if (encodedAuthSession) {
+      try {
+        nextSession = JSON.parse(decodeBase64Url(encodedAuthSession)) as AuthSessionDTO;
+      } catch {
+        nextSession = null;
+      }
+    }
+
+    nextSession ??= buildLegacySession(searchParams);
+
+    if (!nextSession) {
       return;
     }
 
-    signIn({
-      token: authToken,
-      user: {
-        authProvider: authProvider as 'email' | 'google' | 'hybrid',
-        displayName: authDisplayName,
-        email: authEmail,
-        hasGoogleLinked: authHasGoogleLinked === 'true',
-        hasPassword: authHasPassword === 'true',
-        id: authUserId,
-      },
-    });
+    signIn(nextSession);
 
     router.replace('/dashboard');
   }, [router, searchParams, signIn]);

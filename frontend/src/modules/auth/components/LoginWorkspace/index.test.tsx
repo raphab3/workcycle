@@ -56,7 +56,16 @@ describe('LoginWorkspace', () => {
     const user = userEvent.setup();
 
     loginMutateAsyncMock.mockResolvedValue({
-      token: 'auth-token',
+      accessToken: 'auth-token',
+      accessTokenExpiresAt: '2026-03-22T12:00:00.000Z',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: '2026-03-29T12:00:00.000Z',
+      refreshTokenPolicy: {
+        endpoint: '/api/auth/refresh',
+        rotation: 'rotate',
+        transport: 'body',
+      },
+      tokenType: 'Bearer',
       user: {
         authProvider: 'email',
         displayName: 'Rafa',
@@ -74,7 +83,16 @@ describe('LoginWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar com email' }));
 
     expect(signInMock).toHaveBeenCalledWith({
-      token: 'auth-token',
+      accessToken: 'auth-token',
+      accessTokenExpiresAt: '2026-03-22T12:00:00.000Z',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: '2026-03-29T12:00:00.000Z',
+      refreshTokenPolicy: {
+        endpoint: '/api/auth/refresh',
+        rotation: 'rotate',
+        transport: 'body',
+      },
+      tokenType: 'Bearer',
       user: {
         authProvider: 'email',
         displayName: 'Rafa',
@@ -91,7 +109,16 @@ describe('LoginWorkspace', () => {
     const user = userEvent.setup();
 
     registerMutateAsyncMock.mockResolvedValue({
-      token: 'auth-token',
+      accessToken: 'auth-token',
+      accessTokenExpiresAt: '2026-03-22T12:00:00.000Z',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: '2026-03-29T12:00:00.000Z',
+      refreshTokenPolicy: {
+        endpoint: '/api/auth/refresh',
+        rotation: 'rotate',
+        transport: 'body',
+      },
+      tokenType: 'Bearer',
       user: {
         authProvider: 'email',
         displayName: 'Rafa Barros',
@@ -111,7 +138,16 @@ describe('LoginWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Criar conta com email' }));
 
     expect(signInMock).toHaveBeenCalledWith({
-      token: 'auth-token',
+      accessToken: 'auth-token',
+      accessTokenExpiresAt: '2026-03-22T12:00:00.000Z',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: '2026-03-29T12:00:00.000Z',
+      refreshTokenPolicy: {
+        endpoint: '/api/auth/refresh',
+        rotation: 'rotate',
+        transport: 'body',
+      },
+      tokenType: 'Bearer',
       user: {
         authProvider: 'email',
         displayName: 'Rafa Barros',

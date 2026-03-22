@@ -24,6 +24,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1).default('postgresql://workcycle:workcycle@localhost:5432/workcycle'),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:3000'),
   AUTH_TOKEN_SECRET: z.string().min(16).default('workcycle-dev-auth-token-secret'),
+  AUTH_REFRESH_TOKEN_SECRET: z.string().min(16).default('workcycle-dev-refresh-token-secret'),
   GOOGLE_CLIENT_ID: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
   GOOGLE_CLIENT_SECRET: z.preprocess(emptyStringToUndefined, z.string().min(1).optional()),
   GOOGLE_REDIRECT_URI: z.preprocess(emptyStringToUndefined, z.string().url().optional()),

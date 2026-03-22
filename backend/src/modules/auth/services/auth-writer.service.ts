@@ -6,7 +6,7 @@ import { LoginUserUseCase } from '@/modules/auth/use-cases/login-user.use-case';
 import { RegisterUserUseCase } from '@/modules/auth/use-cases/register-user.use-case';
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
 import { FirebaseAdminService } from '@/shared/providers/firebase/firebase-admin.service';
-import { issueAuthToken } from '@/shared/utils/auth-token';
+import { issueAccessToken, issueRefreshToken, verifyRefreshToken } from '@/shared/utils/auth-token';
 import { env } from '@/shared/config';
 
 import type { DecodedIdToken } from 'firebase-admin/auth';
@@ -126,13 +126,7 @@ export class AuthWriterService {
     }
 
     const redirectUrl = new URL('/login', env.FRONTEND_ORIGIN);
-    redirectUrl.searchParams.set('authToken', session.token);
-    redirectUrl.searchParams.set('authDisplayName', session.user.displayName);
-    redirectUrl.searchParams.set('authEmail', session.user.email);
-    redirectUrl.searchParams.set('authProvider', session.user.authProvider);
-    redirectUrl.searchParams.set('authUserId', session.user.id);
-    redirectUrl.searchParams.set('authHasGoogleLinked', String(session.user.hasGoogleLinked));
-    redirectUrl.searchParams.set('authHasPassword', String(session.user.hasPassword));
+    redirectUrl.searchParams.set('authSession', Buffer.from(JSON.stringify(session)).toString('base64url'));
 
     return redirectUrl.toString();
   }
@@ -181,17 +175,39 @@ export class AuthWriterService {
     return this.buildSessionResponse(user.id, user.email, user.displayName, user.authProvider);
   }
 
+  async refreshSession(refreshToken: string): Promise<AuthSessionResponse> {
+    const payload = verifyRefreshToken(refreshToken);
+
+    if (!payload) {
+      throw new UnauthorizedException('Refresh token is invalid or expired.');
+    }
+
+    return this.buildSessionResponse(payload.sub, payload.email, payload.displayName, payload.provider);
+  }
+
   private async buildSessionResponse(userId: string, email: string, displayName: string, provider: AuthTokenPayload['provider']): Promise<AuthSessionResponse> {
-    const user = await this.getAuthSessionUseCase.execute(userId);
+    const accessToken = issueAccessToken({
+      displayName,
+      email,
+      provider,
+      userId,
+    });
+    const refreshToken = issueRefreshToken({
+      displayName,
+      email,
+      provider,
+      userId,
+    });
+    const session = await this.getAuthSessionUseCase.execute({
+      accessTokenExpiresAt: accessToken.expiresAt,
+      userId,
+    });
 
     return {
-      token: issueAuthToken({
-        displayName,
-        email,
-        provider,
-        userId,
-      }),
-      user,
+      ...session,
+      accessToken: accessToken.token,
+      refreshToken: refreshToken.token,
+      refreshTokenExpiresAt: refreshToken.expiresAt,
     };
   }
 

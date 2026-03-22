@@ -11,10 +11,10 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const hydrateSession = useAuthStore((state) => state.hydrateSession);
+  const mergeSession = useAuthStore((state) => state.mergeSession);
   const session = useAuthStore((state) => state.session);
   const signOut = useAuthStore((state) => state.signOut);
-  const updateUser = useAuthStore((state) => state.updateUser);
-  const sessionToken = session?.token;
+  const sessionToken = session?.accessToken;
 
   useEffect(() => {
     hydrateSession();
@@ -28,12 +28,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let isActive = true;
 
     void authService.getAuthSession()
-      .then((user) => {
+      .then((nextSession) => {
         if (!isActive) {
           return;
         }
 
-        updateUser(user);
+        mergeSession(nextSession);
       })
       .catch(() => {
         if (!isActive) {
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       isActive = false;
     };
-  }, [sessionToken, signOut, updateUser]);
+  }, [mergeSession, sessionToken, signOut]);
 
   return <>{children}</>;
 }
