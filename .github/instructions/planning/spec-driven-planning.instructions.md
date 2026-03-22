@@ -9,10 +9,13 @@ applyTo: "docs/planning/**/*.md"
 - Preserve the three-phase workflow: `EPIC -> CORE FLOW -> TICKETS`.
 - Do not create `core-flow.md` before `epic.md` is approved.
 - Do not create tickets before `core-flow.md` is approved.
+- As soon as an `epic.md` is approved, create `docs/planning/[epic-slug]/` immediately and persist the EPIC there before proceeding.
 - Keep planning artifacts implementation-ready, with explicit scope, dependencies, acceptance criteria, and open questions.
 - Detect and record the actual stack from the repository before making technical recommendations.
 - Prefer concrete module, API, data, and integration boundaries over generic prose.
 - Include edge cases, recovery paths, and operational risks instead of describing only the happy path.
 - For ticket files, keep one clear unit of work per file and ensure acceptance criteria are objectively testable.
 - Follow the planning structure under `docs/planning/[epic-slug]/` with `epic.md`, `core-flow.md`, and `tickets/`.
+- Derive `epic-slug` automatically from the Epic title using lowercase ASCII kebab-case, removing accents, punctuation, and duplicate separators.
+- Reuse the same `epic-slug` for all subsequent files in the initiative.
 - If information is still ambiguous, leave explicit open questions instead of inventing details.

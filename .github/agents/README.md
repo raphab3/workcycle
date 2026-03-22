@@ -8,6 +8,10 @@ Este diretório reúne agentes especializados para planejamento, implementação
 - Arquivo: [PLANNER.agent.md](./PLANNER.agent.md)
 - Use quando a ideia ainda estiver vaga e você precisar sair de problema aberto para artefatos em `docs/planning/`.
 - Fluxo principal: `Kickoff -> Epic -> Core Flow -> Tickets`.
+- O agente foi configurado para `target: vscode`, usando `vscode/askQuestions` para rodadas curtas com opções clicáveis sempre que houver escolhas delimitadas.
+- Após aprovação de cada fase, use os handoffs clicáveis para seguir para `CORE FLOW`, `TICKETS` ou para agentes de revisão e execução.
+- Assim que o `EPIC` for aprovado, o agente deve criar `docs/planning/[epic-slug]/` automaticamente e salvar `epic.md` nessa pasta.
+- O `epic-slug` deve ser gerado automaticamente a partir do título do Epic em formato kebab-case ASCII.
 
 ### frontend-architect
 - Arquivo: [frontend-architect.agent.md](./frontend-architect.agent.md)
