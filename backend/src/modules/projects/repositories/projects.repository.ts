@@ -6,6 +6,10 @@ import { projects } from '@/shared/database/schema';
 
 import type { NewProject } from '@/shared/database/schema';
 
+export type ProjectUpdateData = {
+  [Key in keyof NewProject]?: Exclude<NewProject[Key], undefined>;
+};
+
 @Injectable()
 export class ProjectsRepository {
   constructor(
@@ -40,7 +44,7 @@ export class ProjectsRepository {
     return project;
   }
 
-  async update(id: string, userId: string, data: Partial<NewProject>) {
+  async update(id: string, userId: string, data: ProjectUpdateData) {
     const [project] = await this.drizzleService.db
       .update(projects)
       .set({ ...data, updatedAt: new Date() })

@@ -20,6 +20,10 @@ Backend foundation for WorkCycle Agenda mode.
 - `npm run db:generate` generates SQL migrations from the Drizzle schema
 - `npm run db:migrate` applies generated Drizzle migrations
 
+## Docker Compose
+
+When the backend service starts through Docker Compose, it automatically applies Drizzle migrations before starting the NestJS dev server.
+
 ## Environment
 
 Copy `.env.example` to `.env` when running locally outside Docker.
