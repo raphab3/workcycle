@@ -4,7 +4,7 @@
   "private": true,
   "description": "WorkCycle backend foundation for Agenda mode.",
   "engines": {
-    "node": ">=20"
+    "node": "24.14.0"
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",
