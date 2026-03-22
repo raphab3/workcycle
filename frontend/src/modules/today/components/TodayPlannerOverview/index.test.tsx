@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
@@ -10,84 +10,86 @@ describe('TodayPlannerOverview', () => {
     resetWorkspaceStore();
   });
 
-  it('renders operational context derived from the current plan', () => {
+  it('renders the operational cockpit idle state and blocks session start until a project is selected', async () => {
+    const user = userEvent.setup();
+
     render(<TodayPlannerOverview />);
 
-    expect(screen.getByText('50h00 projetadas no ritmo atual')).toBeInTheDocument();
-    expect(screen.getByText('Backlog ocupa 5% da janela de 4 semanas')).toBeInTheDocument();
-    expect(screen.getByText('3 sinais de atencao ativos')).toBeInTheDocument();
-    expect(screen.getByText(/AuthGuard esta pausado/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Nenhuma sessao iniciada hoje/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Contexto do ciclo a partir do que esta acontecendo hoje/i })).not.toBeInTheDocument();
+
+    const startButton = screen.getByRole('button', { name: /Iniciar sessao/i });
+    expect(startButton).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
+
+    expect(startButton).toBeEnabled();
   });
 
-  it('reflects shared task changes from the workspace store', () => {
-    useWorkspaceStore.getState().addTask({
-      title: 'Escalar analise de onboarding',
-      description: 'Detalhar gargalos de onboarding e preparar resposta para o proximo ciclo.',
-      projectId: 'cliente-core',
-      columnId: 'backlog',
-      checklist: [],
-      cycleAssignment: 'current',
-      priority: 'critical',
-      status: 'todo',
-      dueInDays: 0,
-      estimatedHours: 6,
+  it('starts a session and collapses the day plan after the initial project is selected', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /DataVault/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+
+    expect(screen.getByRole('heading', { name: /Sessao em andamento/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Rever plano/i })).toBeInTheDocument();
+    expect(screen.getByText(/Projeto ativo: DataVault/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Pausar$/i })).toBeInTheDocument();
+  });
+
+  it('switches the active project from the project picker', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+    await user.click(screen.getByRole('button', { name: /Trocar projeto/i }));
+    await user.click(screen.getByRole('button', { name: /FinTrack/i }));
+
+    expect(screen.getByText(/Projeto ativo agora/i)).toBeInTheDocument();
+    expect(screen.getByText(/^FinTrack$/i)).toBeInTheDocument();
+  });
+
+  it('opens the close-day drawer from the running state', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+    await user.click(screen.getAllByRole('button', { name: /Encerrar dia/i })[0]);
+
+    expect(screen.getByRole('dialog', { name: /Encerrar dia/i })).toBeInTheDocument();
+    expect(screen.getByText(/Linha do tempo de pulsos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fechamento com horas finais/i)).toBeInTheDocument();
+  });
+
+  it('shows paused inactivity actions and opens the review drawer', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />);
+
+    await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
+    await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
+    await user.click(screen.getByRole('button', { name: /Iniciar sessao/i }));
+
+    act(() => {
+      useWorkspaceStore.getState().firePulse('2026-03-22T09:30:00.000Z');
+      useWorkspaceStore.getState().expireActivePulse('2026-03-22T09:35:00.000Z');
     });
 
-    render(<TodayPlannerOverview />);
+    expect(screen.getByRole('heading', { name: /Sessao pausada por inatividade/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Revisar tempo/i }));
 
-    expect(screen.getByText(/Maior pressao atual em ClienteCore/i)).toBeInTheDocument();
-  });
-
-  it('renders fixed and rotative planning blocks', () => {
-    render(<TodayPlannerOverview />);
-
-    expect(screen.getByText('Tasks alocadas no cycle')).toBeInTheDocument();
-    expect(screen.getByText('Ajustar migration de faturamento')).toBeInTheDocument();
-    expect(screen.getByText('Distribuicao inicial do dia')).toBeInTheDocument();
-    expect(screen.getAllByText('ClienteCore').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Fixo').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Rotativo').length).toBeGreaterThan(0);
-  });
-
-  it('collapses and expands the suggestion banner', async () => {
-    const user = userEvent.setup();
-
-    render(<TodayPlannerOverview />);
-
-    expect(screen.getByLabelText('Detalhes de redistribuicao')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ocultar detalhes' }));
-    expect(screen.queryByLabelText('Detalhes de redistribuicao')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Sugestao de redistribuicao baseada na carga aberta/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Mostrar detalhes' }));
-    expect(screen.getByLabelText('Detalhes de redistribuicao')).toBeInTheDocument();
-    expect(screen.getByText(/Sugestao de redistribuicao baseada na carga aberta/i)).toBeInTheDocument();
-  });
-
-  it('adjusts actual hours with the execution stepper', async () => {
-    const user = userEvent.setup();
-
-    render(<TodayPlannerOverview />);
-
-    expect(screen.getByText(/Horas reais registradas: 10h00/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Aumentar ClienteCore' }));
-    expect(screen.getByText(/Horas reais registradas: 10h30/i)).toBeInTheDocument();
-  });
-
-  it('allows concluding or skipping tasks from the current cycle', async () => {
-    const user = userEvent.setup();
-
-    render(<TodayPlannerOverview />);
-
-    const billingTaskCard = screen.getByText('Ajustar migration de faturamento').closest('article');
-    const refinementTaskCard = screen.getByText('Fechar refinamento da sprint').closest('article');
-
-    expect(billingTaskCard).not.toBeNull();
-    expect(refinementTaskCard).not.toBeNull();
-
-    await user.click(within(billingTaskCard as HTMLElement).getByRole('button', { name: 'Pular para proximo cycle' }));
-    expect(screen.queryByText('Ajustar migration de faturamento')).not.toBeInTheDocument();
-
-    await user.click(within(refinementTaskCard as HTMLElement).getByRole('button', { name: 'Concluir task' }));
-    expect(screen.queryByText('Fechar refinamento da sprint')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /Revisar tempo/i })).toBeInTheDocument();
+    expect(screen.getByText(/Confirme ou marque como inativo/i)).toBeInTheDocument();
   });
 });
