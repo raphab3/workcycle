@@ -18,5 +18,8 @@ export function useCreateProjectMutation() {
         ...currentProjects.filter((currentProject) => currentProject.id !== project.id),
       ]);
     },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+    },
   });
 }

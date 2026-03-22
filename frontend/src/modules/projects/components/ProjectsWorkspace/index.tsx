@@ -27,33 +27,32 @@ export function ProjectsWorkspace() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const hasHydratedSession = useAuthStore((state) => state.hasHydrated);
   const sessionStatus = useAuthStore((state) => state.sessionStatus);
-  const projects = useWorkspaceStore((state) => state.projects);
   const replaceProjects = useWorkspaceStore((state) => state.replaceProjects);
-  const addProject = useWorkspaceStore((state) => state.addProject);
-  const updateProject = useWorkspaceStore((state) => state.updateProject);
-  const toggleProjectStatus = useWorkspaceStore((state) => state.toggleProjectStatus);
-  const shouldUseApi = hasHydratedSession && sessionStatus === 'authenticated';
-  const projectsQuery = useProjectsQuery({ enabled: shouldUseApi });
+  const isAuthLoading = !hasHydratedSession;
+  const isAuthenticated = hasHydratedSession && sessionStatus === 'authenticated';
+  const projectsQuery = useProjectsQuery({ enabled: isAuthenticated });
   const createProjectMutation = useCreateProjectMutation();
   const updateProjectMutation = useUpdateProjectMutation();
   const toggleProjectStatusMutation = useToggleProjectStatusMutation();
 
   useEffect(() => {
-    if (!projectsQuery.data) {
+    if (!isAuthenticated || !projectsQuery.data) {
       return;
     }
 
     replaceProjects(projectsQuery.data);
-  }, [projectsQuery.data, replaceProjects]);
+  }, [isAuthenticated, projectsQuery.data, replaceProjects]);
 
-  const visibleProjects = shouldUseApi ? (projectsQuery.data ?? []) : projects;
+  const visibleProjects = projectsQuery.data ?? [];
   const activeProjects = visibleProjects.filter((project) => project.status === 'active');
   const allocationTotal = getActiveAllocationTotal(visibleProjects);
   const allocationDelta = getAllocationDelta(visibleProjects);
   const allocationTone = getAllocationTone(visibleProjects);
-  const isSyncingProjects = shouldUseApi && projectsQuery.isPending;
+  const isSyncingProjects = isAuthenticated && projectsQuery.isPending;
+  const isRefetchingProjects = isAuthenticated && projectsQuery.isRefetching && !projectsQuery.isPending;
   const isSubmittingProject = createProjectMutation.isPending || updateProjectMutation.isPending;
   const isTogglingProjectStatus = toggleProjectStatusMutation.isPending;
+  const isProjectsReadOnly = !isAuthenticated || isSubmittingProject || isRefetchingProjects;
   const requestError = useMemo(
     () => projectsQuery.error ?? createProjectMutation.error ?? updateProjectMutation.error ?? toggleProjectStatusMutation.error,
     [createProjectMutation.error, projectsQuery.error, toggleProjectStatusMutation.error, updateProjectMutation.error],
@@ -67,42 +66,34 @@ export function ProjectsWorkspace() {
   }
 
   async function handleSubmitProject(values: ProjectFormValues, projectId?: string) {
-    if (shouldUseApi) {
-      if (projectId) {
-        await updateProjectMutation.mutateAsync({ projectId, values });
-      } else {
-        await createProjectMutation.mutateAsync(values);
-      }
-
-      setEditingProject(null);
+    if (!isAuthenticated) {
       return;
     }
 
     if (projectId) {
-      updateProject(projectId, values);
-      setEditingProject(null);
-      return;
+      await updateProjectMutation.mutateAsync({ projectId, values });
+    } else {
+      await createProjectMutation.mutateAsync(values);
     }
 
-    addProject(values);
+    setEditingProject(null);
   }
 
   function handleToggleStatus(projectId: string) {
-    if (shouldUseApi) {
-      const targetProject = visibleProjects.find((project) => project.id === projectId);
-
-      if (!targetProject) {
-        return;
-      }
-
-      void toggleProjectStatusMutation.mutateAsync({
-        projectId,
-        status: targetProject.status === 'active' ? 'paused' : 'active',
-      });
+    if (!isAuthenticated) {
       return;
     }
 
-    toggleProjectStatus(projectId);
+    const targetProject = visibleProjects.find((project) => project.id === projectId);
+
+    if (!targetProject) {
+      return;
+    }
+
+    void toggleProjectStatusMutation.mutateAsync({
+      projectId,
+      status: targetProject.status === 'active' ? 'paused' : 'active',
+    });
   }
 
   return (
@@ -121,11 +112,38 @@ export function ProjectsWorkspace() {
           tone="info"
         />
 
+        {isAuthLoading && (
+          <StateNotice
+            eyebrow="Autenticacao"
+            title="Validando sessao antes de carregar projetos"
+            description="A carteira sera sincronizada assim que a sessao autenticada for hidratada no cliente."
+            tone="info"
+          />
+        )}
+
+        {hasHydratedSession && !isAuthenticated && (
+          <StateNotice
+            eyebrow="Autenticacao"
+            title="Entre para sincronizar a carteira real"
+            description="O fluxo principal de Projects agora depende do backend autenticado e nao usa mais fallback funcional de mock local."
+            tone="warning"
+          />
+        )}
+
         {isSyncingProjects && (
           <StateNotice
             eyebrow="Sincronizacao"
             title="Carregando carteira persistida"
-            description="Os projetos autenticados estao sendo recuperados do backend para substituir o estado local temporario."
+            description="Os projetos autenticados estao sendo recuperados do backend para montar a carteira semanal real."
+            tone="info"
+          />
+        )}
+
+        {isRefetchingProjects && (
+          <StateNotice
+            eyebrow="Sincronizacao"
+            title="Atualizando carteira persistida"
+            description="O backend confirmou uma mudanca recente e a lista esta sendo reconciliada para evitar divergencia de cache."
             tone="info"
           />
         )}
@@ -139,12 +157,12 @@ export function ProjectsWorkspace() {
           />
         )}
 
-        {!isSyncingProjects && visibleProjects.length === 0 && (
+        {isAuthenticated && !isSyncingProjects && !requestErrorMessage && visibleProjects.length === 0 && (
           <EmptyState
             eyebrow="Projetos"
             title="Nenhuma frente cadastrada"
             description="Cadastre a primeira frente para liberar planejamentos diarios e leitura semanal do mock."
-            hint="Este fallback cobre o estado vazio global do modulo e evita a quebra do fluxo nas telas derivadas."
+            hint="Este estado vazio ja reflete a resposta real do backend para a carteira autenticada."
           />
         )}
 
@@ -198,6 +216,7 @@ export function ProjectsWorkspace() {
           <div className="px-6 pb-6">
             <ProjectForm
               defaultValues={editingProject}
+              isDisabled={!isAuthenticated || isRefetchingProjects}
               isSubmitting={isSubmittingProject}
               onCancelEdit={handleCancelEdit}
               onSubmitProject={handleSubmitProject}
@@ -207,7 +226,7 @@ export function ProjectsWorkspace() {
       </div>
 
       <ProjectsList
-        isDisabled={isTogglingProjectStatus}
+        isDisabled={!isAuthenticated || isTogglingProjectStatus || isRefetchingProjects}
         projects={visibleProjects}
         onEditProject={setEditingProject}
         onToggleStatus={handleToggleStatus}

@@ -17,5 +17,8 @@ export function useToggleProjectStatusMutation() {
         currentProject.id === project.id ? project : currentProject
       )));
     },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+    },
   });
 }

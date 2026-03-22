@@ -28,7 +28,7 @@ const baseValues: ProjectFormSchemaInput = {
   fixedHoursPerDay: 0,
 };
 
-export function ProjectForm({ defaultValues, isSubmitting = false, onCancelEdit, onSubmitProject }: ProjectFormProps) {
+export function ProjectForm({ defaultValues, isDisabled = false, isSubmitting = false, onCancelEdit, onSubmitProject }: ProjectFormProps) {
   const {
     formState: { errors },
     handleSubmit,
@@ -60,6 +60,7 @@ export function ProjectForm({ defaultValues, isSubmitting = false, onCancelEdit,
 
   return (
     <form className={projectFormStyles.form} onSubmit={handleSubmit(handleSubmitForm)}>
+      <fieldset disabled={isDisabled || isSubmitting}>
       <div className={projectFormStyles.grid}>
         <div className={projectFormStyles.field}>
           <label className={projectFormStyles.label} htmlFor="project-name">Nome do projeto</label>
@@ -153,13 +154,14 @@ export function ProjectForm({ defaultValues, isSubmitting = false, onCancelEdit,
         </p>
         <div className={projectFormStyles.actions}>
           {defaultValues && (
-            <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isDisabled || isSubmitting}>
               Cancelar edicao
             </Button>
           )}
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : defaultValues ? 'Salvar alteracoes' : 'Adicionar projeto'}</Button>
+          <Button type="submit" disabled={isDisabled || isSubmitting}>{isSubmitting ? 'Salvando...' : defaultValues ? 'Salvar alteracoes' : 'Adicionar projeto'}</Button>
         </div>
       </div>
+      </fieldset>
     </form>
   );
 }

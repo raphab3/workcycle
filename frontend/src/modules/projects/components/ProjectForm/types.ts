@@ -2,6 +2,7 @@ import type { Project, ProjectFormValues, WeekDay } from '@/modules/projects/typ
 
 export interface ProjectFormProps {
   defaultValues?: Project | null;
+  isDisabled?: boolean;
   isSubmitting?: boolean;
   onCancelEdit: () => void;
   onSubmitProject: (values: ProjectFormValues, projectId?: string) => Promise<void> | void;
