@@ -15,6 +15,13 @@
       "when": 1774208357288,
       "tag": "0001_ambitious_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774214906497,
+      "tag": "0002_careful_rhodey",
+      "breakpoints": true
     }
   ]
 }
