@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
 
@@ -6,7 +6,10 @@ import type { AuthUserResponse } from '@/modules/auth/types/auth';
 
 @Injectable()
 export class GetAuthSessionUseCase {
-  constructor(private readonly authRepository: AuthRepository) {}
+  constructor(
+    @Inject(AuthRepository)
+    private readonly authRepository: AuthRepository,
+  ) {}
 
   async execute(userId: string): Promise<AuthUserResponse> {
     const user = await this.authRepository.findUserById(userId);

@@ -1,11 +1,11 @@
-COMPOSE ?= docker-compose
+COMPOSE ?= docker compose
 
-.PHONY: help up up-build down restart ps logs logs-backend logs-frontend logs-db build migrate-backend backend-shell frontend-shell db-shell
+.PHONY: help up up-build down restart ps logs logs-backend logs-frontend logs-db build migrate-backend backend-shell frontend-shell db-shell rebuild-frontend rebuild-backend
 
 help:
 	@printf "Available targets:\n"
-	@printf "  make up              # Start the full infrastructure in detached mode\n"
-	@printf "  make up-build        # Build images and start the full infrastructure\n"
+	@printf "  make up              # Start the dev infrastructure in detached mode with live reload\n"
+	@printf "  make up-build        # Rebuild images and start the dev infrastructure\n"
 	@printf "  make down            # Stop and remove containers, network, and defaults\n"
 	@printf "  make restart         # Restart the full infrastructure\n"
 	@printf "  make ps              # Show running compose services\n"
@@ -15,6 +15,8 @@ help:
 	@printf "  make logs-db         # Tail database logs\n"
 	@printf "  make build           # Build all compose images\n"
 	@printf "  make migrate-backend # Run backend database migrations inside compose\n"
+	@printf "  make rebuild-frontend# Reinstall frontend dependencies after package changes\n"
+	@printf "  make rebuild-backend # Reinstall backend dependencies after package changes\n"
 	@printf "  make backend-shell   # Open a shell in the backend container\n"
 	@printf "  make frontend-shell  # Open a shell in the frontend container\n"
 	@printf "  make db-shell        # Open psql in the database container\n"
@@ -47,6 +49,12 @@ logs-db:
 
 build:
 	$(COMPOSE) build
+
+rebuild-frontend:
+	$(COMPOSE) up -d --build frontend
+
+rebuild-backend:
+	$(COMPOSE) up -d --build backend
 
 migrate-backend:
 	$(COMPOSE) run --rm backend npm run db:migrate

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 
 import { BuildGoogleLinkUrlUseCase } from '@/modules/auth/use-cases/build-google-link-url.use-case';
 import { GetAuthSessionUseCase } from '@/modules/auth/use-cases/get-auth-session.use-case';
@@ -25,10 +25,15 @@ interface GoogleProfileResponse {
 @Injectable()
 export class AuthWriterService {
   constructor(
+    @Inject(AuthRepository)
     private readonly authRepository: AuthRepository,
+    @Inject(BuildGoogleLinkUrlUseCase)
     private readonly buildGoogleLinkUrlUseCase: BuildGoogleLinkUrlUseCase,
+    @Inject(GetAuthSessionUseCase)
     private readonly getAuthSessionUseCase: GetAuthSessionUseCase,
+    @Inject(LoginUserUseCase)
     private readonly loginUserUseCase: LoginUserUseCase,
+    @Inject(RegisterUserUseCase)
     private readonly registerUserUseCase: RegisterUserUseCase,
   ) {}
 

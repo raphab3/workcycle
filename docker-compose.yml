@@ -3,10 +3,18 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    command: pnpm dev --hostname 0.0.0.0 --port 3000
     ports:
       - '3000:3000'
     environment:
+      NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:3333
+      WATCHPACK_POLLING: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
     depends_on:
       backend:
         condition: service_started
@@ -15,6 +23,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: npm run dev
     ports:
       - '3333:3333'
     environment:
@@ -28,6 +37,10 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3333/api/auth/google/callback}
       LOG_LEVEL: info
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -51,3 +64,6 @@ services:
 
 volumes:
   pgdata:
+  frontend_node_modules:
+  frontend_next:
+  backend_node_modules:

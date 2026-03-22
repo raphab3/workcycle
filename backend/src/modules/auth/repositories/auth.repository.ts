@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
@@ -18,7 +18,10 @@ interface UpsertGoogleAccountInput {
 
 @Injectable()
 export class AuthRepository {
-  constructor(private readonly drizzleService: DrizzleService) {}
+  constructor(
+    @Inject(DrizzleService)
+    private readonly drizzleService: DrizzleService,
+  ) {}
 
   async createUser(input: { authProvider: AuthProvider; displayName: string; email: string; passwordHash?: string | null }) {
     const [user] = await this.drizzleService.db

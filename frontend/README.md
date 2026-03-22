@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# WorkCycle Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Desenvolvimento com Docker
 
-Currently, two official plugins are available:
+O ambiente de desenvolvimento agora usa bind mount do diretório `frontend/` dentro do container. Isso permite que alterações em `src/`, `public/` e arquivos de configuração reflitam automaticamente no `next dev` sem rebuild da imagem.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Subir o ambiente
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+make up
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+ou
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+docker compose up -d
 ```
+
+### Quando o hot reload deve funcionar
+
+- alterações em arquivos `.ts`, `.tsx`, `.css`, `.md` e assets do frontend;
+- mudanças em `src/app`, `src/modules`, `src/shared` e `public`;
+- ajustes no backend em `backend/src` também passam a refletir com watch.
+
+### Quando ainda precisa rebuild
+
+Rebuild continua necessário quando você altera dependências ou o ambiente-base do container, por exemplo:
+
+- `package.json`
+- `pnpm-lock.yaml`
+- `Dockerfile`
+
+Nesse caso, use:
+
+```bash
+make rebuild-frontend
+```
+
+ou, para o backend:
+
+```bash
+make rebuild-backend
+```
+
+### Observações
+
+- O Compose mantém `node_modules` e `.next` em volumes nomeados para evitar conflito com dependências locais.
+- Foram habilitados `WATCHPACK_POLLING` e `CHOKIDAR_USEPOLLING` para tornar a detecção de mudanças mais consistente dentro do container.
+- Os containers passaram a usar Node 24 para alinhar com a versão exigida no projeto.

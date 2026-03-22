@@ -1,11 +1,14 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
 import { hashPassword } from '@/shared/utils/password';
 
 @Injectable()
 export class RegisterUserUseCase {
-  constructor(private readonly authRepository: AuthRepository) {}
+  constructor(
+    @Inject(AuthRepository)
+    private readonly authRepository: AuthRepository,
+  ) {}
 
   async execute(input: { displayName: string; email: string; password: string }) {
     const existingUser = await this.authRepository.findUserByEmail(input.email);

@@ -5,15 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginWorkspace } from './index';
 
 const signInMock = vi.fn();
-const useAuthStatusQueryMock = vi.fn();
 const loginMutateAsyncMock = vi.fn();
 const registerMutateAsyncMock = vi.fn();
 const replaceMock = vi.fn();
 let searchParamsMock = new URLSearchParams();
-
-vi.mock('@/modules/auth/queries/useAuthStatusQuery', () => ({
-  useAuthStatusQuery: () => useAuthStatusQueryMock(),
-}));
 
 vi.mock('@/modules/auth/queries/useLoginMutation', () => ({
   useLoginMutation: () => ({
@@ -52,15 +47,9 @@ describe('LoginWorkspace', () => {
   beforeEach(() => {
     searchParamsMock = new URLSearchParams();
     signInMock.mockReset();
-    useAuthStatusQueryMock.mockReset();
     loginMutateAsyncMock.mockReset();
     registerMutateAsyncMock.mockReset();
     replaceMock.mockReset();
-
-    useAuthStatusQueryMock.mockReturnValue({
-      data: { emailPasswordEnabled: true, oauthConfigured: false, provider: 'google', status: 'pending' },
-      isError: false,
-    });
   });
 
   it('logs into the email flow', async () => {

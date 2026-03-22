@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, Res, UseGuards } from '@nestjs/common';
 
 import type { FastifyReply } from 'fastify';
 
@@ -13,7 +13,9 @@ import type { AuthTokenPayload } from '@/modules/auth/types/auth';
 @Controller('auth')
 export class AuthController {
   constructor(
+    @Inject(AuthFinderService)
     private readonly authFinderService: AuthFinderService,
+    @Inject(AuthWriterService)
     private readonly authWriterService: AuthWriterService,
   ) {}
 

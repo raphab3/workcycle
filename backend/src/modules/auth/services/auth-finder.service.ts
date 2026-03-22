@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { AuthRepository } from '@/modules/auth/repositories/auth.repository';
 import { GetAuthSessionUseCase } from '@/modules/auth/use-cases/get-auth-session.use-case';
@@ -9,8 +9,11 @@ import type { AuthTokenPayload } from '@/modules/auth/types/auth';
 @Injectable()
 export class AuthFinderService {
   constructor(
+    @Inject(AuthRepository)
     private readonly authRepository: AuthRepository,
+    @Inject(GetAuthSessionUseCase)
     private readonly getAuthSessionUseCase: GetAuthSessionUseCase,
+    @Inject(GetAuthStatusUseCase)
     private readonly getAuthStatusUseCase: GetAuthStatusUseCase,
   ) {}
 
