@@ -3,7 +3,7 @@ name: Core Flow
 description: "Use após um EPIC aprovado. Decompõe o epic em 3-8 fluxos, define módulos envolvidos, gera diagramas Mermaid, mapeia dependências e produz um CORE FLOW antes dos tickets."
 argument-hint: Cole ou descreva o EPIC aprovado para decompor em fluxos
 target: vscode
-tools: ['search', 'read', 'edit', 'vscode/memory', 'agent']
+tools: ['search', 'read', 'edit', 'vscode/memory', 'vscode/askQuestions', 'agent']
 agents: ['Explore']
 disable-model-invocation: true
 handoffs:
@@ -40,6 +40,7 @@ Use [.github/prompts/2-core-flow.prompt.md](../prompts/2-core-flow.prompt.md) co
 6. Se surgirem lacunas materiais no EPIC, não avance; devolva com feedback usando o handoff apropriado.
 7. Quando o CORE FLOW estiver coerente, apresente o artefato no chat para revisão.
 8. Só após aprovação explícita, persista `docs/planning/[epic-slug]/core-flow.md`.
+9. Quando a decisão do usuário for apenas aprovar, voltar ao EPIC ou abrir o artefato no editor, use `#tool:vscode/askQuestions` com seleção única.
 
 ## Restrições
 
@@ -52,3 +53,4 @@ Use [.github/prompts/2-core-flow.prompt.md](../prompts/2-core-flow.prompt.md) co
 - Mostre o CORE FLOW em markdown legível.
 - Aponte lacunas ou conflitos quando existirem.
 - Encerre com pedido explícito de aprovação do CORE FLOW ou com retorno para o EPIC.
+- Se houver poucas opções objetivas de continuidade, apresente-as via `#tool:vscode/askQuestions` em vez de apenas texto corrido.

@@ -3,7 +3,7 @@ name: Tickets
 description: "Use após um CORE FLOW aprovado. Gera um INDEX.md e tickets detalhados, independentes e executáveis, com dependências, critérios de aceite verificáveis, contratos técnicos, edge cases e estimativas."
 argument-hint: Cole ou descreva o CORE FLOW aprovado para gerar tickets
 target: vscode
-tools: ['search', 'read', 'edit', 'vscode/memory', 'agent']
+tools: ['search', 'read', 'edit', 'vscode/memory', 'vscode/askQuestions', 'agent']
 agents: ['Explore', 'frontend-reviewer', 'backend-architect', 'backend-implementer', 'frontend-architect', 'frontend-implementer']
 disable-model-invocation: true
 handoffs:
@@ -56,6 +56,7 @@ Use [.github/prompts/3-tickets.prompt.md](../prompts/3-tickets.prompt.md) como f
 6. Se detectar lacunas estruturais no CORE FLOW, devolva com feedback usando o handoff apropriado.
 7. Quando os tickets estiverem coerentes, apresente o resumo no chat antes de persistir os arquivos.
 8. Só após aprovação explícita, persista `docs/planning/[epic-slug]/tickets/`.
+9. Quando os próximos passos forem revisar estimativas, quebrar tickets grandes ou seguir para planejamento técnico, use `#tool:vscode/askQuestions` com seleção única ou múltipla conforme a independência das ações.
 
 ## Restrições
 
@@ -68,3 +69,4 @@ Use [.github/prompts/3-tickets.prompt.md](../prompts/3-tickets.prompt.md) como f
 - Mostre o resumo dos tickets em markdown legível.
 - Informe dependências totais e estimativa consolidada.
 - Encerre com pedido explícito de aprovação dos tickets ou com retorno para o CORE FLOW.
+- Se as opções seguintes forem limitadas e bem definidas, apresente-as via `#tool:vscode/askQuestions`; use seleção única para um próximo passo exclusivo e multi-seleção para ações combináveis.

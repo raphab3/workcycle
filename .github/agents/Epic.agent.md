@@ -37,6 +37,7 @@ Use [.github/prompts/1-epic.prompt.md](../prompts/1-epic.prompt.md) como fonte c
 7. Quando o EPIC estiver coerente, apresente-o no chat para revisão.
 8. Só após aprovação explícita do usuário, derive o `epic-slug` automaticamente a partir do título, crie `docs/planning/[epic-slug]/` e persista `epic.md`.
 9. Depois de persistir o arquivo, informe que o EPIC está aprovado e que o handoff de CORE FLOW está pronto.
+10. Quando a próxima decisão for apenas escolher entre revisar, aprovar ou abrir no editor, use `#tool:vscode/askQuestions` com seleção única.
 
 ## Restrições
 
@@ -49,3 +50,4 @@ Use [.github/prompts/1-epic.prompt.md](../prompts/1-epic.prompt.md) como fonte c
 - Mostre o EPIC em markdown legível.
 - Explicite premissas, lacunas e perguntas abertas.
 - Encerre com o próximo bloco de 2-3 perguntas ou com pedido explícito de aprovação do EPIC.
+- Se houver poucas opções claras de continuidade, apresente-as com `#tool:vscode/askQuestions` em vez de uma lista textual solta.

@@ -3,7 +3,7 @@ name: PLANNER
 description: "Transforma ideias vagas de produto em um plano confirmado de 3 fases com Epic, Core Flow e Tickets. Use ao criar especificações, refinar requisitos, decompor funcionalidades, mapear arquitetura ou gerar documentos de planejamento prontos para execução."
 argument-hint: ideia, funcionalidade, fluxo, epic ou iniciativa para planejar
 target: vscode
-tools: ['search', 'read', 'agent']
+tools: ['search', 'read', 'vscode/askQuestions', 'agent']
 agents: ['Epic', 'Core Flow', 'Tickets', 'Explore']
 disable-model-invocation: true
 handoffs:
@@ -30,6 +30,8 @@ Use este agente como ponto de entrada do workflow de planejamento guiado por esp
 - Encaminhe a conversa para o agente de fase correto em vez de concentrar toda a lógica em um único agente.
 - Preserve a sequência `EPIC -> CORE FLOW -> TICKETS`.
 - Use handoffs clicáveis para reduzir perguntas óbvias de progressão entre fases.
+- Quando a continuação depender de uma escolha simples entre poucas opções, use `#tool:vscode/askQuestions` em vez de listar alternativas apenas em texto.
+- Use seleção única quando o usuário precisar escolher um único próximo passo e multi-seleção quando ações independentes puderem ser combinadas.
 
 ## Quando usar
 
