@@ -62,7 +62,7 @@ describe('useActivityPulse', () => {
     expect(state.activePulse).not.toBeNull();
     expect(state.pulseHistory).toHaveLength(0);
     expect(useNotificationsStore.getState().lastDeliveryDecision?.channel).toBe('in-app');
-    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z:due');
   });
 
   it('pauses the session after 5 minutes without pulse confirmation', () => {
@@ -88,7 +88,7 @@ describe('useActivityPulse', () => {
       status: 'unconfirmed',
       resolution: 'pending',
     });
-    expect(useNotificationsStore.getState().deliveryAttempts.at(-1)?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
+    expect(useNotificationsStore.getState().deliveryAttempts.at(-1)?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z:expired');
   });
 
   it('does not fire additional pulses while the session is paused', () => {
@@ -154,7 +154,7 @@ describe('useActivityPulse', () => {
       vi.advanceTimersByTime(30 * 60 * 1000);
     });
 
-    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z:due');
 
     act(() => {
       useWorkspaceStore.getState().confirmActivePulse('2026-03-22T09:31:00.000Z');

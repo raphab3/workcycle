@@ -64,7 +64,8 @@ export function useActivityPulse() {
     }
 
     if (latestPulse.resolution !== 'pending' && dismissedPulseRef.current !== latestPulse.firedAt) {
-      dismissNotificationEvent(createTodayPulseNotificationEventId(latestPulse.firedAt));
+      dismissNotificationEvent(createTodayPulseNotificationEventId(latestPulse.firedAt, 'due'));
+      dismissNotificationEvent(createTodayPulseNotificationEventId(latestPulse.firedAt, 'expired'));
       dismissedPulseRef.current = latestPulse.firedAt;
     }
   }, [dismissNotificationEvent, dispatchNotificationEvent, notificationCapability, pulseHistory]);

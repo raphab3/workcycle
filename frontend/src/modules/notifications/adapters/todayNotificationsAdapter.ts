@@ -1,13 +1,13 @@
 import type { ActivePulse, PulseRecord } from '@/modules/today/types';
 import type { OperationalNotificationEvent } from '@/modules/notifications/types/events';
 
-export function createTodayPulseNotificationEventId(firedAt: string) {
-  return `today-pulse:${firedAt}`;
+export function createTodayPulseNotificationEventId(firedAt: string, kind: 'due' | 'expired' = 'due') {
+  return `today-pulse:${firedAt}:${kind}`;
 }
 
 export function createActivityPulseDueNotificationEvent(activePulse: ActivePulse): OperationalNotificationEvent {
   return {
-    eventId: createTodayPulseNotificationEventId(activePulse.firedAt),
+    eventId: createTodayPulseNotificationEventId(activePulse.firedAt, 'due'),
     expiresAt: activePulse.expiresAt,
     message: 'Confirme o bloco atual para manter a sessao consistente.',
     occurredAt: activePulse.firedAt,
@@ -18,7 +18,7 @@ export function createActivityPulseDueNotificationEvent(activePulse: ActivePulse
 
 export function createActivityPulseExpiredNotificationEvent(pulse: PulseRecord, expiredAt?: string): OperationalNotificationEvent {
   return {
-    eventId: createTodayPulseNotificationEventId(pulse.firedAt),
+    eventId: createTodayPulseNotificationEventId(pulse.firedAt, 'expired'),
     message: 'O pulso expirou e a sessao foi pausada por inatividade. Revise o intervalo para retomar o fluxo.',
     occurredAt: expiredAt ?? pulse.firedAt,
     title: 'Sessao pausada por inatividade',

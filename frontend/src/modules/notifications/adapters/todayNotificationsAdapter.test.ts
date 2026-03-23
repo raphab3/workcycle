@@ -8,7 +8,8 @@ import {
 
 describe('todayNotificationsAdapter', () => {
   it('builds a stable pulse notification id from firedAt', () => {
-    expect(createTodayPulseNotificationEventId('2026-03-22T09:30:00.000Z')).toBe('today-pulse:2026-03-22T09:30:00.000Z');
+    expect(createTodayPulseNotificationEventId('2026-03-22T09:30:00.000Z')).toBe('today-pulse:2026-03-22T09:30:00.000Z:due');
+    expect(createTodayPulseNotificationEventId('2026-03-22T09:30:00.000Z', 'expired')).toBe('today-pulse:2026-03-22T09:30:00.000Z:expired');
   });
 
   it('maps an active pulse to a due notification event', () => {
@@ -17,7 +18,7 @@ describe('todayNotificationsAdapter', () => {
       firedAt: '2026-03-22T09:30:00.000Z',
       projectId: 'proj-1',
     })).toMatchObject({
-      eventId: 'today-pulse:2026-03-22T09:30:00.000Z',
+      eventId: 'today-pulse:2026-03-22T09:30:00.000Z:due',
       type: 'activity-pulse-due',
       expiresAt: '2026-03-22T09:35:00.000Z',
     });
@@ -33,7 +34,7 @@ describe('todayNotificationsAdapter', () => {
       reviewedAt: null,
       status: 'unconfirmed',
     }, '2026-03-22T09:35:00.000Z')).toMatchObject({
-      eventId: 'today-pulse:2026-03-22T09:30:00.000Z',
+      eventId: 'today-pulse:2026-03-22T09:30:00.000Z:expired',
       occurredAt: '2026-03-22T09:35:00.000Z',
       type: 'activity-pulse-expired',
     });

@@ -9,6 +9,7 @@ import { EventsModule } from '@/modules/events/events.module';
 import { ProjectsModule } from '@/modules/projects/projects.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
 import { TasksModule } from '@/modules/tasks/tasks.module';
+import { WeeklyModule } from '@/modules/weekly/weekly.module';
 import { CacheModule } from '@/shared/providers/cache/cache.module';
 import { DrizzleModule } from '@/shared/database/drizzle.module';
 import { FirebaseModule } from '@/shared/providers/firebase/firebase.module';
@@ -28,6 +29,7 @@ import { QueuesModule } from '@/shared/providers/queues/queues.module';
     TasksModule,
     AccountingModule,
     CycleModule,
+    WeeklyModule,
   ],
   controllers: [AppController],
 })
