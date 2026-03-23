@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch, UseGuards } from '@nestjs/common';
 
 import { updateUserSettingsSchema } from '@/modules/settings/settings.schemas';
 import { SettingsFinderService } from '@/modules/settings/services/settings-finder.service';
@@ -11,7 +11,9 @@ import type { AuthTokenPayload } from '@/modules/auth/types/auth';
 @Controller('settings')
 export class SettingsController {
   constructor(
+    @Inject(SettingsFinderService)
     private readonly settingsFinderService: SettingsFinderService,
+    @Inject(SettingsWriterService)
     private readonly settingsWriterService: SettingsWriterService,
   ) {}
 

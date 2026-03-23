@@ -1,6 +1,8 @@
-import 'dotenv/config';
+import { config as loadDotenv } from 'dotenv';
 
 import { z } from 'zod';
+
+loadDotenv({ override: true });
 
 function emptyStringToUndefined(value: unknown) {
   if (typeof value !== 'string') {

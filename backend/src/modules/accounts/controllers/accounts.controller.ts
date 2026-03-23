@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch, Param, UseGuards } from '@nestjs/common';
 
 import { updateGoogleCalendarSchema } from '@/modules/accounts/accounts.schemas';
 import { AccountsFinderService } from '@/modules/accounts/services/accounts-finder.service';
@@ -11,7 +11,9 @@ import type { AuthTokenPayload } from '@/modules/auth/types/auth';
 @Controller('accounts')
 export class AccountsController {
   constructor(
+    @Inject(AccountsFinderService)
     private readonly accountsFinderService: AccountsFinderService,
+    @Inject(AccountsWriterService)
     private readonly accountsWriterService: AccountsWriterService,
   ) {}
 

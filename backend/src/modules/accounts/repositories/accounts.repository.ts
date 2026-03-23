@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
@@ -6,7 +6,10 @@ import { googleAccounts, googleCalendars } from '@/shared/database/schema';
 
 @Injectable()
 export class AccountsRepository {
-  constructor(private readonly drizzleService: DrizzleService) {}
+  constructor(
+    @Inject(DrizzleService)
+    private readonly drizzleService: DrizzleService,
+  ) {}
 
   async listAccounts(userId: string) {
     return this.drizzleService.db

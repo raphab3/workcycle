@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { UpdateGoogleCalendarUseCase } from '@/modules/accounts/use-cases/update-google-calendar.use-case';
 
@@ -12,7 +12,10 @@ function ensureCalendarPersisted<T>(calendar: T | undefined) {
 
 @Injectable()
 export class AccountsWriterService {
-  constructor(private readonly updateGoogleCalendarUseCase: UpdateGoogleCalendarUseCase) {}
+  constructor(
+    @Inject(UpdateGoogleCalendarUseCase)
+    private readonly updateGoogleCalendarUseCase: UpdateGoogleCalendarUseCase,
+  ) {}
 
   async updateCalendar(calendarId: string, userId: string, isIncluded: boolean) {
     return ensureCalendarPersisted(await this.updateGoogleCalendarUseCase.execute(calendarId, userId, isIncluded));
