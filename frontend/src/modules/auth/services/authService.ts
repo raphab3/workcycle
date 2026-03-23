@@ -22,7 +22,7 @@ async function getGoogleAccounts() {
 }
 
 async function updateGoogleCalendar(input: { calendarId: string; isIncluded: boolean }) {
-  const response = await api.patch<GoogleCalendarDTO>(`/api/accounts/calendars/${input.calendarId}`, {
+  const response = await api.patch<GoogleCalendarDTO>(`/api/accounts/calendars/${encodeURIComponent(input.calendarId)}`, {
     isIncluded: input.isIncluded,
   });
 
