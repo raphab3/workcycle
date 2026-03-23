@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, CalendarDays, FolderKanban, LayoutDashboard, ListTodo } from 'lucide-react';
+import { BarChart3, CalendarDays, CalendarRange, FolderKanban, LayoutDashboard, ListTodo } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
@@ -12,6 +12,7 @@ import { appNavigationStyles } from './styles';
 export const navigationItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/hoje', label: 'Hoje', icon: CalendarDays },
+  { href: '/agenda', label: 'Agenda', icon: CalendarRange },
   { href: '/semana', label: 'Semana', icon: BarChart3 },
   { href: '/tarefas', label: 'Tarefas', icon: ListTodo },
   { href: '/projetos', label: 'Projetos', icon: FolderKanban },
