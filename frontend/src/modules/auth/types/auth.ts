@@ -6,7 +6,18 @@ export interface AuthStatusDTO {
   status: 'pending' | 'ready' | string;
 }
 
+export interface GoogleCalendarDTO {
+  accountId: string;
+  colorHex: string;
+  id: string;
+  isIncluded: boolean;
+  isPrimary: boolean;
+  name: string;
+  syncedAt: string | null;
+}
+
 export interface GoogleAccountDTO {
+  calendars: GoogleCalendarDTO[];
   id: string;
   email: string;
   displayName: string;

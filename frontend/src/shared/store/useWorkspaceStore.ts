@@ -41,7 +41,10 @@ function cloneProject(project: Project): Project {
 }
 
 function cloneTask(task: Task): Task {
-  return { ...task };
+  return {
+    ...task,
+    checklist: task.checklist.map((item) => ({ ...item })),
+  };
 }
 
 function cloneTaskColumn(column: TaskColumn): TaskColumn {
@@ -155,6 +158,7 @@ interface WorkspaceStoreState {
   updateTimeBlock: (timeBlockIndex: number, updates: Partial<TimeBlock>) => void;
   prepareCloseDayReview: () => CloseDayReview;
   replaceProjects: (projects: Project[]) => void;
+  replaceTasks: (tasks: Task[]) => void;
   addProject: (values: ProjectFormValues) => void;
   updateProject: (projectId: string, values: ProjectFormValues) => void;
   toggleProjectStatus: (projectId: string) => void;
@@ -542,6 +546,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
     return review;
   },
   replaceProjects: (projects) => set({ projects: projects.map(cloneProject) }),
+  replaceTasks: (tasks) => set({ tasks: tasks.map(cloneTask) }),
   addProject: (values) => set((state) => ({
     projects: [
       {

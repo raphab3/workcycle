@@ -10,6 +10,23 @@ export interface TaskChecklistItem {
   done: boolean;
 }
 
+export interface TaskRecordDTO {
+  checklist: TaskChecklistItem[];
+  columnId: string;
+  cycleAssignment: TaskCycleAssignment;
+  cycleSessionId: string | null;
+  description: string | null;
+  dueDate: string | null;
+  estimatedHours: number;
+  id: string;
+  isArchived: boolean;
+  priority: TaskPriority;
+  projectId: string;
+  status: TaskStatus;
+  title: string;
+  userId: string;
+}
+
 export interface TaskColumn {
   id: string;
   title: string;
@@ -22,12 +39,13 @@ export interface TaskColumnFormValues {
 }
 
 export interface Task {
+  cycleSessionId?: string | null;
   id: string;
   title: string;
   description: string;
   projectId: string;
   columnId: string;
-  nextCycleStartDate?: string | null;
+  dueDate?: string | null;
   isArchived: boolean;
   checklist: TaskChecklistItem[];
   priority: TaskPriority;
@@ -42,13 +60,16 @@ export interface TaskFormValues {
   description: string;
   projectId: string;
   columnId: string;
-  nextCycleStartDate?: string | null;
   checklist: TaskChecklistItem[];
   priority: TaskPriority;
   status: TaskStatus;
   cycleAssignment: TaskCycleAssignment;
   dueInDays: number;
   estimatedHours: number;
+}
+
+export interface PersistedTaskValues extends TaskFormValues {
+  cycleSessionId?: string | null;
 }
 
 export interface TaskFiltersValues {

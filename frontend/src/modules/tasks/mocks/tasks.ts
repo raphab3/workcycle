@@ -2,11 +2,13 @@ import type { Task } from '@/modules/tasks/types';
 
 export const mockTasks: Task[] = [
   {
+    cycleSessionId: 'cycle-2026-03-22',
     id: 'billing-migration',
     title: 'Ajustar migration de faturamento',
     description: 'Fechar a migration principal do faturamento, revisar indexes e validar o impacto nas consultas legadas antes do deploy.',
     projectId: 'datavault',
     columnId: 'backlog',
+    dueDate: '2026-03-22',
     isArchived: false,
     checklist: [
       { id: 'billing-migration-1', label: 'Revisar indexes', done: true },
@@ -20,11 +22,13 @@ export const mockTasks: Task[] = [
     estimatedHours: 3.5,
   },
   {
+    cycleSessionId: 'cycle-2026-03-22',
     id: 'sprint-refinement',
     title: 'Fechar refinamento da sprint',
     description: 'Consolidar escopo, dependencias e riscos para fechar a proxima sprint com handoff tecnico claro.',
     projectId: 'fintrack',
     columnId: 'in-progress',
+    dueDate: '2026-03-24',
     isArchived: false,
     checklist: [
       { id: 'sprint-refinement-1', label: 'Atualizar notas', done: true },
@@ -37,11 +41,13 @@ export const mockTasks: Task[] = [
     estimatedHours: 2,
   },
   {
+    cycleSessionId: null,
     id: 'daily-contract',
     title: 'Revisar daily contract baseline',
     description: 'Registrar pontos fixos do contrato diario e confirmar janelas minimas de atendimento para o ciclo seguinte.',
     projectId: 'cliente-core',
     columnId: 'backlog',
+    dueDate: '2026-03-27',
     isArchived: false,
     checklist: [
       { id: 'daily-contract-1', label: 'Conferir janela contratual', done: false },
@@ -53,11 +59,13 @@ export const mockTasks: Task[] = [
     estimatedHours: 1.5,
   },
   {
+    cycleSessionId: null,
     id: 'auth-audit',
     title: 'Auditar backlog de autenticacao',
     description: 'Mapear pendencias do fluxo de autenticacao antes da rodada de review e definir proximos owners.',
     projectId: 'authguard',
     columnId: 'code-review',
+    dueDate: '2026-03-21',
     isArchived: false,
     checklist: [
       { id: 'auth-audit-1', label: 'Listar bugs em aberto', done: true },
@@ -70,11 +78,13 @@ export const mockTasks: Task[] = [
     estimatedHours: 2.5,
   },
   {
+    cycleSessionId: null,
     id: 'retro-notes',
     title: 'Fechar notas da retro',
     description: 'Consolidar aprendizados da retro e publicar um resumo final para consulta do time.',
     projectId: 'fintrack',
     columnId: 'done',
+    dueDate: '2026-03-23',
     isArchived: false,
     checklist: [
       { id: 'retro-notes-1', label: 'Publicar resumo', done: true },

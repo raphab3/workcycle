@@ -1,7 +1,7 @@
 import { api } from '@/lib/axios';
 import { env } from '@/config/env';
 
-import type { AuthSessionDTO, AuthStatusDTO, GoogleAccountDTO } from '@/modules/auth/types';
+import type { AuthSessionDTO, AuthStatusDTO, GoogleAccountDTO, GoogleCalendarDTO } from '@/modules/auth/types';
 
 async function getAuthStatus() {
   const response = await api.get<AuthStatusDTO>('/api/auth/status');
@@ -17,6 +17,14 @@ async function getAuthSession() {
 
 async function getGoogleAccounts() {
   const response = await api.get<GoogleAccountDTO[]>('/api/accounts');
+
+  return response.data;
+}
+
+async function updateGoogleCalendar(input: { calendarId: string; isIncluded: boolean }) {
+  const response = await api.patch<GoogleCalendarDTO>(`/api/accounts/calendars/${input.calendarId}`, {
+    isIncluded: input.isIncluded,
+  });
 
   return response.data;
 }
@@ -65,4 +73,5 @@ export const authService = {
   login,
   refreshSession,
   register,
+  updateGoogleCalendar,
 };

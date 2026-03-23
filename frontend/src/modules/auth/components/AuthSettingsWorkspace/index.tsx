@@ -1,10 +1,12 @@
 'use client';
 
-import { CalendarClock, Link2 } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Link2, RefreshCcw, Unplug } from 'lucide-react';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { useAuthStatusQuery } from '@/modules/auth/queries/useAuthStatusQuery';
 import { useGoogleAccountsQuery } from '@/modules/auth/queries/useGoogleAccountsQuery';
+import { useUpdateGoogleCalendarMutation } from '@/modules/auth/queries/useUpdateGoogleCalendarMutation';
 import { authService } from '@/modules/auth/services/authService';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
 import { Button } from '@/shared/components/Button';
@@ -15,16 +17,59 @@ import { StateNotice } from '@/shared/components/StateNotice';
 
 import { authSettingsWorkspaceStyles } from './styles';
 
+import type { GoogleAccountDTO, GoogleCalendarDTO } from '@/modules/auth/types';
+
+function isAccountExpired(account: GoogleAccountDTO) {
+  return Number.isFinite(Date.parse(account.tokenExpiresAt)) && Date.parse(account.tokenExpiresAt) <= Date.now();
+}
+
+function getAccountStatus(account: GoogleAccountDTO) {
+  if (!account.isActive) {
+    return {
+      description: 'Essa conexao foi marcada como inativa no backend. Revise a integracao antes de depender dela no Modo Agenda.',
+      eyebrow: 'Conta degradada',
+      title: 'Esta conta precisa de atencao',
+      tone: 'warning' as const,
+    };
+  }
+
+  if (isAccountExpired(account)) {
+    return {
+      description: 'O token desta conta ja expirou. O vinculo continua salvo, mas a sincronizacao dependera de reconexao ou refresh no backend.',
+      eyebrow: 'Token expirado',
+      title: 'Reconecte esta conta para manter os calendarios atualizados',
+      tone: 'warning' as const,
+    };
+  }
+
+  return null;
+}
+
 export function AuthSettingsWorkspace() {
   const searchParams = useSearchParams();
   const session = useAuthStore((state) => state.session);
   const authStatusQuery = useAuthStatusQuery();
   const googleAccountsQuery = useGoogleAccountsQuery({ enabled: Boolean(session) });
+  const updateGoogleCalendarMutation = useUpdateGoogleCalendarMutation();
+  const [pendingCalendarId, setPendingCalendarId] = useState<string | null>(null);
 
   async function handleLinkGoogle() {
     const response = await authService.getGoogleLinkUrl();
 
     window.location.assign(response.url);
+  }
+
+  async function handleToggleCalendar(calendar: GoogleCalendarDTO) {
+    setPendingCalendarId(calendar.id);
+
+    try {
+      await updateGoogleCalendarMutation.mutateAsync({
+        calendarId: calendar.id,
+        isIncluded: !calendar.isIncluded,
+      });
+    } finally {
+      setPendingCalendarId(null);
+    }
   }
 
   if (!session) {
@@ -85,7 +130,7 @@ export function AuthSettingsWorkspace() {
         <Card>
           <CardHeader>
             <CardDescription>Google</CardDescription>
-            <CardTitle>Vincular Google a uma conta criada por email</CardTitle>
+            <CardTitle>Contas conectadas e calendarios operacionais</CardTitle>
           </CardHeader>
           <CardContent className={authSettingsWorkspaceStyles.connections}>
             {!authStatusQuery.data?.oauthConfigured && (
@@ -97,17 +142,92 @@ export function AuthSettingsWorkspace() {
               />
             )}
 
-            {googleAccounts.length > 0 ? (
+            {googleAccountsQuery.isError ? (
+              <StateNotice
+                eyebrow="Integracoes indisponiveis"
+                title="Nao foi possivel carregar as contas Google agora"
+                description="A vinculacao continua preservada, mas a leitura das integracoes falhou nesta tentativa. Tente novamente apos estabilizar a API." 
+                tone="warning"
+              />
+            ) : googleAccounts.length > 0 ? (
               <div className={authSettingsWorkspaceStyles.connections}>
                 {googleAccounts.map((account) => (
-                  <div className={authSettingsWorkspaceStyles.row} key={account.id}>
-                    <div>
-                      <p className={authSettingsWorkspaceStyles.label}>Conta vinculada</p>
-                      <p className={authSettingsWorkspaceStyles.value}>{account.displayName}</p>
-                      <p className={authSettingsWorkspaceStyles.hint}>{account.email}</p>
+                  <section className={authSettingsWorkspaceStyles.accountCard} key={account.id}>
+                    <div className={authSettingsWorkspaceStyles.accountHeader}>
+                      <div className={authSettingsWorkspaceStyles.accountHeaderMeta}>
+                        <div>
+                          <p className={authSettingsWorkspaceStyles.label}>Conta vinculada</p>
+                          <p className={authSettingsWorkspaceStyles.value}>{account.displayName}</p>
+                          <p className={authSettingsWorkspaceStyles.hint}>{account.email}</p>
+                        </div>
+                        <p className={authSettingsWorkspaceStyles.accountStatus}>
+                          {account.calendars.length} calendario{account.calendars.length === 1 ? '' : 's'} conectado{account.calendars.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                      <CalendarClock aria-hidden="true" className="mt-1 h-5 w-5 text-cyan-700" />
                     </div>
-                    <CalendarClock aria-hidden="true" className="mt-1 h-5 w-5 text-cyan-700" />
-                  </div>
+
+                    {getAccountStatus(account) && (
+                      <StateNotice
+                        eyebrow={getAccountStatus(account)?.eyebrow ?? 'Conta degradada'}
+                        title={getAccountStatus(account)?.title ?? 'Conta degradada'}
+                        description={getAccountStatus(account)?.description ?? ''}
+                        tone={getAccountStatus(account)?.tone ?? 'warning'}
+                      />
+                    )}
+
+                    {account.calendars.length > 0 ? (
+                      <div className={authSettingsWorkspaceStyles.calendarsList}>
+                        {account.calendars.map((calendar) => {
+                          const isPending = pendingCalendarId === calendar.id && updateGoogleCalendarMutation.isPending;
+
+                          return (
+                            <div className={authSettingsWorkspaceStyles.calendarRow} key={calendar.id}>
+                              <div className={authSettingsWorkspaceStyles.calendarMeta}>
+                                <div className={authSettingsWorkspaceStyles.calendarNameRow}>
+                                  <span className={authSettingsWorkspaceStyles.calendarDot} style={{ backgroundColor: calendar.colorHex }} />
+                                  <p className={authSettingsWorkspaceStyles.calendarTitle}>{calendar.name}</p>
+                                  {calendar.isPrimary && <span className={authSettingsWorkspaceStyles.calendarBadge}>Primary</span>}
+                                  {calendar.isIncluded && <span className={authSettingsWorkspaceStyles.calendarBadge}>Incluido</span>}
+                                </div>
+                                <p className={authSettingsWorkspaceStyles.hint}>
+                                  {calendar.isIncluded
+                                    ? 'Este calendario ja alimenta a agenda operacional do WorkCycle.'
+                                    : 'Este calendario esta salvo, mas nao entra na agenda operacional enquanto permanecer excluido.'}
+                                </p>
+                                <p className={authSettingsWorkspaceStyles.hint}>
+                                  Ultimo sync: {calendar.syncedAt ? new Date(calendar.syncedAt).toLocaleString('pt-BR') : 'ainda nao sincronizado'}
+                                </p>
+                              </div>
+                              <div className={authSettingsWorkspaceStyles.calendarAction}>
+                                <Button
+                                  disabled={isPending}
+                                  onClick={() => void handleToggleCalendar(calendar)}
+                                  size="sm"
+                                  type="button"
+                                  variant={calendar.isIncluded ? 'outline' : 'default'}
+                                >
+                                  {calendar.isIncluded ? (
+                                    <Unplug aria-hidden="true" className="mr-2 h-4 w-4" />
+                                  ) : (
+                                    <CheckCircle2 aria-hidden="true" className="mr-2 h-4 w-4" />
+                                  )}
+                                  {isPending ? 'Atualizando...' : calendar.isIncluded ? 'Excluir da agenda' : 'Incluir na agenda'}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <StateNotice
+                        eyebrow="Sem calendarios"
+                        title="Esta conta ainda nao retornou calendarios conectados"
+                        description="O vinculo da conta existe, mas nenhum calendario foi disponibilizado para uso operacional ate agora."
+                        tone="warning"
+                      />
+                    )}
+                  </section>
                 ))}
               </div>
             ) : (
@@ -123,6 +243,13 @@ export function AuthSettingsWorkspace() {
               <Link2 aria-hidden="true" className="mr-2 h-4.5 w-4.5" />
               Conectar Google
             </Button>
+
+            {googleAccountsQuery.isFetching && googleAccounts.length > 0 && (
+              <p className={authSettingsWorkspaceStyles.hint}>
+                <RefreshCcw aria-hidden="true" className="mr-2 inline h-4 w-4" />
+                Atualizando integracoes Google...
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
