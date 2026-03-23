@@ -43,6 +43,13 @@
       "when": 1774227185404,
       "tag": "0005_chilly_sir_ram",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774237200000,
+      "tag": "0006_whole_mongoose",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { and, asc, between, desc, eq, gte, inArray, lte } from 'drizzle-orm';
-import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
 import { cycleSessions, cycleTimeBlocks, projects, tasks, weeklySnapshots } from '@/shared/database/schema';
@@ -9,6 +9,8 @@ import type { NewWeeklySnapshot } from '@/shared/database/schema';
 
 @Injectable()
 export class WeeklyRepository {
+  private readonly logger = new Logger(WeeklyRepository.name);
+
   constructor(@Inject(DrizzleService) private readonly drizzleService: DrizzleService) {}
 
   private get db(): AppDatabase {
@@ -39,9 +41,18 @@ export class WeeklyRepository {
   }
 
   async findWeeklySnapshot(userId: string, weekKey: string) {
-    const [snapshot] = await this.db.select().from(weeklySnapshots).where(and(eq(weeklySnapshots.userId, userId), eq(weeklySnapshots.weekKey, weekKey))).limit(1);
+    try {
+      const [snapshot] = await this.db.select().from(weeklySnapshots).where(and(eq(weeklySnapshots.userId, userId), eq(weeklySnapshots.weekKey, weekKey))).limit(1);
 
-    return snapshot ?? null;
+      return snapshot ?? null;
+    } catch (error) {
+      if (this.isWeeklySnapshotsRelationMissing(error)) {
+        this.logger.warn('weekly_snapshots table is unavailable; skipping persisted weekly snapshot lookup.');
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   async listWeeklySnapshots(userId: string, options?: { fromWeekKey?: string; toWeekKey?: string; limit?: number }) {
@@ -55,27 +66,53 @@ export class WeeklyRepository {
       conditions.push(lte(weeklySnapshots.weekKey, options.toWeekKey));
     }
 
-    return this.db.select().from(weeklySnapshots).where(and(...conditions)).orderBy(desc(weeklySnapshots.weekKey)).limit(options?.limit ?? 12);
+    try {
+      return await this.db.select().from(weeklySnapshots).where(and(...conditions)).orderBy(desc(weeklySnapshots.weekKey)).limit(options?.limit ?? 12);
+    } catch (error) {
+      if (this.isWeeklySnapshotsRelationMissing(error)) {
+        this.logger.warn('weekly_snapshots table is unavailable; returning derived weekly history without persisted cache.');
+        return [];
+      }
+
+      throw error;
+    }
   }
 
   async upsertWeeklySnapshot(input: NewWeeklySnapshot) {
-    const [snapshot] = await this.db.insert(weeklySnapshots).values(input).onConflictDoUpdate({
-      target: [weeklySnapshots.userId, weeklySnapshots.weekKey],
-      set: {
-        generatedAt: input.generatedAt,
-        isFinal: input.isFinal,
-        snapshot: input.snapshot,
-        timezone: input.timezone,
-        updatedAt: new Date(),
-        weekEndsAt: input.weekEndsAt,
-        weekStartsAt: input.weekStartsAt,
-      },
-    }).returning();
+    try {
+      const [snapshot] = await this.db.insert(weeklySnapshots).values(input).onConflictDoUpdate({
+        target: [weeklySnapshots.userId, weeklySnapshots.weekKey],
+        set: {
+          generatedAt: input.generatedAt,
+          isFinal: input.isFinal,
+          snapshot: input.snapshot,
+          timezone: input.timezone,
+          updatedAt: new Date(),
+          weekEndsAt: input.weekEndsAt,
+          weekStartsAt: input.weekStartsAt,
+        },
+      }).returning();
 
-    if (!snapshot) {
-      throw new InternalServerErrorException('Weekly snapshot upsert failed.');
+      if (!snapshot) {
+        throw new InternalServerErrorException('Weekly snapshot upsert failed.');
+      }
+
+      return snapshot;
+    } catch (error) {
+      if (this.isWeeklySnapshotsRelationMissing(error)) {
+        this.logger.warn('weekly_snapshots table is unavailable; skipping persisted weekly snapshot cache write.');
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  private isWeeklySnapshotsRelationMissing(error: unknown) {
+    if (!(error instanceof Error)) {
+      return false;
     }
 
-    return snapshot;
+    return error.message.includes('relation "weekly_snapshots" does not exist');
   }
 }

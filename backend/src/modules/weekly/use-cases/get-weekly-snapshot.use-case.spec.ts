@@ -47,3 +47,35 @@ test('GetWeeklySnapshotUseCase returns persisted history for a closed week when 
 
   assert.deepEqual(result, persistedSnapshot);
 });
+
+test('GetWeeklySnapshotUseCase still derives the week when weekly snapshot persistence is unavailable', async () => {
+  const weeklyRepository = {
+    findWeeklySnapshot: async () => {
+      throw new Error('relation "weekly_snapshots" does not exist');
+    },
+    listCycleSessionsForWeek: async () => [],
+    listProjects: async () => [],
+    listTasks: async () => [],
+    listTimeBlocksForSessions: async () => [],
+    upsertWeeklySnapshot: async () => null,
+  };
+  const settingsFinderService = {
+    getUserSettings: async () => ({
+      cycleStartHour: '00:00',
+      dailyReviewTime: '18:00',
+      googleConnection: {
+        connectedAccountCount: 0,
+        hasGoogleLinked: false,
+        linkedAt: null,
+      },
+      notificationsEnabled: false,
+      timezone: 'UTC',
+    }),
+  };
+  const useCase = new GetWeeklySnapshotUseCase(weeklyRepository as never, settingsFinderService as never);
+
+  const result = await useCase.execute('user-1');
+
+  assert.equal(typeof result.weekKey, 'string');
+  assert.equal(Array.isArray(result.rows), true);
+});
