@@ -30,13 +30,20 @@ export class AuthRepository {
     private readonly drizzleService: DrizzleService,
   ) {}
 
-  async createUser(input: { authProvider: AuthProvider; displayName: string; email: string; passwordHash?: string | null }) {
+  async createUser(input: {
+    authProvider: AuthProvider;
+    displayName: string;
+    email: string;
+    googleLinkedAt?: Date | null;
+    passwordHash?: string | null;
+  }) {
     const [user] = await this.drizzleService.db
       .insert(users)
       .values({
         authProvider: input.authProvider,
         displayName: input.displayName,
         email: input.email,
+        googleLinkedAt: input.googleLinkedAt ?? null,
         passwordHash: input.passwordHash ?? null,
       })
       .returning();

@@ -91,11 +91,14 @@ export class AuthWriterService {
       throw new UnauthorizedException('Authenticated user was not found for Google linking.');
     }
 
+    const googleLinkedAt = new Date();
+
     if (!user) {
       user = await this.authRepository.createUser({
         authProvider: 'google',
         displayName: profile.name,
         email: profile.email,
+        googleLinkedAt,
         passwordHash: null,
       });
     } else {
@@ -104,7 +107,7 @@ export class AuthWriterService {
       user = await this.authRepository.updateUser({
         authProvider: nextProvider,
         displayName: user.displayName || profile.name,
-        googleLinkedAt: new Date(),
+        googleLinkedAt,
         passwordHash: user.passwordHash,
         userId: user.id,
       });
@@ -176,6 +179,7 @@ export class AuthWriterService {
         authProvider: firebaseProvider,
         displayName,
         email,
+        ...(firebaseProvider === 'google' ? { googleLinkedAt: new Date() } : {}),
         passwordHash: null,
       });
     } else {
