@@ -183,6 +183,24 @@ describe('TodayPlannerOverview', () => {
     expect(screen.getByText(/Fechamento com horas finais/i)).toBeInTheDocument();
   });
 
+  it('allows reopening the day after it was closed', async () => {
+    const user = userEvent.setup();
+
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
+
+    act(() => {
+      useWorkspaceStore.getState().startSession('clientecore');
+      useWorkspaceStore.getState().closeDay();
+    });
+
+    expect(screen.getByRole('heading', { name: /Dia encerrado/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Reabrir dia/i }));
+
+    expect(screen.getByRole('heading', { name: /Sessao pausada manualmente/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Retomar/i })).toBeInTheDocument();
+  });
+
   it('shows paused inactivity actions and opens the review drawer', async () => {
     const user = userEvent.setup();
 

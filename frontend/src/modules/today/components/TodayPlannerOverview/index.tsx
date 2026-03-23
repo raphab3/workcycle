@@ -20,7 +20,7 @@ import { useFirePulseMutation } from '@/modules/today/queries/useFirePulseMutati
 import { useTodaySessionQuery } from '@/modules/today/queries/useTodaySessionQuery';
 import { useUpdateTodaySessionMutation } from '@/modules/today/queries/useUpdateTodaySessionMutation';
 import { todayService } from '@/modules/today/services/todayService';
-import type { PulseRecord, TimeBlock, TodayCycleValues } from '@/modules/today/types';
+import type { PulseRecord, SessionState, TimeBlock, TodayCycleValues } from '@/modules/today/types';
 import { getCycleBoundaryTimestamp, getLocalISODate, hasCrossedCycleBoundary, isWithinRolloverWindow } from '@/modules/today/utils/boundary';
 import { buildCloseDayReview, getTimeBlockDurationInMinutes } from '@/modules/today/utils/pulse';
 import { buildSuggestedAllocations, formatHours } from '@/modules/today/utils/planner';
@@ -138,6 +138,10 @@ function switchProjectTimeBlocks(timeBlocks: TimeBlock[], projectId: string, swi
   ];
 }
 
+function resolveReopenedSessionState(activeProjectId: string | null): SessionState {
+  return activeProjectId ? 'paused_manual' : 'idle';
+}
+
 function buildCycleSnapshot(tasks: Task[], timeBlocks: TimeBlock[], plannedHours: number) {
   const currentTasks = tasks.filter((task) => task.cycleAssignment === 'current' && !task.isArchived);
 
@@ -251,6 +255,7 @@ export function TodayPlannerOverview() {
   const syncCycleBoundary = useWorkspaceStore((state) => state.syncCycleBoundary);
   const clearRolloverNotice = useWorkspaceStore((state) => state.clearRolloverNotice);
   const closeDay = useWorkspaceStore((state) => state.closeDay);
+  const reopenDay = useWorkspaceStore((state) => state.reopenDay);
   const prepareCloseDayReview = useWorkspaceStore((state) => state.prepareCloseDayReview);
   const openRegularizationPanel = useWorkspaceStore((state) => state.openRegularizationPanel);
   const closeRegularizationPanel = useWorkspaceStore((state) => state.closeRegularizationPanel);
@@ -480,6 +485,22 @@ export function TodayPlannerOverview() {
     setTodayActualHours(draftActualHours);
     closeDay();
     handleCloseDrawer();
+  }
+
+  async function handleReopenDay() {
+    const reopenedState = resolveReopenedSessionState(activeProjectId);
+
+    if (isAuthenticated && todaySessionId) {
+      await mutateTodaySession({
+        closedAt: null,
+        snapshot: null,
+        startedAt: reopenedState === 'idle' ? null : sessionStartedAt,
+        state: reopenedState,
+      });
+      return;
+    }
+
+    reopenDay();
   }
 
   function handleAdjustDraftHours(projectId: string, delta: number) {
@@ -843,7 +864,7 @@ export function TodayPlannerOverview() {
                   {sessionState === 'running' && `Projeto ativo: ${activeProject?.name ?? 'Sem projeto'} · mantenha a cockpit aberta durante o dia.`}
                   {sessionState === 'paused_manual' && 'A sessao esta pausada. Voce pode retomar quando voltar ao foco ou encerrar o dia.'}
                   {sessionState === 'paused_inactivity' && 'O pulso nao foi respondido no tempo esperado. Revise o intervalo ou retome a sessao.'}
-                  {sessionState === 'completed' && `${formatHours(daySummaryHours)} registrados · ${completedTasksCount} task(s) concluidas no ciclo atual.`}
+                  {sessionState === 'completed' && `${formatHours(daySummaryHours)} registrados · ${completedTasksCount} task(s) concluidas no ciclo atual. Reabra o dia se ainda precisar continuar.`}
                 </p>
               </div>
 
@@ -948,6 +969,14 @@ export function TodayPlannerOverview() {
                 </Button>
                 <Button type="button" onClick={() => openDrawer('close')}>
                   Encerrar dia
+                </Button>
+              </div>
+            )}
+
+            {sessionState === 'completed' && (
+              <div className={todayPlannerOverviewStyles.sessionActions}>
+                <Button type="button" disabled={isMutatingToday} onClick={() => { void handleReopenDay(); }}>
+                  Reabrir dia
                 </Button>
               </div>
             )}

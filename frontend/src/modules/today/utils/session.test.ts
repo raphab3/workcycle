@@ -272,6 +272,34 @@ describe('session store actions', () => {
     });
   });
 
+  describe('reopenDay', () => {
+    it('reopens a completed day into paused_manual when there is an active project', () => {
+      useWorkspaceStore.getState().startSession('proj-1');
+      useWorkspaceStore.getState().closeDay();
+
+      useWorkspaceStore.getState().reopenDay();
+      const state = useWorkspaceStore.getState();
+
+      expect(state.sessionState).toBe('paused_manual');
+      expect(state.cycleState).toBe('ACTIVE');
+      expect(state.cycleSnapshot).toBeNull();
+    });
+
+    it('reopens a completed day into idle when no active project is available', () => {
+      useWorkspaceStore.getState().startSession('proj-1');
+      useWorkspaceStore.getState().closeDay();
+      useWorkspaceStore.setState({ activeProjectId: null, sessionStartedAt: '2026-03-22T08:00:00.000Z' });
+
+      useWorkspaceStore.getState().reopenDay();
+      const state = useWorkspaceStore.getState();
+
+      expect(state.sessionState).toBe('idle');
+      expect(state.sessionStartedAt).toBeNull();
+      expect(state.cycleState).toBe('PLANNED');
+      expect(state.cycleSnapshot).toBeNull();
+    });
+  });
+
   describe('setCycleState', () => {
     it('directly updates cycleState', () => {
       useWorkspaceStore.getState().setCycleState('RECONCILED');

@@ -87,6 +87,10 @@ function getTomorrowISODate(): string {
   return `${year}-${month}-${day}`;
 }
 
+function resolveReopenedSessionState(activeProjectId: string | null): SessionState {
+  return activeProjectId ? 'paused_manual' : 'idle';
+}
+
 const defaultOperationalSettings = {
   cycleStartHour: '00:00',
   dailyReviewTime: '18:00',
@@ -157,6 +161,7 @@ interface WorkspaceStoreState {
   resumeSession: () => void;
   switchActiveProject: (projectId: string) => void;
   closeDay: () => void;
+  reopenDay: () => void;
   autoCloseCycle: (boundaryAt?: string, options?: { deferNextCycleUntilManualStart?: boolean }) => void;
   startNextCycle: (options?: { continueSession?: boolean; keepActiveProject?: boolean; nextDate?: string; startedAt?: string }) => void;
   syncCycleBoundary: (currentAt?: string) => void;
@@ -287,6 +292,24 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       timeBlocks: updatedTimeBlocks,
       activePulse: null,
       nextPulseDueAt: null,
+    };
+  }),
+  reopenDay: () => set((state) => {
+    if (state.sessionState !== 'completed') {
+      return state;
+    }
+
+    const reopenedState = resolveReopenedSessionState(state.activeProjectId);
+
+    return {
+      sessionState: reopenedState,
+      sessionStartedAt: reopenedState === 'idle' ? null : state.sessionStartedAt,
+      cycleState: reopenedState === 'idle' ? 'PLANNED' : 'ACTIVE',
+      cycleSnapshot: null,
+      activePulse: null,
+      nextPulseDueAt: null,
+      regularizationState: { isOpen: false, highlightedPulseIndex: null },
+      closeDayReview: buildCloseDayReview(state.pulseHistory),
     };
   }),
   autoCloseCycle: (boundaryAt, options) => set((state) => {
