@@ -14,6 +14,7 @@ export type NotificationDeliveryReason =
   | 'browser-unsupported-fallback'
   | 'duplicate-event'
   | 'event-expired-before-delivery'
+  | 'paused-inactivity-active'
   | 'page-visible-in-app-preferred'
   | 'product-disabled';
 
@@ -27,9 +28,11 @@ export interface DeliveryDecision {
 
 export interface NotificationDeliveryAttempt {
   channel: NotificationDeliveryChannel;
+  context?: Record<string, string | number | boolean | null>;
   dedupeKey: string | null;
   degradedReason: NotificationDegradedReason | null;
   deliveredAt: string;
   eventId: string;
+  eventType: import('@/modules/notifications/types/events').OperationalNotificationEventType;
   reason: NotificationDeliveryReason;
 }

@@ -1,10 +1,9 @@
-import { cycleSessionStateEnum, type CycleSession, type CycleTimeBlock, type Project, type Task } from '@/shared/database/schema';
+import type { CycleSession, CycleTimeBlock, Project, Task } from '@/shared/database/schema';
 
-import { addDays, getWeekDayLabel, getWeekInfoFromDate } from '@/modules/weekly/utils/weekly-boundary';
+import { getWeekDayLabel, getWeekInfoFromDate } from '@/modules/weekly/utils/weekly-boundary';
 
 import type { WeeklyDay, WeeklyDayCellDTO, WeeklyProjectRowDTO, WeeklySnapshotResponseDTO } from '@/modules/weekly/types/weekly';
 
-const DEFAULT_DAILY_AVAILABLE_HOURS = 10;
 const DEFAULT_WEEKLY_ROTATIVE_CAPACITY_HOURS = 60;
 
 const rotativePatterns: WeeklyDay[][] = [
@@ -219,17 +218,4 @@ export function buildWeeklySnapshot(params: BuildWeeklySnapshotParams): WeeklySn
     weekKey: params.weekKey,
     weekStartsAt: weekInfo.weekStartsAt,
   };
-}
-
-export function getWeeklySnapshotInputsForWeek(weekKey: string, currentCycleDate: string) {
-  const targetWeek = getWeekInfoFromDate(currentCycleDate).weekKey === weekKey
-    ? getWeekInfoFromDate(currentCycleDate)
-    : (() => {
-      const weekStartsAt = addDays(getWeekInfoFromDate(currentCycleDate).weekStartsAt, 0);
-
-      void weekStartsAt;
-      return null;
-    })();
-
-  return targetWeek;
 }

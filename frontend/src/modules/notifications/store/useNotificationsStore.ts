@@ -4,7 +4,13 @@ import { create } from 'zustand';
 
 import { createMemoryNotificationDedupeStore } from '@/modules/notifications/services/notificationDedupeStore';
 import { decideNotificationDelivery } from '@/modules/notifications/services/notificationDeliveryEngine';
+import {
+  createInitialPulseInactivityState,
+  isPulseNotificationEventActionable,
+  shouldSuppressPulseNotificationEvent,
+} from '@/modules/notifications/services/pulseInactivityPolicy';
 
+import type { PulseInactivityState } from '@/modules/notifications/services/pulseInactivityPolicy';
 import type { NotificationCapabilityState } from '@/modules/notifications/types/capability';
 import type { DeliveryDecision, NotificationDeliveryAttempt } from '@/modules/notifications/types/delivery';
 import type { InAppNotificationState, OperationalNotificationEvent } from '@/modules/notifications/types/events';
@@ -25,11 +31,34 @@ function emitBrowserNotification(event: OperationalNotificationEvent, dedupeKey:
 function createDeliveryAttempt(event: OperationalNotificationEvent, decision: DeliveryDecision, deliveredAt: string): NotificationDeliveryAttempt {
   return {
     channel: decision.channel,
+    context: event.context,
     dedupeKey: decision.dedupeKey,
     degradedReason: decision.degradedReason,
     deliveredAt,
     eventId: event.eventId,
+    eventType: event.type,
     reason: decision.reason,
+  };
+}
+
+function createPulseSuppressionAttempt(pulseInactivity: PulseInactivityState, deliveredAt: string): NotificationDeliveryAttempt | null {
+  if (!pulseInactivity.activeExpiredEventId || !pulseInactivity.suppressFurtherPulseAlerts) {
+    return null;
+  }
+
+  return {
+    channel: 'suppressed',
+    context: {
+      activeExpiredEventId: pulseInactivity.activeExpiredEventId,
+      source: 'pulse-inactivity-policy',
+      suppressedSince: pulseInactivity.suppressedSince,
+    },
+    dedupeKey: null,
+    degradedReason: null,
+    deliveredAt,
+    eventId: pulseInactivity.activeExpiredEventId,
+    eventType: 'activity-pulse-expired',
+    reason: 'paused-inactivity-active',
   };
 }
 
@@ -38,10 +67,13 @@ interface NotificationsStoreState {
   degradedReason: DeliveryDecision['degradedReason'];
   deliveryAttempts: NotificationDeliveryAttempt[];
   lastDeliveryDecision: DeliveryDecision | null;
+  pulseInactivity: PulseInactivityState;
   dismissInAppNotification: () => void;
   dismissNotificationEvent: (eventId: string) => void;
+  isNotificationEventActionable: (eventId: string) => boolean;
   dispatchEvent: (event: OperationalNotificationEvent, capability: NotificationCapabilityState, now?: string) => DeliveryDecision;
   resetNotificationsStore: () => void;
+  syncPulseInactivityState: (pulseInactivity: PulseInactivityState, now?: string) => void;
 }
 
 const initialState = {
@@ -49,9 +81,10 @@ const initialState = {
   degradedReason: null,
   deliveryAttempts: [] as NotificationDeliveryAttempt[],
   lastDeliveryDecision: null as DeliveryDecision | null,
+  pulseInactivity: createInitialPulseInactivityState(),
 };
 
-export const useNotificationsStore = create<NotificationsStoreState>((set) => ({
+export const useNotificationsStore = create<NotificationsStoreState>((set, get) => ({
   ...initialState,
   dismissInAppNotification: () => set({ activeInAppNotification: null }),
   dismissNotificationEvent: (eventId) => set((state) => ({
@@ -59,7 +92,26 @@ export const useNotificationsStore = create<NotificationsStoreState>((set) => ({
       ? null
       : state.activeInAppNotification,
   })),
+  isNotificationEventActionable: (eventId) => isPulseNotificationEventActionable(get().pulseInactivity, eventId),
   dispatchEvent: (event, capability, now = new Date().toISOString()) => {
+    if (shouldSuppressPulseNotificationEvent(get().pulseInactivity, event)) {
+      const decision: DeliveryDecision = {
+        channel: 'suppressed',
+        dedupeKey: null,
+        degradedReason: null,
+        reason: 'paused-inactivity-active',
+        shouldMarkDelivered: false,
+      };
+      const attempt = createDeliveryAttempt(event, decision, now);
+
+      set((state) => ({
+        deliveryAttempts: [...state.deliveryAttempts, attempt].slice(-20),
+        lastDeliveryDecision: decision,
+      }));
+
+      return decision;
+    }
+
     let decision = decideNotificationDelivery({ capability, dedupeStore, event, now });
 
     if (decision.channel === 'browser') {
@@ -102,6 +154,24 @@ export const useNotificationsStore = create<NotificationsStoreState>((set) => ({
   resetNotificationsStore: () => {
     dedupeStore.reset();
     set(initialState);
+  },
+  syncPulseInactivityState: (pulseInactivity, now = new Date().toISOString()) => {
+    set((state) => {
+      const shouldRecordSuppression = pulseInactivity.suppressFurtherPulseAlerts && (
+        !state.pulseInactivity.suppressFurtherPulseAlerts
+        || state.pulseInactivity.activeExpiredEventId !== pulseInactivity.activeExpiredEventId
+      );
+      const suppressionAttempt = shouldRecordSuppression
+        ? createPulseSuppressionAttempt(pulseInactivity, now)
+        : null;
+
+      return {
+        pulseInactivity,
+        deliveryAttempts: suppressionAttempt
+          ? [...state.deliveryAttempts, suppressionAttempt].slice(-20)
+          : state.deliveryAttempts,
+      };
+    });
   },
 }));
 

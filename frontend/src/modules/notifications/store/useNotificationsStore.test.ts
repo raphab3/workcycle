@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetNotificationsStore, useNotificationsStore } from './useNotificationsStore';
 
+import { createPulseInactivityState } from '@/modules/notifications/services/pulseInactivityPolicy';
+
 import type { NotificationCapabilityState } from '@/modules/notifications/types/capability';
 
 const baseCapability: NotificationCapabilityState = {
@@ -119,5 +121,63 @@ describe('useNotificationsStore', () => {
     useNotificationsStore.getState().dismissNotificationEvent('event-1');
 
     expect(useNotificationsStore.getState().activeInAppNotification).toBeNull();
+  });
+
+  it('records suppression state and suppresses new pulse alerts while paused_inactivity is active', () => {
+    useNotificationsStore.getState().syncPulseInactivityState(createPulseInactivityState('paused_inactivity', {
+      confirmedMinutes: 0,
+      firedAt: '2026-03-22T09:30:00.000Z',
+      projectId: 'proj-1',
+      resolution: 'pending',
+      respondedAt: null,
+      reviewedAt: null,
+      status: 'unconfirmed',
+    }), '2026-03-22T09:35:00.000Z');
+
+    const decision = useNotificationsStore.getState().dispatchEvent({
+      ...baseEvent,
+      eventId: 'event-2',
+      occurredAt: '2026-03-22T10:00:00.000Z',
+    }, baseCapability, '2026-03-22T10:00:00.000Z');
+
+    expect(decision.channel).toBe('suppressed');
+    expect(decision.reason).toBe('paused-inactivity-active');
+    expect(useNotificationsStore.getState().deliveryAttempts.at(-2)).toMatchObject({
+      channel: 'suppressed',
+      eventId: 'today-pulse:2026-03-22T09:30:00.000Z:expired',
+      reason: 'paused-inactivity-active',
+    });
+    expect(useNotificationsStore.getState().deliveryAttempts.at(-1)).toMatchObject({
+      channel: 'suppressed',
+      eventId: 'event-2',
+      reason: 'paused-inactivity-active',
+    });
+  });
+
+  it('clears suppression and stale action guard when inactivity state is reset', () => {
+    useNotificationsStore.getState().syncPulseInactivityState(createPulseInactivityState('paused_inactivity', {
+      confirmedMinutes: 0,
+      firedAt: '2026-03-22T09:30:00.000Z',
+      projectId: 'proj-1',
+      resolution: 'pending',
+      respondedAt: null,
+      reviewedAt: null,
+      status: 'unconfirmed',
+    }), '2026-03-22T09:35:00.000Z');
+
+    expect(useNotificationsStore.getState().isNotificationEventActionable('today-pulse:2026-03-22T09:30:00.000Z:due')).toBe(false);
+
+    useNotificationsStore.getState().syncPulseInactivityState({
+      activeExpiredEventId: null,
+      suppressFurtherPulseAlerts: false,
+      suppressedSince: null,
+    }, '2026-03-22T09:40:00.000Z');
+
+    expect(useNotificationsStore.getState().pulseInactivity).toEqual({
+      activeExpiredEventId: null,
+      suppressFurtherPulseAlerts: false,
+      suppressedSince: null,
+    });
+    expect(useNotificationsStore.getState().isNotificationEventActionable('today-pulse:2026-03-22T09:30:00.000Z:due')).toBe(true);
   });
 });

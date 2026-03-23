@@ -6,6 +6,12 @@ export {
 } from './services/browserNotificationCapability';
 export { createMemoryNotificationDedupeStore } from './services/notificationDedupeStore';
 export { createOperationalNotificationDedupeKey, decideNotificationDelivery } from './services/notificationDeliveryEngine';
+export {
+  createInitialPulseInactivityState,
+  createPulseInactivityState,
+  isPulseNotificationEventActionable,
+  shouldSuppressPulseNotificationEvent,
+} from './services/pulseInactivityPolicy';
 export { resetNotificationsStore, useNotificationsStore } from './store/useNotificationsStore';
 export {
   createActivityPulseDueNotificationEvent,
@@ -15,3 +21,4 @@ export {
 export type { BrowserNotificationPermission, NotificationCapabilityState } from './types/capability';
 export type { DeliveryDecision, NotificationDegradedReason, NotificationDeliveryAttempt, NotificationDeliveryChannel, NotificationDeliveryReason } from './types/delivery';
 export type { InAppNotificationState, OperationalNotificationEvent, OperationalNotificationEventType } from './types/events';
+export type { PulseInactivityState } from './services/pulseInactivityPolicy';

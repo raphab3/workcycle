@@ -1,1 +1,12 @@
-export type { WeeklyDayCell, WeeklyDeviationStatus, WeeklyProjectRow, WeeklyScenario, WeeklySummaryMetrics } from './weekly';
+export type {
+	WeeklyDayCell,
+	WeeklyDeviationStatus,
+	WeeklyHistoryDTO,
+	WeeklyHistoryQueryInput,
+	WeeklyProjectRow,
+	WeeklyScenario,
+	WeeklySnapshotDTO,
+	WeeklySnapshotQueryInput,
+	WeeklySnapshotSource,
+	WeeklySummaryMetrics,
+} from './weekly';

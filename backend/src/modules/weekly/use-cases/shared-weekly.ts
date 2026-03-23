@@ -1,5 +1,6 @@
 import { buildWeeklySnapshot } from '@/modules/weekly/utils/weekly-consolidation';
 import { getWeekInfoFromDate, getWeekInfoFromWeekKey } from '@/modules/weekly/utils/weekly-boundary';
+import { resolveOperationalCycleDate } from '@/modules/cycle/utils/operational-boundary';
 
 import type { WeeklyRepository } from '@/modules/weekly/repositories/weekly.repository';
 import type { UserSettingsDTO } from '@/modules/settings/types/settings';
@@ -37,8 +38,6 @@ export async function buildWeeklySnapshotForWeek(params: {
 }
 
 export function resolveCurrentCycleDate(referenceAt: string, settings: UserSettingsDTO) {
-  const { resolveOperationalCycleDate } = require('@/modules/cycle/utils/operational-boundary') as typeof import('@/modules/cycle/utils/operational-boundary');
-
   return resolveOperationalCycleDate(referenceAt, {
     cycleStartHour: settings.cycleStartHour,
     timezone: settings.timezone,

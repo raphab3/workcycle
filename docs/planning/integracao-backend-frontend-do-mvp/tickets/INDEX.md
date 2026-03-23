@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T012 concluído em 2026-03-23
-- **Próximo ticket sugerido:** T013 — Definir contratos híbridos de Weekly
+- **Checkpoint atual:** T013 concluído em 2026-03-23
+- **Próximo ticket sugerido:** T014 — Integrar Weekly no frontend com dados híbridos
 
 ## Por Fluxo
 
@@ -43,7 +43,7 @@
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T013 | Definir contratos híbridos de Weekly | API | M | T007, T009, T011 | Backlog |
+| T013 | Definir contratos híbridos de Weekly | API | M | T007, T009, T011 | Concluído |
 | T014 | Integrar Weekly no frontend com dados híbridos | FEAT | M | T013 | Backlog |
 
 ### CF-06: Settings persistidos com impacto transversal em tempo e sessão

@@ -88,6 +88,11 @@ describe('useActivityPulse', () => {
       status: 'unconfirmed',
       resolution: 'pending',
     });
+    expect(useNotificationsStore.getState().pulseInactivity).toEqual({
+      activeExpiredEventId: 'today-pulse:2026-03-22T09:30:00.000Z:expired',
+      suppressFurtherPulseAlerts: true,
+      suppressedSince: '2026-03-22T09:30:00.000Z',
+    });
     expect(useNotificationsStore.getState().deliveryAttempts.at(-1)?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z:expired');
   });
 
@@ -161,5 +166,60 @@ describe('useActivityPulse', () => {
     });
 
     expect(useNotificationsStore.getState().activeInAppNotification).toBeNull();
+  });
+
+  it('clears inactivity suppression when the user resumes the session', () => {
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
+
+    act(() => {
+      useWorkspaceStore.getState().startSession('proj-1');
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(35 * 60 * 1000);
+    });
+
+    expect(useNotificationsStore.getState().pulseInactivity.suppressFurtherPulseAlerts).toBe(true);
+
+    act(() => {
+      useWorkspaceStore.getState().resumeSession();
+    });
+
+    expect(useNotificationsStore.getState().pulseInactivity).toEqual({
+      activeExpiredEventId: null,
+      suppressFurtherPulseAlerts: false,
+      suppressedSince: null,
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(30 * 60 * 1000);
+    });
+
+    expect(useNotificationsStore.getState().lastDeliveryDecision?.channel).toBe('in-app');
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T10:05:00.000Z:due');
+  });
+
+  it('clears inactivity suppression when the expired pulse is regularized', () => {
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
+
+    act(() => {
+      useWorkspaceStore.getState().startSession('proj-1');
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(35 * 60 * 1000);
+    });
+
+    expect(useNotificationsStore.getState().pulseInactivity.suppressFurtherPulseAlerts).toBe(true);
+
+    act(() => {
+      useWorkspaceStore.getState().reviewPulse(0, 'inactive', '2026-03-22T09:36:00.000Z');
+    });
+
+    expect(useNotificationsStore.getState().pulseInactivity).toEqual({
+      activeExpiredEventId: null,
+      suppressFurtherPulseAlerts: false,
+      suppressedSince: null,
+    });
   });
 });

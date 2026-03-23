@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import {
   createActivityPulseDueNotificationEvent,
   createActivityPulseExpiredNotificationEvent,
+  createPulseInactivityState,
   createTodayPulseNotificationEventId,
   useNotificationCapability,
   useNotificationsStore,
@@ -29,6 +30,7 @@ export function useActivityPulse() {
   const notificationCapability = useNotificationCapability({ enabled: sessionState === 'running' || sessionState === 'paused_inactivity' });
   const dispatchNotificationEvent = useNotificationsStore((state) => state.dispatchEvent);
   const dismissNotificationEvent = useNotificationsStore((state) => state.dismissNotificationEvent);
+  const syncPulseInactivityState = useNotificationsStore((state) => state.syncPulseInactivityState);
   const pendingFireRef = useRef<string | null>(null);
   const pendingExpireRef = useRef<string | null>(null);
   const dispatchedDuePulseRef = useRef<string | null>(null);
@@ -36,6 +38,14 @@ export function useActivityPulse() {
   const dismissedPulseRef = useRef<string | null>(null);
 
   const shouldUseBackend = Boolean(sessionId);
+  const latestPulse = pulseHistory[pulseHistory.length - 1] ?? null;
+
+  useEffect(() => {
+    syncPulseInactivityState(
+      createPulseInactivityState(sessionState, latestPulse),
+      latestPulse?.reviewedAt ?? latestPulse?.respondedAt ?? latestPulse?.firedAt,
+    );
+  }, [latestPulse, sessionState, syncPulseInactivityState]);
 
   useEffect(() => {
     if (!activePulse || dispatchedDuePulseRef.current === activePulse.firedAt) {
@@ -47,8 +57,6 @@ export function useActivityPulse() {
   }, [activePulse, dispatchNotificationEvent, notificationCapability]);
 
   useEffect(() => {
-    const latestPulse = pulseHistory[pulseHistory.length - 1];
-
     if (!latestPulse) {
       return;
     }
@@ -68,7 +76,7 @@ export function useActivityPulse() {
       dismissNotificationEvent(createTodayPulseNotificationEventId(latestPulse.firedAt, 'expired'));
       dismissedPulseRef.current = latestPulse.firedAt;
     }
-  }, [dismissNotificationEvent, dispatchNotificationEvent, notificationCapability, pulseHistory]);
+  }, [dismissNotificationEvent, dispatchNotificationEvent, latestPulse, notificationCapability]);
 
   useEffect(() => {
     if (sessionState !== 'running') {
