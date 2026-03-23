@@ -3,11 +3,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
+import { toIsoFromDatetimeLocal } from '@/modules/agenda/utils/agenda';
+
 import { AgendaWorkspace } from './index';
 
 const refreshMutateAsyncMock = vi.fn();
 const createMutateAsyncMock = vi.fn();
 const updateMutateAsyncMock = vi.fn();
+const respondMutateAsyncMock = vi.fn();
 const deleteMutateAsyncMock = vi.fn();
 
 function buildAttendees(total: number) {
@@ -57,6 +60,14 @@ vi.mock('@/modules/agenda/queries/useUpdateAgendaEventMutation', () => ({
   }),
 }));
 
+vi.mock('@/modules/agenda/queries/useRespondAgendaEventMutation', () => ({
+  useRespondAgendaEventMutation: () => ({
+    error: null,
+    isPending: false,
+    mutateAsync: respondMutateAsyncMock,
+  }),
+}));
+
 vi.mock('@/modules/agenda/queries/useDeleteAgendaEventMutation', () => ({
   useDeleteAgendaEventMutation: () => ({
     error: null,
@@ -81,11 +92,10 @@ function renderAgendaWorkspace() {
 
 describe('AgendaWorkspace', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-03-22T10:00:00.000Z'));
     refreshMutateAsyncMock.mockReset();
     createMutateAsyncMock.mockReset();
     updateMutateAsyncMock.mockReset();
+    respondMutateAsyncMock.mockReset();
     deleteMutateAsyncMock.mockReset();
     useAuthStoreMock.mockImplementation((selector: (state: { hasHydrated: boolean; sessionStatus: string }) => unknown) => selector({
       hasHydrated: true,
@@ -119,7 +129,7 @@ describe('AgendaWorkspace', () => {
             accountDisplayName: 'Rafa Work',
             accountEmail: 'rafa@work.dev',
             accountId: 'account-1',
-            attendees: buildAttendees(3),
+            attendees: [{ displayName: 'Rafa Work', email: 'rafa@work.dev', responseStatus: 'needsAction', self: true }, ...buildAttendees(3)],
             calendarColorHex: '#3367D6',
             calendarId: 'calendar-1',
             calendarName: 'Primary',
@@ -132,7 +142,7 @@ describe('AgendaWorkspace', () => {
             projectId: null,
             recurrenceRule: null,
             recurringEventId: null,
-            responseStatus: 'accepted',
+            responseStatus: 'needsAction',
             startAt: '2026-03-22T11:00:00.000Z',
             syncedAt: '2026-03-22T08:50:00.000Z',
             title: 'Planejamento semanal',
@@ -142,7 +152,7 @@ describe('AgendaWorkspace', () => {
             accountDisplayName: 'Rafa Work',
             accountEmail: 'rafa@work.dev',
             accountId: 'account-1',
-            attendees: buildAttendees(12),
+            attendees: [{ displayName: 'Rafa Work', email: 'rafa@work.dev', responseStatus: 'accepted', self: true }, ...buildAttendees(12)],
             calendarColorHex: '#3367D6',
             calendarId: 'calendar-1',
             calendarName: 'Primary',
@@ -169,12 +179,8 @@ describe('AgendaWorkspace', () => {
     });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('renders events in chronological order and exposes manual refresh', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup();
 
     renderAgendaWorkspace();
 
@@ -193,7 +199,7 @@ describe('AgendaWorkspace', () => {
   });
 
   it('creates a new event through the workspace form', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup();
 
     renderAgendaWorkspace();
 
@@ -208,15 +214,15 @@ describe('AgendaWorkspace', () => {
     expect(createMutateAsyncMock).toHaveBeenCalledWith({
       calendarId: 'calendar-1',
       description: undefined,
-      endAt: '2026-03-22T14:00:00.000Z',
+      endAt: toIsoFromDatetimeLocal('2026-03-22T14:00'),
       location: 'Sala 1',
-      startAt: '2026-03-22T13:00:00.000Z',
+      startAt: toIsoFromDatetimeLocal('2026-03-22T13:00'),
       title: 'Checkpoint do dia',
     });
   });
 
   it('updates and deletes an existing event', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup();
 
     renderAgendaWorkspace();
 
@@ -242,5 +248,48 @@ describe('AgendaWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Excluir' }));
 
     expect(deleteMutateAsyncMock).toHaveBeenCalledWith('calendar-1:event-1');
+  });
+
+  it('declines participation in an invited event without deleting it', async () => {
+    const user = userEvent.setup();
+
+    renderAgendaWorkspace();
+
+    await user.click(screen.getAllByRole('button', { name: 'Recusar participacao' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Recusar participacao' }).at(-1) as HTMLButtonElement);
+
+    expect(respondMutateAsyncMock).toHaveBeenCalledWith({
+      eventId: 'calendar-1:event-1',
+      responseStatus: 'declined',
+    });
+    expect(deleteMutateAsyncMock).not.toHaveBeenCalled();
+  });
+
+  it('confirms participation for a pending invite', async () => {
+    const user = userEvent.setup();
+
+    renderAgendaWorkspace();
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar participacao' }));
+    await user.click(screen.getAllByRole('button', { name: 'Confirmar participacao' }).at(-1) as HTMLButtonElement);
+
+    expect(respondMutateAsyncMock).toHaveBeenCalledWith({
+      eventId: 'calendar-1:event-2',
+      responseStatus: 'accepted',
+    });
+  });
+
+  it('undoes an existing participation response back to pending', async () => {
+    const user = userEvent.setup();
+
+    renderAgendaWorkspace();
+
+    await user.click(screen.getByRole('button', { name: 'Desfazer resposta' }));
+    await user.click(screen.getAllByRole('button', { name: 'Desfazer resposta' }).at(-1) as HTMLButtonElement);
+
+    expect(respondMutateAsyncMock).toHaveBeenCalledWith({
+      eventId: 'calendar-1:event-1',
+      responseStatus: 'needsAction',
+    });
   });
 });

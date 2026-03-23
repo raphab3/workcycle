@@ -9,6 +9,8 @@ export interface AgendaDegradedSource {
   reason: string;
 }
 
+export type AgendaEventResponseStatus = 'accepted' | 'declined' | 'tentative' | 'needsAction';
+
 export interface AgendaEvent {
   accountDisplayName: string;
   accountEmail: string;
@@ -26,7 +28,7 @@ export interface AgendaEvent {
   projectId: string | null;
   recurrenceRule: string | null;
   recurringEventId: string | null;
-  responseStatus: 'accepted' | 'declined' | 'tentative' | 'needsAction';
+  responseStatus: AgendaEventResponseStatus;
   startAt: string;
   syncedAt: string;
   title: string;
@@ -70,6 +72,11 @@ export interface AgendaCalendarOption {
 export interface UpdateAgendaEventInput {
   eventId: string;
   values: AgendaEventWritePayload;
+}
+
+export interface RespondAgendaEventInput {
+  eventId: string;
+  responseStatus: AgendaEventResponseStatus;
 }
 
 export interface DeleteAgendaEventInput {

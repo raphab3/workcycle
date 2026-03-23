@@ -6,6 +6,7 @@ import type {
   AgendaEventsResult,
   AgendaIntervalInput,
   DeleteAgendaEventResult,
+  RespondAgendaEventInput,
   UpdateAgendaEventInput,
 } from '@/modules/agenda/types';
 
@@ -45,6 +46,12 @@ async function updateEvent({ eventId, values }: UpdateAgendaEventInput) {
   return response.data;
 }
 
+async function respondToEvent({ eventId, responseStatus }: RespondAgendaEventInput) {
+  const response = await api.patch<AgendaEvent>(`/api/events/${eventId}`, { responseStatus });
+
+  return response.data;
+}
+
 async function deleteEvent(eventId: string) {
   const response = await api.delete<DeleteAgendaEventResult>(`/api/events/${eventId}`);
 
@@ -56,5 +63,6 @@ export const agendaService = {
   deleteEvent,
   getEvents,
   refreshEvents,
+  respondToEvent,
   updateEvent,
 };

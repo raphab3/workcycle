@@ -23,6 +23,7 @@ export class EventsRemoteWriterService {
   ) {}
 
   private static buildGoogleEventWritePayload(input: {
+    attendees?: Array<Record<string, unknown>> | undefined;
     description?: string | undefined;
     endAt?: string | undefined;
     location?: string | undefined;
@@ -30,6 +31,7 @@ export class EventsRemoteWriterService {
     title?: string | undefined;
   }) {
     return {
+      attendees: input.attendees,
       description: input.description,
       end: input.endAt ? { dateTime: input.endAt } : undefined,
       location: input.location,

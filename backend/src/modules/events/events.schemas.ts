@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const calendarEventResponseStatusSchema = z.enum(['accepted', 'declined', 'tentative', 'needsAction']);
+
 function parseStringArray(value: unknown) {
   if (typeof value === 'string') {
     return value
@@ -67,7 +69,9 @@ function validateCalendarEventWindow(input: { endAt: string; startAt: string }, 
 
 export const createCalendarEventSchema = calendarEventFieldsSchema.superRefine(validateCalendarEventWindow);
 
-export const updateCalendarEventSchema = calendarEventFieldsSchema.partial().superRefine((input, context) => {
+export const updateCalendarEventSchema = calendarEventFieldsSchema.partial().extend({
+  responseStatus: calendarEventResponseStatusSchema.optional(),
+}).superRefine((input, context) => {
   if (Object.keys(input).length === 0) {
     context.addIssue({
       code: 'custom',

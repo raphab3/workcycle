@@ -1,5 +1,5 @@
 import type { GoogleAccountDTO } from '@/modules/auth/types';
-import type { AgendaCalendarOption, AgendaEvent, AgendaEventFormValues, AgendaEventWritePayload, AgendaIntervalInput } from '@/modules/agenda/types';
+import type { AgendaCalendarOption, AgendaEvent, AgendaEventFormValues, AgendaEventResponseStatus, AgendaEventWritePayload, AgendaIntervalInput } from '@/modules/agenda/types';
 
 function padValue(value: number) {
   return String(value).padStart(2, '0');
@@ -128,6 +128,69 @@ export function isAgendaEventWithinInterval(event: AgendaEvent, interval: Agenda
 
 export function countUniqueAgendaCalendars(events: AgendaEvent[]) {
   return new Set(events.map((event) => event.calendarId)).size;
+}
+
+function hasSelfAgendaAttendee(event: AgendaEvent) {
+  return event.attendees.some((attendee) => attendee.self === true);
+}
+
+export interface AgendaResponseAction {
+  confirmLabel: string;
+  description: string;
+  nextStatus: AgendaEventResponseStatus;
+  title: string;
+}
+
+export function getAgendaResponseActions(event: AgendaEvent): AgendaResponseAction[] {
+  if (!hasSelfAgendaAttendee(event)) {
+    return [];
+  }
+
+  const actions: AgendaResponseAction[] = [];
+
+  if (event.responseStatus === 'needsAction' || event.responseStatus === 'declined' || event.responseStatus === 'tentative') {
+    actions.push({
+      confirmLabel: 'Confirmar participacao',
+      description: 'Essa resposta marca no Google Calendar que voce pretende participar deste convite sem alterar os dados do evento.',
+      nextStatus: 'accepted',
+      title: 'Confirmar participacao',
+    });
+  }
+
+  if (event.responseStatus !== 'declined') {
+    actions.push({
+      confirmLabel: 'Recusar participacao',
+      description: 'A recusa atualiza sua resposta neste convite no Google Calendar sem excluir o evento da agenda do organizador.',
+      nextStatus: 'declined',
+      title: 'Recusar participacao',
+    });
+  }
+
+  if (event.responseStatus !== 'needsAction') {
+    actions.push({
+      confirmLabel: 'Desfazer resposta',
+      description: 'Essa acao remove sua decisao atual e devolve o convite ao estado pendente no Google Calendar.',
+      nextStatus: 'needsAction',
+      title: 'Desfazer resposta',
+    });
+  }
+
+  return actions;
+}
+
+export function getAgendaResponseStatusLabel(status: AgendaEventResponseStatus) {
+  switch (status) {
+    case 'accepted':
+      return 'Participacao confirmada';
+    case 'declined':
+      return 'Participacao recusada';
+    case 'tentative':
+      return 'Participacao talvez';
+    case 'needsAction':
+      return 'Convite pendente';
+    default:
+      return status;
+  }
 }
 
 function getAgendaAttendeeLabel(attendee: Record<string, unknown>) {

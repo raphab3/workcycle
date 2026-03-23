@@ -72,7 +72,7 @@ describe('agendaService', () => {
     getSpy.mockRestore();
   });
 
-  it('posts, patches and deletes events through the real endpoints', async () => {
+  it('posts, patches, responds and deletes events through the real endpoints', async () => {
     const postSpy = vi.spyOn(api, 'post').mockResolvedValue({ data: agendaEventPayload });
     const patchSpy = vi.spyOn(api, 'patch').mockResolvedValue({ data: agendaEventPayload });
     const deleteSpy = vi.spyOn(api, 'delete').mockResolvedValue({ data: { deleted: true, id: agendaEventPayload.id } });
@@ -96,6 +96,10 @@ describe('agendaService', () => {
         title: 'Daily revisada',
       },
     });
+    await agendaService.respondToEvent({
+      eventId: agendaEventPayload.id,
+      responseStatus: 'declined',
+    });
     await agendaService.deleteEvent(agendaEventPayload.id);
 
     expect(postSpy).toHaveBeenCalledWith('/api/events', {
@@ -113,6 +117,9 @@ describe('agendaService', () => {
       location: 'Meet',
       startAt: '2026-03-22T09:30:00.000Z',
       title: 'Daily revisada',
+    });
+    expect(patchSpy).toHaveBeenCalledWith(`/api/events/${agendaEventPayload.id}`, {
+      responseStatus: 'declined',
     });
     expect(deleteSpy).toHaveBeenCalledWith(`/api/events/${agendaEventPayload.id}`);
 

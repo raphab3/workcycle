@@ -10,8 +10,9 @@ import { useCreateAgendaEventMutation } from '@/modules/agenda/queries/useCreate
 import { useAgendaEventsQuery } from '@/modules/agenda/queries/useAgendaEventsQuery';
 import { useDeleteAgendaEventMutation } from '@/modules/agenda/queries/useDeleteAgendaEventMutation';
 import { useRefreshAgendaMutation } from '@/modules/agenda/queries/useRefreshAgendaMutation';
+import { useRespondAgendaEventMutation } from '@/modules/agenda/queries/useRespondAgendaEventMutation';
 import { useUpdateAgendaEventMutation } from '@/modules/agenda/queries/useUpdateAgendaEventMutation';
-import { buildAgendaDayInterval, countUniqueAgendaCalendars, formatAgendaDateTime, formatAgendaDayLabel, formatAgendaTimeRange, getAgendaGuestSummary, getIncludedAgendaCalendars, getLocalISODate, shiftAgendaDate, sortAgendaEvents, toAgendaEventWritePayload } from '@/modules/agenda/utils/agenda';
+import { buildAgendaDayInterval, countUniqueAgendaCalendars, formatAgendaDateTime, formatAgendaDayLabel, formatAgendaTimeRange, getAgendaGuestSummary, getAgendaResponseActions, getAgendaResponseStatusLabel, getIncludedAgendaCalendars, getLocalISODate, shiftAgendaDate, sortAgendaEvents, toAgendaEventWritePayload } from '@/modules/agenda/utils/agenda';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog/index';
@@ -19,16 +20,26 @@ import { EmptyState } from '@/shared/components/EmptyState';
 import { OverlayPanel } from '@/shared/components/OverlayPanel/index';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+import { cn } from '@/shared/utils/cn';
 
 import { AgendaEventForm } from '../AgendaEventForm/index';
 import { agendaWorkspaceStyles } from './styles';
 
-import type { AgendaEvent, AgendaEventFormValues } from '@/modules/agenda/types';
+import type { AgendaEvent, AgendaEventFormValues, AgendaEventResponseStatus } from '@/modules/agenda/types';
+
+interface PendingResponseAction {
+  confirmLabel: string;
+  description: string;
+  event: AgendaEvent;
+  nextStatus: AgendaEventResponseStatus;
+  title: string;
+}
 
 export function AgendaWorkspace() {
   const [selectedDate, setSelectedDate] = useState(() => getLocalISODate(new Date()));
   const [editingEvent, setEditingEvent] = useState<AgendaEvent | null>(null);
   const [isEventPanelOpen, setIsEventPanelOpen] = useState(false);
+  const [pendingResponseAction, setPendingResponseAction] = useState<PendingResponseAction | null>(null);
   const [pendingDeleteEvent, setPendingDeleteEvent] = useState<AgendaEvent | null>(null);
   const hasHydratedSession = useAuthStore((state) => state.hasHydrated);
   const sessionStatus = useAuthStore((state) => state.sessionStatus);
@@ -40,6 +51,7 @@ export function AgendaWorkspace() {
   const createAgendaEventMutation = useCreateAgendaEventMutation(interval);
   const updateAgendaEventMutation = useUpdateAgendaEventMutation(interval);
   const deleteAgendaEventMutation = useDeleteAgendaEventMutation(interval);
+  const respondAgendaEventMutation = useRespondAgendaEventMutation(interval);
   const refreshAgendaMutation = useRefreshAgendaMutation();
 
   const availableCalendars = useMemo(
@@ -52,8 +64,8 @@ export function AgendaWorkspace() {
   );
   const degradedSources = agendaEventsQuery.data?.degradedSources ?? [];
   const requestError = useMemo(
-    () => agendaEventsQuery.error ?? googleAccountsQuery.error ?? createAgendaEventMutation.error ?? updateAgendaEventMutation.error ?? deleteAgendaEventMutation.error ?? refreshAgendaMutation.error,
-    [agendaEventsQuery.error, createAgendaEventMutation.error, deleteAgendaEventMutation.error, googleAccountsQuery.error, refreshAgendaMutation.error, updateAgendaEventMutation.error],
+    () => agendaEventsQuery.error ?? googleAccountsQuery.error ?? createAgendaEventMutation.error ?? updateAgendaEventMutation.error ?? respondAgendaEventMutation.error ?? deleteAgendaEventMutation.error ?? refreshAgendaMutation.error,
+    [agendaEventsQuery.error, createAgendaEventMutation.error, deleteAgendaEventMutation.error, googleAccountsQuery.error, refreshAgendaMutation.error, respondAgendaEventMutation.error, updateAgendaEventMutation.error],
   );
   const requestErrorMessage = requestError
     ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar a agenda operacional com o backend.')
@@ -63,7 +75,7 @@ export function AgendaWorkspace() {
   const isSyncingAgenda = isAuthenticated && agendaEventsQuery.isPending;
   const isRefetchingAgenda = isAuthenticated && (agendaEventsQuery.isRefetching || refreshAgendaMutation.isPending) && !agendaEventsQuery.isPending;
   const isSubmittingEvent = createAgendaEventMutation.isPending || updateAgendaEventMutation.isPending;
-  const isMutatingAgenda = isSubmittingEvent || deleteAgendaEventMutation.isPending;
+  const isMutatingAgenda = isSubmittingEvent || respondAgendaEventMutation.isPending || deleteAgendaEventMutation.isPending;
 
   async function handleSubmitEvent(values: AgendaEventFormValues, eventId?: string) {
     const payload = toAgendaEventWritePayload(values);
@@ -89,6 +101,18 @@ export function AgendaWorkspace() {
 
     await deleteAgendaEventMutation.mutateAsync(pendingDeleteEvent.id);
     setPendingDeleteEvent(null);
+  }
+
+  async function handleConfirmResponseAction() {
+    if (!pendingResponseAction) {
+      return;
+    }
+
+    await respondAgendaEventMutation.mutateAsync({
+      eventId: pendingResponseAction.event.id,
+      responseStatus: pendingResponseAction.nextStatus,
+    });
+    setPendingResponseAction(null);
   }
 
   function handleOpenNewEvent() {
@@ -220,6 +244,7 @@ export function AgendaWorkspace() {
           <div className={agendaWorkspaceStyles.eventList}>
             {visibleEvents.map((event) => {
               const guestSummary = getAgendaGuestSummary(event);
+              const responseActions = getAgendaResponseActions(event);
 
               return (
                 <article className={agendaWorkspaceStyles.eventCard} key={event.id}>
@@ -231,6 +256,14 @@ export function AgendaWorkspace() {
                       <span>{formatAgendaTimeRange(event)}</span>
                       <span>{event.calendarName}</span>
                       <span>{event.accountDisplayName}</span>
+                      <span
+                        className={cn(
+                          agendaWorkspaceStyles.eventStatusBadge,
+                          event.responseStatus === 'declined' && agendaWorkspaceStyles.eventStatusBadgeDeclined,
+                        )}
+                      >
+                        {getAgendaResponseStatusLabel(event.responseStatus)}
+                      </span>
                     </div>
                   </div>
                   <p className={agendaWorkspaceStyles.helper}>Ultimo sync: {formatAgendaDateTime(event.syncedAt)}</p>
@@ -262,6 +295,17 @@ export function AgendaWorkspace() {
                 </div>
 
                 <div className={agendaWorkspaceStyles.eventActions}>
+                  {responseActions.map((action) => (
+                    <Button
+                      key={`${event.id}-${action.nextStatus}`}
+                      onClick={() => setPendingResponseAction({ ...action, event })}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {action.title}
+                    </Button>
+                  ))}
                   <Button onClick={() => handleOpenEditEvent(event)} size="sm" type="button" variant="outline">Editar evento</Button>
                   <Button onClick={() => setPendingDeleteEvent(event)} size="sm" type="button" variant="outline">Excluir evento</Button>
                 </div>
@@ -328,6 +372,17 @@ export function AgendaWorkspace() {
           onSubmitEvent={handleSubmitEvent}
         />
       </OverlayPanel>
+
+      <ConfirmDialog
+        confirmLabel={respondAgendaEventMutation.isPending ? 'Atualizando resposta...' : pendingResponseAction?.confirmLabel ?? 'Atualizar resposta'}
+        description={pendingResponseAction?.description ?? 'Atualize a sua resposta neste convite sem excluir o evento.'}
+        isOpen={Boolean(pendingResponseAction)}
+        onCancel={() => setPendingResponseAction(null)}
+        onConfirm={() => void handleConfirmResponseAction()}
+        title={pendingResponseAction?.title ?? 'Atualizar resposta do convite'}
+      >
+        {pendingResponseAction?.event.title}
+      </ConfirmDialog>
 
       <ConfirmDialog
         confirmLabel={deleteAgendaEventMutation.isPending ? 'Excluindo...' : 'Excluir'}

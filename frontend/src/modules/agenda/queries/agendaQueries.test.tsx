@@ -7,6 +7,7 @@ import { useAgendaEventsQuery } from '@/modules/agenda/queries/useAgendaEventsQu
 import { useCreateAgendaEventMutation } from '@/modules/agenda/queries/useCreateAgendaEventMutation';
 import { useDeleteAgendaEventMutation } from '@/modules/agenda/queries/useDeleteAgendaEventMutation';
 import { useRefreshAgendaMutation } from '@/modules/agenda/queries/useRefreshAgendaMutation';
+import { useRespondAgendaEventMutation } from '@/modules/agenda/queries/useRespondAgendaEventMutation';
 import { useUpdateAgendaEventMutation } from '@/modules/agenda/queries/useUpdateAgendaEventMutation';
 import { agendaService } from '@/modules/agenda/services/agendaService';
 
@@ -61,7 +62,7 @@ describe('agenda queries', () => {
     expect(result.current.data?.events).toEqual([agendaEventPayload]);
   });
 
-  it('updates cache after refresh, create, update and delete mutations', async () => {
+  it('updates cache after refresh, create, update, response and delete mutations', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
     queryClient.setQueryData<AgendaEventsResult>(agendaKeys.list(interval), { degradedSources: [], events: [agendaEventPayload] });
@@ -80,6 +81,10 @@ describe('agenda queries', () => {
     vi.spyOn(agendaService, 'updateEvent').mockResolvedValue({
       ...agendaEventPayload,
       title: 'Daily revisada',
+    });
+    vi.spyOn(agendaService, 'respondToEvent').mockResolvedValue({
+      ...agendaEventPayload,
+      responseStatus: 'declined',
     });
     vi.spyOn(agendaService, 'deleteEvent').mockResolvedValue({ deleted: true, id: agendaEventPayload.id });
 
@@ -113,6 +118,15 @@ describe('agenda queries', () => {
       },
     });
     expect(queryClient.getQueryData<AgendaEventsResult>(agendaKeys.list(interval))?.events.find((event) => event.id === agendaEventPayload.id)?.title).toBe('Daily revisada');
+
+    const respondHook = renderHook(() => useRespondAgendaEventMutation(interval), {
+      wrapper: createWrapper(queryClient),
+    });
+    await respondHook.result.current.mutateAsync({
+      eventId: agendaEventPayload.id,
+      responseStatus: 'declined',
+    });
+    expect(queryClient.getQueryData<AgendaEventsResult>(agendaKeys.list(interval))?.events.find((event) => event.id === agendaEventPayload.id)?.responseStatus).toBe('declined');
 
     const deleteHook = renderHook(() => useDeleteAgendaEventMutation(interval), {
       wrapper: createWrapper(queryClient),

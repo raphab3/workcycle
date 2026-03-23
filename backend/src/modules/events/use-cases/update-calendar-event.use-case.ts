@@ -6,6 +6,41 @@ import { EventsRemoteWriterService } from '@/modules/events/services/events-remo
 import { toCalendarEventResponse, toPersistedCalendarEvent, toRemoteCalendarEventId } from '@/modules/events/types/event';
 
 import type { UpdateCalendarEventInput } from '@/modules/events/events.schemas';
+import type { CalendarEventListRow } from '@/modules/events/types/event';
+
+function buildUpdatedAttendees(existing: CalendarEventListRow, responseStatus: UpdateCalendarEventInput['responseStatus']) {
+  if (!responseStatus) {
+    return undefined;
+  }
+
+  let resolvedSelfAttendee = false;
+
+  const attendees = existing.attendees.map((attendee) => {
+    const attendeeEmail = typeof attendee.email === 'string' ? attendee.email.trim().toLocaleLowerCase() : null;
+    const accountEmail = existing.accountEmail.trim().toLocaleLowerCase();
+    const matchesSelf = attendee.self === true || attendeeEmail === accountEmail;
+
+    if (!matchesSelf) {
+      const { self: _self, ...rest } = attendee;
+
+      return rest;
+    }
+
+    resolvedSelfAttendee = true;
+    const { self: _self, ...rest } = attendee;
+
+    return {
+      ...rest,
+      responseStatus,
+    };
+  });
+
+  if (resolvedSelfAttendee) {
+    return attendees;
+  }
+
+  return [...attendees, { email: existing.accountEmail, responseStatus }];
+}
 
 @Injectable()
 export class UpdateCalendarEventUseCase {
@@ -36,6 +71,7 @@ export class UpdateCalendarEventUseCase {
     }
 
     const remoteEvent = await this.eventsRemoteWriterService.updateEvent(source, toRemoteCalendarEventId(existing.calendarId, existing.id), {
+      attendees: buildUpdatedAttendees(existing, input.responseStatus),
       description: input.description ?? existing.description ?? undefined,
       endAt: input.endAt ?? existing.endAt.toISOString(),
       location: input.location ?? existing.location ?? undefined,

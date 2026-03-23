@@ -10,6 +10,8 @@ export const agendaWorkspaceStyles = {
   eventTitleBlock: 'grid gap-2',
   eventTitle: 'text-lg font-semibold tracking-tight text-foreground',
   eventMeta: 'flex flex-wrap items-center gap-2 text-sm text-muted-foreground',
+  eventStatusBadge: 'rounded-full border border-border/70 bg-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground',
+  eventStatusBadgeDeclined: 'border-rose-200 bg-rose-50 text-rose-700',
   eventDot: 'h-2.5 w-2.5 rounded-full',
   eventBody: 'mt-4 grid gap-2 text-sm leading-6 text-foreground/88',
   eventLink: 'font-medium text-foreground underline underline-offset-4 transition hover:text-foreground/80',
