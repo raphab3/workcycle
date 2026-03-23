@@ -60,7 +60,10 @@ export class AuthController {
 
   @Get('google/start')
   googleStart(@Res() reply: FastifyReply) {
-    return reply.redirect(this.authWriterService.getGoogleLoginUrl());
+    return reply
+      .status(302)
+      .header('Location', this.authWriterService.getGoogleLoginUrl())
+      .send();
   }
 
   @UseGuards(AuthGuard)
@@ -77,6 +80,9 @@ export class AuthController {
   ) {
     const redirectUrl = await this.authWriterService.handleGoogleCallback(code, state);
 
-    return reply.redirect(redirectUrl);
+    return reply
+      .status(302)
+      .header('Location', redirectUrl)
+      .send();
   }
 }
