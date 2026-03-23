@@ -1,13 +1,25 @@
 'use client';
 
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { getApiErrorMessage } from '@/lib/apiError';
+import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useProjectsQuery } from '@/modules/projects/queries/useProjectsQuery';
 import type { Project } from '@/modules/projects/types';
 import { TaskForm } from '@/modules/tasks/components/TaskForm';
-import type { Task } from '@/modules/tasks/types';
+import { useTasksQuery } from '@/modules/tasks/queries/useTasksQuery';
+import { useUpdateTaskMutation } from '@/modules/tasks/queries/useUpdateTaskMutation';
+import { useUpdateTaskStatusMutation } from '@/modules/tasks/queries/useUpdateTaskStatusMutation';
+import type { PersistedTaskValues, Task } from '@/modules/tasks/types';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 import { useActivityPulse } from '@/modules/today/hooks/useActivityPulse';
+import { todayKeys } from '@/modules/today/queries/todayKeys';
+import { useFirePulseMutation } from '@/modules/today/queries/useFirePulseMutation';
+import { useTodaySessionQuery } from '@/modules/today/queries/useTodaySessionQuery';
+import { useUpdateTodaySessionMutation } from '@/modules/today/queries/useUpdateTodaySessionMutation';
+import { todayService } from '@/modules/today/services/todayService';
 import type { PulseRecord, TimeBlock, TodayCycleValues } from '@/modules/today/types';
 import { getCycleBoundaryTimestamp, getLocalISODate, hasCrossedCycleBoundary, isWithinRolloverWindow } from '@/modules/today/utils/boundary';
 import { buildCloseDayReview, getTimeBlockDurationInMinutes } from '@/modules/today/utils/pulse';
@@ -87,6 +99,75 @@ function buildDraftActualHours(projects: Project[], trackedHoursByProject: Recor
   return Object.fromEntries(projects.map((project) => [project.id, trackedHoursByProject[project.id] ?? 0]));
 }
 
+function toSessionTimeBlocks(timeBlocks: TimeBlock[]) {
+  return timeBlocks.map((timeBlock) => ({
+    confirmedMinutes: timeBlock.confirmedMinutes,
+    endedAt: timeBlock.endedAt,
+    projectId: timeBlock.projectId,
+    startedAt: timeBlock.startedAt,
+  }));
+}
+
+function closeOpenTimeBlocks(timeBlocks: TimeBlock[], endedAt: string) {
+  return timeBlocks.map((timeBlock) => (
+    timeBlock.endedAt === null ? { ...timeBlock, endedAt } : timeBlock
+  ));
+}
+
+function appendTimeBlock(timeBlocks: TimeBlock[], projectId: string, startedAt: string) {
+  return [
+    ...timeBlocks,
+    {
+      confirmedMinutes: 0,
+      endedAt: null,
+      projectId,
+      startedAt,
+    },
+  ];
+}
+
+function switchProjectTimeBlocks(timeBlocks: TimeBlock[], projectId: string, switchedAt: string) {
+  return [
+    ...closeOpenTimeBlocks(timeBlocks, switchedAt),
+    {
+      confirmedMinutes: 0,
+      endedAt: null,
+      projectId,
+      startedAt: switchedAt,
+    },
+  ];
+}
+
+function buildCycleSnapshot(tasks: Task[], timeBlocks: TimeBlock[], plannedHours: number) {
+  const currentTasks = tasks.filter((task) => task.cycleAssignment === 'current' && !task.isArchived);
+
+  return {
+    actualHours: Number((timeBlocks.reduce((total, timeBlock) => total + timeBlock.confirmedMinutes, 0) / 60).toFixed(1)),
+    completedTaskIds: currentTasks.filter((task) => task.status === 'done').map((task) => task.id),
+    incompleteTaskIds: currentTasks.filter((task) => task.status !== 'done').map((task) => task.id),
+    plannedHours: Number(plannedHours.toFixed(1)),
+  };
+}
+
+function applyDraftActualHoursToTimeBlocks(timeBlocks: TimeBlock[], draftActualHours: Record<string, number>, referenceTimestamp: string) {
+  const remainingMinutesByProject = Object.fromEntries(
+    Object.entries(draftActualHours).map(([projectId, hours]) => [projectId, Math.max(0, Math.round(hours * 60))]),
+  );
+
+  return timeBlocks.map((timeBlock) => {
+    const trackedMinutes = getTimeBlockDurationInMinutes(timeBlock, referenceTimestamp);
+    const remainingMinutes = remainingMinutesByProject[timeBlock.projectId] ?? 0;
+    const confirmedMinutes = Math.min(trackedMinutes, remainingMinutes);
+
+    remainingMinutesByProject[timeBlock.projectId] = Math.max(0, remainingMinutes - confirmedMinutes);
+
+    return {
+      ...timeBlock,
+      confirmedMinutes,
+    };
+  });
+}
+
 function getRhythmStatus(realHours: number, plannedHours: number, hasPendingReview: boolean) {
   if (hasPendingReview) {
     return { label: 'Atencao', tone: 'warning' as const };
@@ -112,7 +193,9 @@ function getRhythmStatus(realHours: number, plannedHours: number, hasPendingRevi
 export function TodayPlannerOverview() {
   useActivityPulse();
 
+  const queryClient = useQueryClient();
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [selectedCycleDate, setSelectedCycleDate] = useState<string | undefined>(undefined);
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -121,10 +204,21 @@ export function TodayPlannerOverview() {
   const [taskDrawerTaskId, setTaskDrawerTaskId] = useState<string | null>(null);
   const [draftActualHours, setDraftActualHours] = useState<Record<string, number>>({});
   const rolloverPromptCycleRef = useRef<string | null>(null);
+  const hasHydratedSession = useAuthStore((state) => state.hasHydrated);
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
+  const isAuthenticated = hasHydratedSession && sessionStatus === 'authenticated';
+  const projectsQuery = useProjectsQuery({ enabled: isAuthenticated });
+  const tasksQuery = useTasksQuery({ enabled: isAuthenticated });
+  const todaySessionQuery = useTodaySessionQuery({ cycleDate: selectedCycleDate, enabled: isAuthenticated });
+  const updateTodaySessionMutation = useUpdateTodaySessionMutation();
+  const firePulseMutation = useFirePulseMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const updateTaskStatusMutation = useUpdateTaskStatusMutation();
 
   const projects = useWorkspaceStore((state) => state.projects);
   const taskColumns = useWorkspaceStore((state) => state.taskColumns);
   const tasks = useWorkspaceStore((state) => state.tasks);
+  const todaySessionId = useWorkspaceStore((state) => state.todaySessionId);
   const cycleValues = useWorkspaceStore((state) => state.todayCycleValues);
   const todayActualHours = useWorkspaceStore((state) => state.todayActualHours);
   const sessionState = useWorkspaceStore((state) => state.sessionState);
@@ -140,6 +234,9 @@ export function TodayPlannerOverview() {
   const cycleState = useWorkspaceStore((state) => state.cycleState);
   const cycleSnapshot = useWorkspaceStore((state) => state.cycleSnapshot);
   const rolloverNotice = useWorkspaceStore((state) => state.rolloverNotice);
+  const replaceProjects = useWorkspaceStore((state) => state.replaceProjects);
+  const replaceTasks = useWorkspaceStore((state) => state.replaceTasks);
+  const replaceTodaySession = useWorkspaceStore((state) => state.replaceTodaySession);
   const setTodayCycleValues = useWorkspaceStore((state) => state.setTodayCycleValues);
   const setTodayActualHours = useWorkspaceStore((state) => state.setTodayActualHours);
   const startSession = useWorkspaceStore((state) => state.startSession);
@@ -162,6 +259,30 @@ export function TodayPlannerOverview() {
   const confirmActivePulse = useWorkspaceStore((state) => state.confirmActivePulse);
 
   useEffect(() => {
+    if (!isAuthenticated || !projectsQuery.data) {
+      return;
+    }
+
+    replaceProjects(projectsQuery.data);
+  }, [isAuthenticated, projectsQuery.data, replaceProjects]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !tasksQuery.data) {
+      return;
+    }
+
+    replaceTasks(tasksQuery.data);
+  }, [isAuthenticated, replaceTasks, tasksQuery.data]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !todaySessionQuery.data) {
+      return;
+    }
+
+    replaceTodaySession(todaySessionQuery.data);
+  }, [isAuthenticated, replaceTodaySession, todaySessionQuery.data]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       setCurrentTime(new Date());
     }, 1_000);
@@ -177,10 +298,40 @@ export function TodayPlannerOverview() {
     }
   }, [sessionState]);
 
+  const requestError = projectsQuery.error
+    ?? tasksQuery.error
+    ?? todaySessionQuery.error
+    ?? updateTodaySessionMutation.error
+    ?? firePulseMutation.error
+    ?? updateTaskMutation.error
+    ?? updateTaskStatusMutation.error;
+  const requestErrorMessage = requestError
+    ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar o cockpit operacional com o backend.')
+    : null;
+  const isInitialSyncingToday = isAuthenticated && (
+    (projectsQuery.isPending && !projectsQuery.data)
+    || (tasksQuery.isPending && !tasksQuery.data)
+    || (todaySessionQuery.isPending && !todaySessionQuery.data)
+  );
+  const isRefetchingToday = isAuthenticated && (
+    (projectsQuery.isRefetching && !projectsQuery.isPending)
+    || (tasksQuery.isRefetching && !tasksQuery.isPending)
+    || (todaySessionQuery.isRefetching && !todaySessionQuery.isPending)
+  );
+  const isMutatingToday = updateTodaySessionMutation.isPending || firePulseMutation.isPending || updateTaskMutation.isPending || updateTaskStatusMutation.isPending;
+
   useEffect(() => {
     const hasActiveSession = sessionState === 'running' || sessionState === 'paused_manual' || sessionState === 'paused_inactivity';
 
     if (hasCrossedCycleBoundary(currentTime, cycleDate)) {
+      if (isAuthenticated) {
+        setIsRolloverPromptOpen(false);
+        if (!selectedCycleDate) {
+          void todaySessionQuery.refetch();
+        }
+        return;
+      }
+
       syncCycleBoundary(currentTime.toISOString());
       setIsRolloverPromptOpen(false);
       return;
@@ -195,7 +346,7 @@ export function TodayPlannerOverview() {
       setKeepSameProjectOnRollover(Boolean(activeProjectId));
       setIsRolloverPromptOpen(true);
     }
-  }, [activeProjectId, currentTime, cycleDate, cycleState, sessionState, syncCycleBoundary]);
+  }, [activeProjectId, currentTime, cycleDate, cycleState, isAuthenticated, selectedCycleDate, sessionState, syncCycleBoundary, todaySessionQuery]);
 
   const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects]);
   const projectLoadSummary = useMemo(() => getProjectLoadSummary(tasks, activeProjects), [tasks, activeProjects]);
@@ -223,12 +374,55 @@ export function TodayPlannerOverview() {
   const activeProjectPlannedHours = activeAllocation?.plannedHours ?? 0;
   const taskDrawerTask = useMemo<Task | null>(() => tasks.find((task) => task.id === taskDrawerTaskId) ?? null, [taskDrawerTaskId, tasks]);
 
+  async function mutateTodaySession(input: Parameters<typeof updateTodaySessionMutation.mutateAsync>[0]) {
+    return updateTodaySessionMutation.mutateAsync({
+      cycleDate: selectedCycleDate,
+      sessionId: todaySessionId ?? undefined,
+      ...input,
+    });
+  }
+
+  async function handleSelectProject(projectId: string) {
+    if (isAuthenticated && todaySessionId) {
+      if (sessionState === 'running' && projectId !== activeProjectId) {
+        const switchedAt = new Date().toISOString();
+
+        await mutateTodaySession({
+          activeProjectId: projectId,
+          state: 'running',
+          timeBlocks: toSessionTimeBlocks(switchProjectTimeBlocks(timeBlocks, projectId, switchedAt)),
+        });
+      } else {
+        await mutateTodaySession({ activeProjectId: projectId });
+      }
+
+      setIsProjectPickerOpen(false);
+      return;
+    }
+
+    switchActiveProject(projectId);
+    setIsProjectPickerOpen(false);
+  }
+
   function handleSubmitCycle(values: TodayCycleValues) {
     setTodayCycleValues(values);
   }
 
-  function handleStartSession() {
+  async function handleStartSession() {
     if (!activeProjectId) {
+      return;
+    }
+
+    if (isAuthenticated && todaySessionId) {
+      const startedAt = new Date().toISOString();
+
+      await mutateTodaySession({
+        activeProjectId,
+        startedAt,
+        state: 'running',
+        timeBlocks: toSessionTimeBlocks(appendTimeBlock([], activeProjectId, startedAt)),
+      });
+      setIsPlanExpanded(false);
       return;
     }
 
@@ -251,7 +445,24 @@ export function TodayPlannerOverview() {
     closeRegularizationPanel();
   }
 
-  function handleConfirmCloseDay() {
+  async function handleConfirmCloseDay() {
+    if (isAuthenticated && todaySessionId) {
+      const closedAt = new Date().toISOString();
+      const finalizedTimeBlocks = applyDraftActualHoursToTimeBlocks(closeOpenTimeBlocks(timeBlocks, closedAt), draftActualHours, closedAt);
+
+      await mutateTodaySession({
+        closedAt,
+        snapshot: {
+          ...buildCycleSnapshot(tasks, finalizedTimeBlocks, totalPlannedHours),
+          actualHours: Number(Object.values(draftActualHours).reduce((total, value) => total + value, 0).toFixed(1)),
+        },
+        state: 'completed',
+        timeBlocks: toSessionTimeBlocks(finalizedTimeBlocks),
+      });
+      handleCloseDrawer();
+      return;
+    }
+
     setTodayActualHours(draftActualHours);
     closeDay();
     handleCloseDrawer();
@@ -264,23 +475,247 @@ export function TodayPlannerOverview() {
     }));
   }
 
-  function handleSubmitTaskUpdate(values: Parameters<typeof updateTask>[1]) {
+  async function handleSubmitTaskUpdate(values: Parameters<typeof updateTask>[1]) {
     if (!taskDrawerTaskId) {
+      return;
+    }
+
+    if (isAuthenticated) {
+      const persistedValues: PersistedTaskValues = {
+        ...values,
+        cycleSessionId: values.cycleAssignment === 'current'
+          ? taskDrawerTask?.cycleSessionId ?? todaySessionId ?? null
+          : null,
+      };
+
+      if (persistedValues.cycleAssignment === 'current' && !persistedValues.cycleSessionId) {
+        return;
+      }
+
+      await updateTaskMutation.mutateAsync({
+        taskId: taskDrawerTaskId,
+        values: persistedValues,
+      });
       return;
     }
 
     updateTask(taskDrawerTaskId, values);
   }
 
-  function handleCloseForTodayAtBoundary() {
+  async function handlePauseSession() {
+    if (isAuthenticated && todaySessionId) {
+      const pausedAt = new Date().toISOString();
+
+      await mutateTodaySession({
+        state: 'paused_manual',
+        timeBlocks: toSessionTimeBlocks(closeOpenTimeBlocks(timeBlocks, pausedAt)),
+      });
+      return;
+    }
+
+    pauseSession('manual');
+  }
+
+  async function handleResumeSession() {
+    if (!activeProjectId) {
+      return;
+    }
+
+    if (isAuthenticated && todaySessionId) {
+      const resumedAt = new Date().toISOString();
+
+      await mutateTodaySession({
+        activeProjectId,
+        startedAt: sessionStartedAt ?? resumedAt,
+        state: 'running',
+        timeBlocks: toSessionTimeBlocks(appendTimeBlock(timeBlocks, activeProjectId, resumedAt)),
+      });
+      return;
+    }
+
+    resumeSession();
+  }
+
+  async function handleConfirmActivePulse() {
+    if (isAuthenticated && todaySessionId && activePulse) {
+      const respondedAt = new Date().toISOString();
+
+      await firePulseMutation.mutateAsync({
+        confirmedMinutes: 30,
+        firedAt: activePulse.firedAt,
+        projectId: activePulse.projectId,
+        resolution: 'confirmed',
+        respondedAt,
+        reviewedAt: respondedAt,
+        sessionId: todaySessionId,
+        status: 'confirmed',
+      });
+      return;
+    }
+
+    confirmActivePulse();
+  }
+
+  async function handleReviewPulse(pulseIndex: number, resolution: 'confirmed' | 'inactive') {
+    const pulse = pulseHistory[pulseIndex];
+
+    if (!pulse) {
+      return;
+    }
+
+    if (isAuthenticated && todaySessionId) {
+      const reviewedAt = new Date().toISOString();
+
+      await firePulseMutation.mutateAsync({
+        confirmedMinutes: resolution === 'confirmed' ? 30 : 0,
+        firedAt: pulse.firedAt,
+        projectId: pulse.projectId,
+        resolution,
+        respondedAt: resolution === 'confirmed' ? pulse.respondedAt ?? reviewedAt : pulse.respondedAt,
+        reviewedAt,
+        sessionId: todaySessionId,
+        status: resolution === 'confirmed' ? 'confirmed' : pulse.status,
+      });
+      return;
+    }
+
+    reviewPulse(pulseIndex, resolution);
+  }
+
+  async function handleUpdateTimeBlock(timeBlockIndex: number, updates: Partial<TimeBlock>) {
+    if (isAuthenticated && todaySessionId) {
+      const nextTimeBlocks = timeBlocks.map((timeBlock, index) => (
+        index === timeBlockIndex ? { ...timeBlock, ...updates } : timeBlock
+      ));
+
+      await mutateTodaySession({
+        timeBlocks: toSessionTimeBlocks(nextTimeBlocks),
+      });
+      return;
+    }
+
+    updateTimeBlock(timeBlockIndex, updates);
+  }
+
+  async function handleMoveTaskOnBoard(taskId: string, columnId: string, beforeTaskId?: string) {
+    if (isAuthenticated) {
+      const task = tasks.find((candidate) => candidate.id === taskId);
+      const targetColumn = taskColumns.find((column) => column.id === columnId);
+
+      if (!task || !targetColumn) {
+        return;
+      }
+
+      await updateTaskStatusMutation.mutateAsync({
+        taskId,
+        columnId: targetColumn.id,
+        cycleAssignment: task.cycleAssignment,
+        cycleSessionId: task.cycleAssignment === 'current' ? task.cycleSessionId ?? todaySessionId ?? null : null,
+        status: targetColumn.status,
+      });
+      return;
+    }
+
+    moveTaskOnBoard(taskId, columnId, beforeTaskId);
+  }
+
+  async function handleSkipTaskToNextCycle(taskId: string, strategy: 'reset-to-backlog' | 'keep-stage' = 'keep-stage') {
+    if (isAuthenticated) {
+      const task = tasks.find((candidate) => candidate.id === taskId);
+
+      if (!task) {
+        return;
+      }
+
+      const backlogColumnId = taskColumns.find((column) => column.status === 'todo')?.id ?? task.columnId;
+
+      await updateTaskStatusMutation.mutateAsync({
+        taskId,
+        columnId: strategy === 'reset-to-backlog' ? backlogColumnId : task.columnId,
+        cycleAssignment: 'next',
+        cycleSessionId: null,
+        status: strategy === 'reset-to-backlog' ? 'todo' : task.status,
+      });
+      return;
+    }
+
+    skipTaskToNextCycle(taskId, strategy);
+  }
+
+  async function handleCloseForTodayAtBoundary() {
+    if (isAuthenticated && todaySessionId) {
+      const boundaryAt = getCycleBoundaryTimestamp(cycleDate);
+      const finalizedTimeBlocks = closeOpenTimeBlocks(timeBlocks, boundaryAt);
+
+      await mutateTodaySession({
+        closedAt: boundaryAt,
+        rollover: {
+          carryOverInProgressTaskIds: [],
+          strategy: 'manual-start-next',
+          triggeredAt: boundaryAt,
+        },
+        snapshot: buildCycleSnapshot(tasks, finalizedTimeBlocks, totalPlannedHours),
+        state: 'completed',
+        timeBlocks: toSessionTimeBlocks(finalizedTimeBlocks),
+      });
+      setIsRolloverPromptOpen(false);
+      openDrawer('close');
+      return;
+    }
+
     autoCloseCycle(getCycleBoundaryTimestamp(cycleDate), { deferNextCycleUntilManualStart: true });
     setIsRolloverPromptOpen(false);
     openDrawer('close');
   }
 
-  function handleContinueNextCycle() {
+  async function handleContinueNextCycle() {
     const nextDate = getLocalISODate(new Date(currentTime.getTime() + 1_000));
     const shouldKeepProject = keepSameProjectOnRollover && Boolean(activeProjectId);
+
+    if (isAuthenticated && todaySessionId) {
+      const boundaryAt = getCycleBoundaryTimestamp(cycleDate);
+      const finalizedTimeBlocks = closeOpenTimeBlocks(timeBlocks, boundaryAt);
+      const carryOverInProgressTaskIds = tasks
+        .filter((task) => task.cycleAssignment === 'current' && task.status !== 'done' && !task.isArchived)
+        .map((task) => task.id);
+
+      await mutateTodaySession({
+        closedAt: boundaryAt,
+        rollover: {
+          carryOverInProgressTaskIds,
+          strategy: 'auto-close-and-open-next',
+          triggeredAt: boundaryAt,
+        },
+        snapshot: buildCycleSnapshot(tasks, finalizedTimeBlocks, totalPlannedHours),
+        state: 'completed',
+        timeBlocks: toSessionTimeBlocks(finalizedTimeBlocks),
+      });
+
+      setSelectedCycleDate(nextDate);
+
+      const nextSession = await queryClient.fetchQuery({
+        queryKey: todayKeys.session(nextDate),
+        queryFn: () => todayService.getTodaySession(nextDate),
+      });
+
+      replaceTodaySession(nextSession);
+
+      if (shouldKeepProject && activeProjectId && nextSession.id) {
+        const startedAt = new Date().toISOString();
+
+        await updateTodaySessionMutation.mutateAsync({
+          activeProjectId,
+          cycleDate: nextDate,
+          sessionId: nextSession.id,
+          startedAt,
+          state: 'running',
+          timeBlocks: toSessionTimeBlocks(appendTimeBlock([], activeProjectId, startedAt)),
+        });
+      }
+
+      setIsRolloverPromptOpen(false);
+      return;
+    }
 
     autoCloseCycle(getCycleBoundaryTimestamp(cycleDate));
     startNextCycle({
@@ -292,8 +727,63 @@ export function TodayPlannerOverview() {
     setIsRolloverPromptOpen(false);
   }
 
+  if (isInitialSyncingToday) {
+    return (
+      <div className={todayPlannerOverviewStyles.layout}>
+        <StateNotice
+          description="Carregando sessao, tasks e projetos persistidos para montar o cockpit operacional do dia."
+          eyebrow="Hoje"
+          title="Sincronizando dados do backend"
+        />
+      </div>
+    );
+  }
+
+  if (isAuthenticated && requestErrorMessage && (!todaySessionQuery.data || !projectsQuery.data || !tasksQuery.data)) {
+    return (
+      <div className={todayPlannerOverviewStyles.layout}>
+        <div className={todayPlannerOverviewStyles.noticeStack}>
+          <StateNotice
+            description={requestErrorMessage}
+            eyebrow="Hoje"
+            title="Nao foi possivel carregar o cockpit operacional"
+            tone="warning"
+          />
+          <div className={todayPlannerOverviewStyles.noticeActions}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void Promise.all([projectsQuery.refetch(), tasksQuery.refetch(), todaySessionQuery.refetch()]);
+              }}
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={todayPlannerOverviewStyles.layout}>
+      {isRefetchingToday && (
+        <StateNotice
+          description="Atualizando o estado persistido de Today em segundo plano."
+          eyebrow="Hoje"
+          title="Sincronizando alteracoes"
+        />
+      )}
+
+      {requestErrorMessage && !isInitialSyncingToday && (
+        <StateNotice
+          description={requestErrorMessage}
+          eyebrow="Hoje"
+          title="Algumas alteracoes nao puderam ser persistidas"
+          tone="warning"
+        />
+      )}
+
       {rolloverNotice && (
         <div className={todayPlannerOverviewStyles.noticeStack}>
           <StateNotice
@@ -369,8 +859,7 @@ export function TodayPlannerOverview() {
                               )}
                               type="button"
                               onClick={() => {
-                                switchActiveProject(allocation.projectId);
-                                setIsProjectPickerOpen(false);
+                                  void handleSelectProject(allocation.projectId);
                               }}
                             >
                               <span aria-hidden="true" className={todayPlannerOverviewStyles.projectDot} style={{ backgroundColor: allocation.colorHex }} />
@@ -387,7 +876,7 @@ export function TodayPlannerOverview() {
                     )}
                   </div>
 
-                  <Button type="button" disabled={!activeProjectId} onClick={handleStartSession}>
+                  <Button type="button" disabled={!activeProjectId || isMutatingToday} onClick={() => { void handleStartSession(); }}>
                     Iniciar sessao
                   </Button>
                 </div>
@@ -415,7 +904,7 @@ export function TodayPlannerOverview() {
 
             {sessionState === 'running' && (
               <div className={todayPlannerOverviewStyles.sessionActions}>
-                <Button type="button" variant="outline" onClick={() => pauseSession('manual')}>
+                <Button type="button" variant="outline" onClick={() => { void handlePauseSession(); }}>
                   Pausar
                 </Button>
                 <Button type="button" onClick={() => openDrawer('close')}>
@@ -426,7 +915,7 @@ export function TodayPlannerOverview() {
 
             {sessionState === 'paused_manual' && (
               <div className={todayPlannerOverviewStyles.sessionActions}>
-                <Button type="button" variant="outline" onClick={resumeSession}>
+                <Button type="button" variant="outline" onClick={() => { void handleResumeSession(); }}>
                   Retomar
                 </Button>
                 <Button type="button" onClick={() => openDrawer('close')}>
@@ -437,7 +926,7 @@ export function TodayPlannerOverview() {
 
             {sessionState === 'paused_inactivity' && (
               <div className={todayPlannerOverviewStyles.sessionActions}>
-                <Button type="button" variant="outline" onClick={resumeSession}>
+                <Button type="button" variant="outline" onClick={() => { void handleResumeSession(); }}>
                   Retomar sessao
                 </Button>
                 <Button type="button" variant="outline" onClick={() => openDrawer('review')}>
@@ -461,7 +950,7 @@ export function TodayPlannerOverview() {
                   O pulso atual vence em {getCountdownLabel(activePulse.expiresAt, currentTime)}.
                 </p>
               </div>
-              <Button type="button" onClick={() => confirmActivePulse()}>
+              <Button type="button" onClick={() => { void handleConfirmActivePulse(); }}>
                 Confirmar atividade
               </Button>
             </CardContent>
@@ -551,8 +1040,7 @@ export function TodayPlannerOverview() {
                             )}
                             type="button"
                             onClick={() => {
-                              switchActiveProject(allocation.projectId);
-                              setIsProjectPickerOpen(false);
+                              void handleSelectProject(allocation.projectId);
                             }}
                           >
                             <span aria-hidden="true" className={todayPlannerOverviewStyles.projectDot} style={{ backgroundColor: allocation.colorHex }} />
@@ -597,9 +1085,13 @@ export function TodayPlannerOverview() {
               </CardHeader>
               <CycleTasksBoard
                 activeProject={activeProject}
-                onMoveTaskOnBoard={moveTaskOnBoard}
+                onMoveTaskOnBoard={(taskId, columnId, beforeTaskId) => {
+                  void handleMoveTaskOnBoard(taskId, columnId, beforeTaskId);
+                }}
                 onOpenTask={setTaskDrawerTaskId}
-                onSkipTask={skipTaskToNextCycle}
+                onSkipTask={(taskId, strategy) => {
+                  void handleSkipTaskToNextCycle(taskId, strategy);
+                }}
                 taskColumns={taskColumns}
                 tasks={tasks}
               />
@@ -694,10 +1186,10 @@ export function TodayPlannerOverview() {
           </section>
 
           <div className={todayPlannerOverviewStyles.drawerFooter}>
-            <Button type="button" variant="outline" onClick={handleCloseForTodayAtBoundary}>
+            <Button type="button" variant="outline" onClick={() => { void handleCloseForTodayAtBoundary(); }}>
               Fechar este dia
             </Button>
-            <Button type="button" onClick={handleContinueNextCycle}>
+            <Button type="button" onClick={() => { void handleContinueNextCycle(); }}>
               Seguir para o novo dia
             </Button>
           </div>
@@ -716,7 +1208,9 @@ export function TodayPlannerOverview() {
             columns={taskColumns}
             defaultValues={taskDrawerTask}
             onCancelEdit={() => setTaskDrawerTaskId(null)}
-            onSubmitTask={handleSubmitTaskUpdate}
+            onSubmitTask={(values) => {
+              void handleSubmitTaskUpdate(values);
+            }}
             projects={projects}
           />
         ) : null}
@@ -763,10 +1257,10 @@ export function TodayPlannerOverview() {
                     </div>
                     {pulse.resolution === 'pending' ? (
                       <div className={todayPlannerOverviewStyles.pulseActions}>
-                        <Button type="button" size="sm" variant="outline" onClick={() => reviewPulse(index, 'inactive')}>
+                        <Button type="button" size="sm" variant="outline" onClick={() => { void handleReviewPulse(index, 'inactive'); }}>
                           Marcar inativa
                         </Button>
-                        <Button type="button" size="sm" onClick={() => reviewPulse(index, 'confirmed')}>
+                        <Button type="button" size="sm" onClick={() => { void handleReviewPulse(index, 'confirmed'); }}>
                           Confirmar janela
                         </Button>
                       </div>
@@ -798,7 +1292,9 @@ export function TodayPlannerOverview() {
                         aria-label={`Projeto do bloco ${index + 1}`}
                         className={todayPlannerOverviewStyles.timeBlockSelect}
                         value={timeBlock.projectId}
-                        onChange={(event) => updateTimeBlock(index, { projectId: event.target.value })}
+                        onChange={(event) => {
+                          void handleUpdateTimeBlock(index, { projectId: event.target.value });
+                        }}
                       >
                         {allocations.map((allocation) => (
                           <option key={allocation.projectId} value={allocation.projectId}>{allocation.projectName}</option>
@@ -812,10 +1308,10 @@ export function TodayPlannerOverview() {
                       <span>Nao confirmado {formatMinutes(unconfirmedMinutes)}</span>
                     </div>
                     <div className={todayPlannerOverviewStyles.timeBlockActions}>
-                      <Button type="button" size="sm" variant="outline" onClick={() => updateTimeBlock(index, { confirmedMinutes: Math.max(0, timeBlock.confirmedMinutes - 15) })}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => { void handleUpdateTimeBlock(index, { confirmedMinutes: Math.max(0, timeBlock.confirmedMinutes - 15) }); }}>
                         -15min
                       </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => updateTimeBlock(index, { confirmedMinutes: Math.min(trackedMinutes, timeBlock.confirmedMinutes + 15) })}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => { void handleUpdateTimeBlock(index, { confirmedMinutes: Math.min(trackedMinutes, timeBlock.confirmedMinutes + 15) }); }}>
                         +15min
                       </Button>
                     </div>
@@ -863,7 +1359,7 @@ export function TodayPlannerOverview() {
                   <strong>{completedTasksCount}</strong>
                 </div>
               </div>
-              <Button type="button" onClick={handleConfirmCloseDay}>
+              <Button type="button" onClick={() => { void handleConfirmCloseDay(); }}>
                 Confirmar encerramento
               </Button>
             </div>
