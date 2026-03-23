@@ -1,9 +1,8 @@
  'use client';
 
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/shared/components/Button';
 import { cn } from '@/shared/utils/cn';
 
 import type { Task } from '@/modules/tasks/types';
@@ -32,24 +31,14 @@ const cycleLabels = {
   backlog: 'Backlog',
 } as const;
 
-export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteTask, onEditTask, onMoveTaskToColumn, onRemoveColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
-  const [columnTitle, setColumnTitle] = useState('');
-  const [columnStatus, setColumnStatus] = useState<TasksListProps['taskColumns'][number]['status']>('todo');
+export function TasksList({ isDisabled = false, onArchiveTask, onAssignCycle, onEditTask, onMoveTaskToColumn, onToggleDone, projects, taskColumns, tasks }: TasksListProps) {
   const [activeMenuTaskId, setActiveMenuTaskId] = useState<string | null>(null);
 
-  function handleCreateColumn() {
-    const normalizedTitle = columnTitle.trim();
-
-    if (!normalizedTitle) {
+  function handleMenuAction(action: () => void) {
+    if (isDisabled) {
       return;
     }
 
-    onAddColumn({ title: normalizedTitle, status: columnStatus });
-    setColumnTitle('');
-    setColumnStatus('todo');
-  }
-
-  function handleMenuAction(action: () => void) {
     action();
     setActiveMenuTaskId(null);
   }
@@ -61,11 +50,7 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
       <div className={tasksListStyles.boardHeader}>
         <div className={tasksListStyles.boardCopy}>
           <h2 className={tasksListStyles.boardTitle}>Tasks</h2>
-          <p className={tasksListStyles.boardDescription}>Abra a task no drawer, mova por select e deixe o restante das acoes concentrado no menu do card.</p>
-        </div>
-
-        <div className={tasksListStyles.actions}>
-          <Button type="button" variant="outline" onClick={handleCreateColumn}>Adicionar coluna</Button>
+          <p className={tasksListStyles.boardDescription}>O board usa colunas fixas do backend. Abra a task no drawer e concentre mudancas de fluxo no menu de cada card.</p>
         </div>
       </div>
 
@@ -83,11 +68,6 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                   </div>
                   <div className={tasksListStyles.columnActions}>
                     <span className={tasksListStyles.columnTone}>{statusLabels[column.status]}</span>
-                    {taskColumns.length > 1 ? (
-                      <button aria-label={`Remover coluna ${column.title}`} className={tasksListStyles.columnRemoveButton} onClick={() => onRemoveColumn(column)} type="button">
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    ) : null}
                   </div>
                 </div>
 
@@ -112,7 +92,7 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                             </div>
 
                             <div className={tasksListStyles.menuWrap}>
-                              <button aria-label={`Abrir opcoes de ${task.title}`} className={tasksListStyles.menuButton} onClick={() => setActiveMenuTaskId((current) => current === task.id ? null : task.id)} type="button">
+                              <button aria-label={`Abrir opcoes de ${task.title}`} className={tasksListStyles.menuButton} disabled={isDisabled} onClick={() => setActiveMenuTaskId((current) => current === task.id ? null : task.id)} type="button">
                                 <MoreHorizontal className="h-4.5 w-4.5" aria-hidden="true" />
                               </button>
 
@@ -121,22 +101,21 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                                   <p className={tasksListStyles.menuLabel}>Abrir</p>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onEditTask(task))} type="button">Abrir task</button>
                                   <p className={tasksListStyles.menuLabel}>Mover para</p>
-                                  <select aria-label={`Mover ${task.title}`} className={tasksListStyles.menuSelect} value={task.columnId} onChange={(event) => handleMenuAction(() => onMoveTaskToColumn(task.id, event.target.value))}>
+                                  <select aria-label={`Mover ${task.title}`} className={tasksListStyles.menuSelect} disabled={isDisabled} value={task.columnId} onChange={(event) => handleMenuAction(() => onMoveTaskToColumn(task.id, event.target.value))}>
                                     {taskColumns.map((option) => (
                                       <option key={option.id} value={option.id}>{option.title}</option>
                                     ))}
                                   </select>
                                   <p className={tasksListStyles.menuLabel}>Cycle</p>
-                                  <select aria-label={`Cycle ${task.title}`} className={tasksListStyles.menuSelect} value={task.cycleAssignment} onChange={(event) => handleMenuAction(() => onAssignCycle(task.id, event.target.value as Task['cycleAssignment']))}>
+                                  <select aria-label={`Cycle ${task.title}`} className={tasksListStyles.menuSelect} disabled={isDisabled} value={task.cycleAssignment} onChange={(event) => handleMenuAction(() => onAssignCycle(task.id, event.target.value as Task['cycleAssignment']))}>
                                     {Object.entries(cycleLabels).map(([value, label]) => (
-                                      <option key={value} value={value}>{label}</option>
+                                      <option key={value} disabled={value === 'current' && !task.cycleSessionId} value={value}>{label}</option>
                                     ))}
                                   </select>
                                   <p className={tasksListStyles.menuLabel}>Acoes</p>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onEditTask(task))} type="button">Editar</button>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onToggleDone(task.id))} type="button">{task.status === 'done' ? 'Reabrir' : 'Concluir'}</button>
                                   <button className={tasksListStyles.menuAction} onClick={() => handleMenuAction(() => onArchiveTask(task))} type="button">Arquivar</button>
-                                  <button className={cn(tasksListStyles.menuAction, tasksListStyles.menuActionDanger)} onClick={() => handleMenuAction(() => onDeleteTask(task))} type="button">Excluir</button>
                                 </div>
                               ) : null}
                             </div>
@@ -150,7 +129,7 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
                           </div>
 
                           <div className={tasksListStyles.footer}>
-                            <p className={tasksListStyles.footerText}>Abra a task para editar descricao e checklist. Mude coluna e cycle pelo menu do card.</p>
+                            <p className={tasksListStyles.footerText}>Abra a task para editar descricao e checklist. Coluna, cycle, conclusao e arquivamento passam pelo backend.</p>
                           </div>
                         </article>
                       );
@@ -161,31 +140,6 @@ export function TasksList({ onAddColumn, onArchiveTask, onAssignCycle, onDeleteT
             );
           })}
 
-          <section className={tasksListStyles.addColumnPanel}>
-            <div className={tasksListStyles.addColumnForm}>
-              <div className={tasksListStyles.boardCopy}>
-                <h3 className={tasksListStyles.columnTitle}>Nova coluna</h3>
-                <p className={tasksListStyles.addColumnHint}>Crie colunas dinamicamente sem perder o mapeamento de prioridade, cycle e fase operacional.</p>
-              </div>
-
-              <input
-                aria-label="Nome da coluna"
-                className={tasksListStyles.addColumnInput}
-                placeholder="Ex: Waiting QA"
-                value={columnTitle}
-                onChange={(event) => setColumnTitle(event.target.value)}
-              />
-
-              <select aria-label="Categoria da coluna" className={tasksListStyles.moveSelect} value={columnStatus} onChange={(event) => setColumnStatus(event.target.value as TasksListProps['taskColumns'][number]['status'])}>
-                <option value="todo">Backlog</option>
-                <option value="doing">In Progress</option>
-                <option value="blocked">CodeReview</option>
-                <option value="done">Done</option>
-              </select>
-
-              <Button type="button" onClick={handleCreateColumn}>Criar coluna</Button>
-            </div>
-          </section>
         </div>
       </div>
     </section>

@@ -1,10 +1,12 @@
 export type {
+  PersistedTaskValues,
   TaskColumn,
   TaskColumnFormValues,
   TaskChecklistItem,
   TaskCycleAssignment,
   TaskCyclePlan,
   TaskCyclePlanItem,
+  TaskRecordDTO,
   ProjectTaskLoad,
   Task,
   TaskDeadlineState,

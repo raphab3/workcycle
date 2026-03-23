@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T006 concluído em 2026-03-22
-- **Próximo ticket sugerido:** T007 — Integrar Tasks no frontend com board persistido
+- **Checkpoint atual:** T007 concluído em 2026-03-22
+- **Próximo ticket sugerido:** T008 — Persistir Settings e contratos de preferências
 
 ## Por Fluxo
 
@@ -29,7 +29,7 @@
 |----|--------|------|---------|------------|--------|
 | T005 | Modelar persistência de Tasks e vínculo com ciclo | DATA | L | T001, T004 | Concluído |
 | T006 | Implementar API e regras de Tasks | API | L | T005 | Concluído |
-| T007 | Integrar Tasks no frontend com board persistido | FEAT | L | T002, T006 | Backlog |
+| T007 | Integrar Tasks no frontend com board persistido | FEAT | L | T002, T006 | Concluído |
 
 ### CF-04: Today como source of truth operacional do dia
 

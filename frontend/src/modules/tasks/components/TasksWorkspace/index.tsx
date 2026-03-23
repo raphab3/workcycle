@@ -1,10 +1,18 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { getApiErrorMessage } from '@/lib/apiError';
+import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useProjectsQuery } from '@/modules/projects/queries/useProjectsQuery';
 import type { Project } from '@/modules/projects/types';
-import type { Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
+import { useArchiveTaskMutation } from '@/modules/tasks/queries/useArchiveTaskMutation';
+import { useCreateTaskMutation } from '@/modules/tasks/queries/useCreateTaskMutation';
+import { useTasksQuery } from '@/modules/tasks/queries/useTasksQuery';
+import { useUpdateTaskMutation } from '@/modules/tasks/queries/useUpdateTaskMutation';
+import { useUpdateTaskStatusMutation } from '@/modules/tasks/queries/useUpdateTaskStatusMutation';
+import type { PersistedTaskValues, Task, TaskFiltersValues, TaskFormValues } from '@/modules/tasks/types';
 import { filterTasks, getCycleTaskCount, getCycleTaskHours, getOpenEffortHours, getOpenTasksCount, getProjectLoadSummary, getUrgentTasksCount } from '@/modules/tasks/utils/tasks';
 import { Button } from '@/shared/components/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
@@ -12,7 +20,10 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog/index';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { OverlayPanel } from '@/shared/components/OverlayPanel/index';
 import { SectionIntro } from '@/shared/components/SectionIntro';
+import { StateNotice } from '@/shared/components/StateNotice';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
+
+import { defaultTaskColumns } from '@/modules/tasks/mocks/taskColumns';
 
 import { TaskFilters } from '../TaskFilters/index';
 import { TaskForm } from '../TaskForm/index';
@@ -31,37 +42,107 @@ export function TasksWorkspace() {
   const [filters, setFilters] = useState<TaskFiltersValues>(baseFilters);
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
   const [pendingArchiveTask, setPendingArchiveTask] = useState<Task | null>(null);
-  const [pendingColumnRemoval, setPendingColumnRemoval] = useState<string | null>(null);
-  const [pendingDeleteTask, setPendingDeleteTask] = useState<Task | null>(null);
-  const tasks = useWorkspaceStore((state) => state.tasks);
-  const taskColumns = useWorkspaceStore((state) => state.taskColumns);
-  const projects: Project[] = useWorkspaceStore((state) => state.projects);
-  const addTask = useWorkspaceStore((state) => state.addTask);
-  const addTaskColumn = useWorkspaceStore((state) => state.addTaskColumn);
-  const archiveTask = useWorkspaceStore((state) => state.archiveTask);
-  const deleteTask = useWorkspaceStore((state) => state.deleteTask);
-  const moveTaskToColumn = useWorkspaceStore((state) => state.moveTaskToColumn);
-  const removeTaskColumn = useWorkspaceStore((state) => state.removeTaskColumn);
-  const updateTask = useWorkspaceStore((state) => state.updateTask);
-  const toggleTaskDone = useWorkspaceStore((state) => state.toggleTaskDone);
-  const setTaskCycleAssignment = useWorkspaceStore((state) => state.setTaskCycleAssignment);
-  const filteredTasks = filterTasks(tasks, filters);
-  const projectLoad = getProjectLoadSummary(tasks, projects);
+  const hasHydratedSession = useAuthStore((state) => state.hasHydrated);
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
+  const replaceProjects = useWorkspaceStore((state) => state.replaceProjects);
+  const replaceTasks = useWorkspaceStore((state) => state.replaceTasks);
+  const isAuthLoading = !hasHydratedSession;
+  const isAuthenticated = hasHydratedSession && sessionStatus === 'authenticated';
+  const projectsQuery = useProjectsQuery({ enabled: isAuthenticated });
+  const tasksQuery = useTasksQuery({ enabled: isAuthenticated });
+  const createTaskMutation = useCreateTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const updateTaskStatusMutation = useUpdateTaskStatusMutation();
+  const archiveTaskMutation = useArchiveTaskMutation();
 
-  function handleSubmitTask(values: TaskFormValues, taskId?: string) {
-    if (taskId) {
-      updateTask(taskId, values);
-      setEditingTask(null);
-      setIsTaskPanelOpen(false);
+  useEffect(() => {
+    if (!isAuthenticated || !projectsQuery.data) {
       return;
     }
 
-    addTask(values);
+    replaceProjects(projectsQuery.data);
+  }, [isAuthenticated, projectsQuery.data, replaceProjects]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !tasksQuery.data) {
+      return;
+    }
+
+    replaceTasks(tasksQuery.data);
+  }, [isAuthenticated, replaceTasks, tasksQuery.data]);
+
+  const projects: Project[] = projectsQuery.data ?? [];
+  const tasks = tasksQuery.data ?? [];
+  const taskColumns = defaultTaskColumns;
+  const filteredTasks = filterTasks(tasks, filters);
+  const projectLoad = getProjectLoadSummary(tasks, projects);
+  const isSyncingTasks = isAuthenticated && (projectsQuery.isPending || tasksQuery.isPending);
+  const isRefetchingTasks = isAuthenticated && ((projectsQuery.isRefetching && !projectsQuery.isPending) || (tasksQuery.isRefetching && !tasksQuery.isPending));
+  const isSubmittingTask = createTaskMutation.isPending || updateTaskMutation.isPending || updateTaskStatusMutation.isPending || archiveTaskMutation.isPending;
+  const requestError = useMemo(
+    () => projectsQuery.error ?? tasksQuery.error ?? createTaskMutation.error ?? updateTaskMutation.error ?? updateTaskStatusMutation.error ?? archiveTaskMutation.error,
+    [archiveTaskMutation.error, createTaskMutation.error, projectsQuery.error, tasksQuery.error, updateTaskMutation.error, updateTaskStatusMutation.error],
+  );
+  const requestErrorMessage = requestError
+    ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar as tasks com o backend.')
+    : null;
+
+  function buildPersistedTaskValues(values: TaskFormValues): PersistedTaskValues {
+    return {
+      ...values,
+      cycleSessionId: values.cycleAssignment === 'current'
+        ? editingTask?.cycleSessionId ?? null
+        : null,
+    };
+  }
+
+  async function handleSubmitTask(values: TaskFormValues, taskId?: string) {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const persistedValues = buildPersistedTaskValues(values);
+
+    if (persistedValues.cycleAssignment === 'current' && !persistedValues.cycleSessionId) {
+      return;
+    }
+
+    if (taskId) {
+      await updateTaskMutation.mutateAsync({ taskId, values: persistedValues });
+    } else {
+      await createTaskMutation.mutateAsync(persistedValues);
+    }
+
+    setEditingTask(null);
     setIsTaskPanelOpen(false);
   }
 
   function handleToggleDone(taskId: string) {
-    toggleTaskDone(taskId);
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const task = tasks.find((candidate) => candidate.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    const nextColumn = task.status === 'done'
+      ? taskColumns[0]
+      : taskColumns.find((column) => column.status === 'done');
+
+    if (!nextColumn) {
+      return;
+    }
+
+    void updateTaskStatusMutation.mutateAsync({
+      taskId,
+      columnId: nextColumn.id,
+      cycleAssignment: task.cycleAssignment,
+      cycleSessionId: task.cycleAssignment === 'current' ? task.cycleSessionId ?? null : null,
+      status: nextColumn.status,
+    });
   }
 
   function handleOpenNewTask() {
@@ -79,31 +160,60 @@ export function TasksWorkspace() {
     setIsTaskPanelOpen(false);
   }
 
-  function handleConfirmArchiveTask() {
+  async function handleConfirmArchiveTask() {
     if (!pendingArchiveTask) {
       return;
     }
 
-    archiveTask(pendingArchiveTask.id);
+    await archiveTaskMutation.mutateAsync({ taskId: pendingArchiveTask.id });
     setPendingArchiveTask(null);
   }
 
-  function handleConfirmDeleteTask() {
-    if (!pendingDeleteTask) {
+  function handleMoveTaskToColumn(taskId: string, columnId: string) {
+    if (!isAuthenticated) {
       return;
     }
 
-    deleteTask(pendingDeleteTask.id);
-    setPendingDeleteTask(null);
+    const task = tasks.find((candidate) => candidate.id === taskId);
+    const targetColumn = taskColumns.find((column) => column.id === columnId);
+
+    if (!task || !targetColumn) {
+      return;
+    }
+
+    void updateTaskStatusMutation.mutateAsync({
+      taskId,
+      columnId: targetColumn.id,
+      cycleAssignment: task.cycleAssignment,
+      cycleSessionId: task.cycleAssignment === 'current' ? task.cycleSessionId ?? null : null,
+      status: targetColumn.status,
+    });
   }
 
-  function handleConfirmRemoveColumn() {
-    if (!pendingColumnRemoval) {
+  function handleAssignCycle(taskId: string, cycleAssignment: Task['cycleAssignment']) {
+    if (!isAuthenticated) {
       return;
     }
 
-    removeTaskColumn(pendingColumnRemoval);
-    setPendingColumnRemoval(null);
+    const task = tasks.find((candidate) => candidate.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    const cycleSessionId = cycleAssignment === 'current'
+      ? task.cycleSessionId ?? null
+      : null;
+
+    if (cycleAssignment === 'current' && !cycleSessionId) {
+      return;
+    }
+
+    void updateTaskStatusMutation.mutateAsync({
+      taskId,
+      cycleAssignment,
+      cycleSessionId,
+    });
   }
 
   return (
@@ -112,15 +222,69 @@ export function TasksWorkspace() {
         <SectionIntro
           eyebrow="Painel de tasks"
           title="Gestao editorial de tarefas com prioridade, prazo e associacao por projeto"
-          description="Organize a carteira por projeto, mova tarefas entre colunas e ajuste o cycle sem perder visibilidade da carga aberta e dos riscos imediatos."
+          description="Organize a carteira por projeto, mova tarefas entre colunas persistidas e ajuste o cycle sem perder visibilidade da carga aberta e dos riscos imediatos."
         />
 
-        {projects.length === 0 && (
+        {isAuthLoading && (
+          <StateNotice
+            eyebrow="Autenticacao"
+            title="Validando sessao antes de carregar tasks"
+            description="O board persistido sera sincronizado assim que a sessao autenticada for hidratada no cliente."
+            tone="info"
+          />
+        )}
+
+        {hasHydratedSession && !isAuthenticated && (
+          <StateNotice
+            eyebrow="Autenticacao"
+            title="Entre para sincronizar o board real"
+            description="O fluxo principal de Tasks agora depende do backend autenticado e nao usa mais fallback funcional de CRUD local."
+            tone="warning"
+          />
+        )}
+
+        {isSyncingTasks && (
+          <StateNotice
+            eyebrow="Sincronizacao"
+            title="Carregando board persistido"
+            description="Projetos e tasks autenticados estao sendo recuperados do backend para montar o quadro atual."
+            tone="info"
+          />
+        )}
+
+        {isRefetchingTasks && (
+          <StateNotice
+            eyebrow="Sincronizacao"
+            title="Atualizando board persistido"
+            description="O backend confirmou uma mudanca recente e o board esta sendo reconciliado para evitar divergencia de cache."
+            tone="info"
+          />
+        )}
+
+        {requestErrorMessage && (
+          <StateNotice
+            eyebrow="Integracao"
+            title="Falha ao sincronizar tasks"
+            description={requestErrorMessage}
+            tone="warning"
+          />
+        )}
+
+        {isAuthenticated && !isSyncingTasks && !requestErrorMessage && projects.length === 0 && (
           <EmptyState
             eyebrow="Tarefas"
             title="Sem projetos para associar tasks"
             description="A tela de backlog depende da carteira ativa para registrar e agrupar tarefas por projeto."
             hint="Cadastre projetos primeiro para liberar o fluxo completo desta rota."
+          />
+        )}
+
+        {isAuthenticated && !isSyncingTasks && !requestErrorMessage && projects.length > 0 && filteredTasks.length === 0 && (
+          <EmptyState
+            eyebrow="Tarefas"
+            title="Nenhuma task encontrada"
+            description="A lista persistida nao retornou itens para os filtros atuais."
+            hint="Crie a primeira task autenticada ou ajuste os filtros para voltar ao board completo."
           />
         )}
 
@@ -151,19 +315,17 @@ export function TasksWorkspace() {
             </CardHeader>
           </Card>
         </div>
-          <Button type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
+          <Button disabled={!isAuthenticated || projects.length === 0 || isSubmittingTask || isRefetchingTasks} type="button" onClick={handleOpenNewTask}><Plus className="mr-2 h-4.5 w-4.5" aria-hidden="true" />Nova task</Button>
         </section>
 
         <TaskFilters filters={filters} onChange={setFilters} onReset={() => setFilters(baseFilters)} projects={projects} visibleTasks={filteredTasks.length} />
 
         <TasksList
-          onAddColumn={addTaskColumn}
           onArchiveTask={setPendingArchiveTask}
-          onAssignCycle={setTaskCycleAssignment}
-          onDeleteTask={setPendingDeleteTask}
+          onAssignCycle={handleAssignCycle}
           onEditTask={handleOpenEditTask}
-          onMoveTaskToColumn={moveTaskToColumn}
-          onRemoveColumn={(column) => setPendingColumnRemoval(column.id)}
+          isDisabled={!isAuthenticated || isSubmittingTask || isRefetchingTasks}
+          onMoveTaskToColumn={handleMoveTaskToColumn}
           onToggleDone={handleToggleDone}
           projects={projects}
           taskColumns={taskColumns}
@@ -198,40 +360,18 @@ export function TasksWorkspace() {
         onClose={handleCloseTaskPanel}
         title={editingTask ? `Editar ${editingTask.title}` : 'Nova task'}
       >
-        <TaskForm columns={taskColumns} defaultValues={editingTask} onCancelEdit={handleCloseTaskPanel} onSubmitTask={handleSubmitTask} projects={projects} />
+        <TaskForm key={editingTask?.id ?? 'new-task'} columns={taskColumns} defaultValues={editingTask} isDisabled={!isAuthenticated || isSubmittingTask || isRefetchingTasks} isSubmitting={isSubmittingTask} onCancelEdit={handleCloseTaskPanel} onSubmitTask={handleSubmitTask} projects={projects} />
       </OverlayPanel>
 
       <ConfirmDialog
         confirmLabel="Arquivar"
-        description="A task sai do board atual, mas continua preservada no estado local para consulta futura quando a persistencia entrar."
+        description="A task sai do board atual, mas continua preservada no backend para consultas e historico."
         isOpen={Boolean(pendingArchiveTask)}
         onCancel={() => setPendingArchiveTask(null)}
         onConfirm={handleConfirmArchiveTask}
         title="Arquivar task"
       >
         {pendingArchiveTask?.title}
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        confirmLabel="Excluir"
-        description="Essa acao remove a task do board atual. Use quando o item nao fizer mais parte da carteira."
-        isOpen={Boolean(pendingDeleteTask)}
-        onCancel={() => setPendingDeleteTask(null)}
-        onConfirm={handleConfirmDeleteTask}
-        title="Excluir task"
-      >
-        {pendingDeleteTask?.title}
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        confirmLabel="Remover coluna"
-        description="As tasks desta coluna voltam para o backlog para evitar perda de contexto no board."
-        isOpen={Boolean(pendingColumnRemoval)}
-        onCancel={() => setPendingColumnRemoval(null)}
-        onConfirm={handleConfirmRemoveColumn}
-        title="Remover coluna"
-      >
-        {taskColumns.find((column) => column.id === pendingColumnRemoval)?.title}
       </ConfirmDialog>
     </div>
   );

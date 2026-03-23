@@ -6,6 +6,8 @@ export interface TaskFormProps {
   autosaveDelayMs?: number;
   columns: TaskColumn[];
   defaultValues?: Task | null;
+  isDisabled?: boolean;
+  isSubmitting?: boolean;
   onCancelEdit: () => void;
   onSubmitTask: (values: TaskFormValues, taskId?: string) => void;
   projects: Project[];
