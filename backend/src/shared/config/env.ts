@@ -2,7 +2,8 @@ import { config as loadDotenv } from 'dotenv';
 
 import { z } from 'zod';
 
-loadDotenv({ override: true });
+const dotenvResult = loadDotenv();
+const dotenvValues = dotenvResult.parsed ?? {};
 
 function emptyStringToUndefined(value: unknown) {
   if (typeof value !== 'string') {
@@ -14,9 +15,29 @@ function emptyStringToUndefined(value: unknown) {
   return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
+function preferConfiguredValue(primaryValue: unknown, fallbackValue: unknown) {
+  const normalizedPrimaryValue = emptyStringToUndefined(primaryValue);
+
+  if (normalizedPrimaryValue !== undefined) {
+    return normalizedPrimaryValue;
+  }
+
+  return emptyStringToUndefined(fallbackValue);
+}
+
 const envSource = {
   ...process.env,
-  GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_CALLBACK_URL,
+  GOOGLE_CLIENT_ID: preferConfiguredValue(process.env.GOOGLE_CLIENT_ID, dotenvValues.GOOGLE_CLIENT_ID),
+  GOOGLE_CLIENT_SECRET: preferConfiguredValue(process.env.GOOGLE_CLIENT_SECRET, dotenvValues.GOOGLE_CLIENT_SECRET),
+  GOOGLE_REDIRECT_URI: preferConfiguredValue(
+    process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_CALLBACK_URL,
+    dotenvValues.GOOGLE_REDIRECT_URI ?? dotenvValues.GOOGLE_CALLBACK_URL,
+  ),
+  FIREBASE_PROJECT_ID: preferConfiguredValue(process.env.FIREBASE_PROJECT_ID, dotenvValues.FIREBASE_PROJECT_ID),
+  FIREBASE_CLIENT_EMAIL: preferConfiguredValue(process.env.FIREBASE_CLIENT_EMAIL, dotenvValues.FIREBASE_CLIENT_EMAIL),
+  FIREBASE_PRIVATE_KEY: preferConfiguredValue(process.env.FIREBASE_PRIVATE_KEY, dotenvValues.FIREBASE_PRIVATE_KEY),
+  FIREBASE_SERVICE_ACCOUNT_JSON: preferConfiguredValue(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, dotenvValues.FIREBASE_SERVICE_ACCOUNT_JSON),
+  FIREBASE_SERVICE_ACCOUNT_PATH: preferConfiguredValue(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, dotenvValues.FIREBASE_SERVICE_ACCOUNT_PATH),
 };
 
 const envSchema = z.object({

@@ -8,6 +8,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from '@/modules/auth';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useNotificationRecovery } from '@/modules/notifications';
 import { useUserSettingsQuery } from '@/modules/settings';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { ThemeProvider } from '@/shared/theme';
@@ -37,12 +38,19 @@ function SettingsHydrator() {
   return null;
 }
 
+function NotificationsRuntime() {
+  useNotificationRecovery();
+
+  return null;
+}
+
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SettingsHydrator />
+          <NotificationsRuntime />
           {children}
         </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} />

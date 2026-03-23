@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
 
 import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { cert, getApp, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
@@ -41,12 +42,29 @@ function ensureServiceAccountFields(serviceAccount: FirebaseServiceAccountInput)
 }
 
 function buildServiceAccountFromJson(rawJson: string) {
-  const serviceAccount = JSON.parse(rawJson) as ServiceAccount;
+  const serviceAccount = JSON.parse(rawJson) as ServiceAccount & {
+    client_email?: string;
+    private_key?: string;
+    project_id?: string;
+  };
 
   return ensureServiceAccountFields({
-    ...serviceAccount,
-    privateKey: normalizePrivateKey(serviceAccount.privateKey),
+    clientEmail: serviceAccount.clientEmail ?? serviceAccount.client_email,
+    privateKey: normalizePrivateKey(serviceAccount.privateKey ?? serviceAccount.private_key),
+    projectId: serviceAccount.projectId ?? serviceAccount.project_id,
   });
+}
+
+function resolveServiceAccountPath(configuredPath: string) {
+  const normalizedRelativePath = configuredPath.replace(/^[.][\\/]/, '');
+  const candidatePaths = isAbsolute(configuredPath)
+    ? [configuredPath]
+    : [
+        resolve(process.cwd(), configuredPath),
+        resolve(process.cwd(), '..', normalizedRelativePath),
+      ];
+
+  return candidatePaths.find((candidatePath) => existsSync(candidatePath)) ?? null;
 }
 
 function buildServiceAccount() {
@@ -55,9 +73,13 @@ function buildServiceAccount() {
   }
 
   if (env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-    const rawJson = readFileSync(env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf-8');
+    const resolvedPath = resolveServiceAccountPath(env.FIREBASE_SERVICE_ACCOUNT_PATH);
 
-    return buildServiceAccountFromJson(rawJson);
+    if (resolvedPath) {
+      const rawJson = readFileSync(resolvedPath, 'utf-8');
+
+      return buildServiceAccountFromJson(rawJson);
+    }
   }
 
   if (!env.FIREBASE_PROJECT_ID || !env.FIREBASE_CLIENT_EMAIL || !env.FIREBASE_PRIVATE_KEY) {

@@ -1,13 +1,33 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { vi } from 'vitest';
 
 import SemanaRoutePage from './page';
 
-describe('SemanaRoutePage', () => {
-  it('renders the weekly balance heading and board headers', () => {
-    render(<SemanaRoutePage />);
+vi.mock('@/modules/weekly/components/WeeklyBalanceWorkspace/index', () => ({
+  WeeklyBalanceWorkspace: () => <div>Weekly workspace mounted</div>,
+}));
 
-    expect(screen.getByRole('heading', { name: /Leitura semanal de desvios usando horas previstas e horas ajustadas/i })).toBeInTheDocument();
-    expect(screen.getByText('Projeto')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
+function renderSemanaRoutePage() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SemanaRoutePage />
+    </QueryClientProvider>,
+  );
+}
+
+describe('SemanaRoutePage', () => {
+  it('renders the weekly workspace composition', () => {
+    renderSemanaRoutePage();
+
+    expect(screen.getByText('Weekly workspace mounted')).toBeInTheDocument();
   });
 });

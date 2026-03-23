@@ -1,7 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
-
 import {
   Card,
   CardContent,
@@ -64,9 +62,9 @@ export function WeeklyBalanceWorkspace() {
   const rows = scenario.rows;
   const summary = scenario.summary;
   const historySnapshots = weeklyHistoryQuery.data?.snapshots ?? [];
-  const provisionalCellsCount = useMemo(
-    () => rows.reduce((total, row) => total + row.cells.filter((cell) => cell.isProvisional).length, 0),
-    [rows],
+  const provisionalCellsCount = rows.reduce(
+    (total, row) => total + row.cells.filter((cell) => cell.isProvisional).length,
+    0,
   );
   const hasProvisionalData = provisionalCellsCount > 0 || scenario.isFinal === false;
 

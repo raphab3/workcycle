@@ -128,10 +128,12 @@ export function buildWeeklySnapshot(params: BuildWeeklySnapshotParams): WeeklySn
   let fixedHoursTotal = 0;
 
   fixedProjects.forEach((project) => {
+    const fixedDays = project.fixedDays as WeeklyDay[];
+
     weekInfo.dates.forEach((date) => {
       const day = getWeekDayLabel(date);
 
-      if (!project.fixedDays.includes(day)) {
+      if (!fixedDays.includes(day)) {
         return;
       }
 
@@ -151,7 +153,7 @@ export function buildWeeklySnapshot(params: BuildWeeklySnapshotParams): WeeklySn
       ? remainingRotativeHours
       : (remainingHours * getRotativeScore(project, projectLoadSummary[project.id])) / Math.max(scoreSum, 1);
     const plannedWeekHours = roundToHalf(rawPlannedWeekHours);
-    const pattern = rotativePatterns[index % rotativePatterns.length] ?? rotativePatterns[0];
+    const pattern = rotativePatterns[index % rotativePatterns.length] ?? [];
     const distributedHours = distributeHoursAcrossDays(plannedWeekHours, pattern);
 
     remainingRotativeHours = roundToHalf(Math.max(0, remainingRotativeHours - plannedWeekHours));
