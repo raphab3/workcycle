@@ -7,6 +7,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { CycleModule } from '@/modules/cycle/cycle.module';
 import { EventsModule } from '@/modules/events/events.module';
 import { ProjectsModule } from '@/modules/projects/projects.module';
+import { TasksModule } from '@/modules/tasks/tasks.module';
 import { CacheModule } from '@/shared/providers/cache/cache.module';
 import { DrizzleModule } from '@/shared/database/drizzle.module';
 import { FirebaseModule } from '@/shared/providers/firebase/firebase.module';
@@ -22,6 +23,7 @@ import { QueuesModule } from '@/shared/providers/queues/queues.module';
     AccountsModule,
     EventsModule,
     ProjectsModule,
+    TasksModule,
     AccountingModule,
     CycleModule,
   ],
