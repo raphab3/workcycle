@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
 import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
 import { env } from '@/shared/config';
@@ -17,7 +17,10 @@ class GoogleCalendarWriteError extends Error {
 
 @Injectable()
 export class EventsRemoteWriterService {
-  constructor(private readonly accountsRepository: AccountsRepository) {}
+  constructor(
+    @Inject(AccountsRepository)
+    private readonly accountsRepository: AccountsRepository,
+  ) {}
 
   private static buildGoogleEventWritePayload(input: {
     description?: string | undefined;

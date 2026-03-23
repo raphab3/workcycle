@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { EventsRepository } from '@/modules/events/repositories/events.repository';
 import { EventsSyncService } from '@/modules/events/services/events-sync.service';
@@ -10,7 +10,9 @@ import type { ListCalendarEventsInputDTO, ListCalendarEventsResultDTO } from '@/
 @Injectable()
 export class ListCalendarEventsUseCase {
   constructor(
+    @Inject(EventsRepository)
     private readonly eventsRepository: EventsRepository,
+    @Inject(EventsSyncService)
     private readonly eventsSyncService: EventsSyncService,
   ) {}
 

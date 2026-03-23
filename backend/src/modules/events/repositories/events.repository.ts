@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, gt, inArray, lt, notInArray } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
@@ -8,7 +8,10 @@ import type { NewCalendarEvent } from '@/shared/database/schema';
 
 @Injectable()
 export class EventsRepository {
-  constructor(private readonly drizzleService: DrizzleService) {}
+  constructor(
+    @Inject(DrizzleService)
+    private readonly drizzleService: DrizzleService,
+  ) {}
 
   async findEventById(id: string, userId: string) {
     const [event] = await this.drizzleService.db

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
 import { EventsRepository } from '@/modules/events/repositories/events.repository';
@@ -25,7 +25,9 @@ class GoogleCalendarApiError extends Error {
 @Injectable()
 export class EventsSyncService {
   constructor(
+    @Inject(AccountsRepository)
     private readonly accountsRepository: AccountsRepository,
+    @Inject(EventsRepository)
     private readonly eventsRepository: EventsRepository,
   ) {}
 
