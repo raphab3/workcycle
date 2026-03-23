@@ -7,8 +7,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from '@/modules/auth';
-import { useUserSettingsQuery } from '@/modules/auth/queries/useUserSettingsQuery';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useUserSettingsQuery } from '@/modules/settings';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { ThemeProvider } from '@/shared/theme';
 

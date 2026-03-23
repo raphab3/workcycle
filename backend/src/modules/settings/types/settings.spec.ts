@@ -31,4 +31,12 @@ test('settings types map persisted values and Google linkage summary to the publ
     notificationsEnabled: true,
     timezone: 'America/Sao_Paulo',
   });
+
+  assert.deepEqual(Object.keys(result).sort(), [
+    'cycleStartHour',
+    'dailyReviewTime',
+    'googleConnection',
+    'notificationsEnabled',
+    'timezone',
+  ]);
 });

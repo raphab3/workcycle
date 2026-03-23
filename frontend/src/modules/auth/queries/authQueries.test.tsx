@@ -3,15 +3,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { authKeys } from '@/modules/auth/queries/authKeys';
-import { settingsKeys } from '@/modules/auth/queries/settingsKeys';
 import { useGoogleAccountsQuery } from '@/modules/auth/queries/useGoogleAccountsQuery';
 import { useUpdateGoogleCalendarMutation } from '@/modules/auth/queries/useUpdateGoogleCalendarMutation';
-import { useUpdateUserSettingsMutation } from '@/modules/auth/queries/useUpdateUserSettingsMutation';
-import { useUserSettingsQuery } from '@/modules/auth/queries/useUserSettingsQuery';
 import { authService } from '@/modules/auth/services/authService';
-import { settingsService } from '@/modules/auth/services/settingsService';
+import { settingsKeys, settingsService, useUpdateUserSettingsMutation, useUserSettingsQuery } from '@/modules/settings';
 
-import type { GoogleAccountDTO, UserSettingsDTO } from '@/modules/auth/types';
+import type { GoogleAccountDTO } from '@/modules/auth/types';
+import type { UserSettingsDTO } from '@/modules/settings';
 
 const accountsPayload: GoogleAccountDTO[] = [
   {
@@ -53,7 +51,7 @@ function createWrapper(queryClient: QueryClient) {
   };
 }
 
-describe('auth queries', () => {
+describe('auth and settings queries', () => {
   it('loads persisted user settings from the backend settings contract', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },

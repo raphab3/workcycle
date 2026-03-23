@@ -77,6 +77,16 @@ vi.mock('@/modules/auth/queries/useGoogleAccountsQuery', () => ({
   useGoogleAccountsQuery: () => googleAccountsQueryState,
 }));
 
+vi.mock('@/modules/settings', async () => {
+  const actual = await vi.importActual<typeof import('@/modules/settings')>('@/modules/settings');
+
+  return {
+    ...actual,
+    useUserSettingsQuery: () => settingsQueryState,
+    useUpdateUserSettingsMutation: () => updateUserSettingsMutationState,
+  };
+});
+
 vi.mock('@/modules/auth/queries/useUserSettingsQuery', () => ({
   useUserSettingsQuery: () => settingsQueryState,
 }));

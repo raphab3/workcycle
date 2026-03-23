@@ -2,7 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { SettingsRepository } from '@/modules/settings/repositories/settings.repository';
 
-import type { UpdateUserSettingsInput } from '@/modules/settings/settings.schemas';
+import type { UpdateUserSettingsInput } from '@/modules/settings/types/settings';
 
 @Injectable()
 export class UpdateUserSettingsUseCase {

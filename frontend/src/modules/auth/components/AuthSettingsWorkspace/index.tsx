@@ -9,11 +9,10 @@ import { useSearchParams } from 'next/navigation';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuthStatusQuery } from '@/modules/auth/queries/useAuthStatusQuery';
 import { useGoogleAccountsQuery } from '@/modules/auth/queries/useGoogleAccountsQuery';
-import { useUpdateUserSettingsMutation } from '@/modules/auth/queries/useUpdateUserSettingsMutation';
-import { useUserSettingsQuery } from '@/modules/auth/queries/useUserSettingsQuery';
 import { useUpdateGoogleCalendarMutation } from '@/modules/auth/queries/useUpdateGoogleCalendarMutation';
 import { authService } from '@/modules/auth/services/authService';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { useUpdateUserSettingsMutation, useUserSettingsQuery } from '@/modules/settings';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -23,7 +22,8 @@ import { StateNotice } from '@/shared/components/StateNotice';
 import { authSettingsFormSchema, type AuthSettingsFormInput, type AuthSettingsFormOutput } from './schema';
 import { authSettingsWorkspaceStyles } from './styles';
 
-import type { GoogleAccountDTO, GoogleCalendarDTO, UserSettingsDTO } from '@/modules/auth/types';
+import type { GoogleAccountDTO, GoogleCalendarDTO } from '@/modules/auth/types';
+import type { UserSettingsDTO } from '@/modules/settings';
 
 function isAccountExpired(account: GoogleAccountDTO) {
   return Number.isFinite(Date.parse(account.tokenExpiresAt)) && Date.parse(account.tokenExpiresAt) <= Date.now();

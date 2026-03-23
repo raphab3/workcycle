@@ -24,3 +24,10 @@ test('updateUserSettingsSchema rejects empty updates', () => {
 test('updateUserSettingsSchema rejects invalid persisted time values', () => {
   assert.throws(() => updateUserSettingsSchema.parse({ cycleStartHour: '25:30' }), /Use o formato HH:mm para horarios persistidos\./);
 });
+
+test('updateUserSettingsSchema rejects browser-only fields that must not be persisted', () => {
+  assert.throws(
+    () => updateUserSettingsSchema.parse({ browserPermission: 'granted', notificationsEnabled: true }),
+    (error: unknown) => error instanceof Error && /Unrecognized key/.test(error.message),
+  );
+});

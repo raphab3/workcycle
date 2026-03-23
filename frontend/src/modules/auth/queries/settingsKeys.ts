@@ -1,4 +1,1 @@
-export const settingsKeys = {
-  all: ['settings'] as const,
-  user: () => [...settingsKeys.all, 'user'] as const,
-};
+export { settingsKeys } from '@/modules/settings/queries/settingsKeys';

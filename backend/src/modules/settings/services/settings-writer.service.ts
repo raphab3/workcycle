@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UpdateUserSettingsUseCase } from '@/modules/settings/use-cases/update-user-settings.use-case';
 import { toGoogleConnectionSummary, toUserSettingsDTO } from '@/modules/settings/types/settings';
 
-import type { UpdateUserSettingsInput } from '@/modules/settings/settings.schemas';
+import type { UpdateUserSettingsInput } from '@/modules/settings/types/settings';
 
 @Injectable()
 export class SettingsWriterService {

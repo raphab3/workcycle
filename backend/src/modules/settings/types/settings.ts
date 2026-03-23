@@ -21,6 +21,8 @@ export interface UserSettingsDTO {
   timezone: string;
 }
 
+export type UpdateUserSettingsInput = Partial<Pick<UserSettingsDTO, 'cycleStartHour' | 'dailyReviewTime' | 'notificationsEnabled' | 'timezone'>>;
+
 export interface UserGoogleConnectionRow {
   googleAccountCount: number;
   googleLinkedAt: Date | null;

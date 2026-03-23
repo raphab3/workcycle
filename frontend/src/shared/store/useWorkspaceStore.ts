@@ -3,8 +3,8 @@
 import { create } from 'zustand';
 
 import { mockProjects } from '@/modules/projects/mocks/projects';
-import type { UpdateUserSettingsInput } from '@/modules/auth/types';
 import type { Project, ProjectFormValues } from '@/modules/projects/types';
+import type { UpdateUserSettingsInput } from '@/modules/settings';
 import { defaultTaskColumns } from '@/modules/tasks/mocks/taskColumns';
 import { mockTasks } from '@/modules/tasks/mocks/tasks';
 import type { Task, TaskColumn, TaskColumnFormValues, TaskFormValues } from '@/modules/tasks/types';
@@ -20,6 +20,7 @@ import type {
   RolloverNotice,
   SessionState,
   TimeBlock,
+  TodaySessionDTO,
   TodayCycleValues,
 } from '@/modules/today/types';
 import { getCycleBoundaryTimestamp, getLocalISODate } from '@/modules/today/utils/boundary';
@@ -32,6 +33,7 @@ import {
 } from '@/modules/today/utils/pulse';
 import { buildSuggestedAllocations, createActualHoursMap, getDefaultCycleValues } from '@/modules/today/utils/planner';
 import { computeCycleSnapshot } from '@/modules/today/utils/session';
+import { mapTodaySessionToWorkspace } from '@/modules/today/utils/sessionSync';
 import { getProjectLoadSummary } from '@/modules/tasks/utils/tasks';
 
 function cloneProject(project: Project): Project {
@@ -107,6 +109,7 @@ function createInitialWorkspaceState() {
     tasks,
     todayCycleValues,
     todayActualHours: createActualHoursMap(allocations),
+    todaySessionId: null as string | null,
     sessionState: 'idle' as SessionState,
     sessionStartedAt: null as string | null,
     activeProjectId: null as string | null,
@@ -132,6 +135,7 @@ interface WorkspaceStoreState {
   tasks: Task[];
   todayCycleValues: TodayCycleValues;
   todayActualHours: Record<string, number>;
+  todaySessionId: string | null;
   sessionState: SessionState;
   sessionStartedAt: string | null;
   activeProjectId: string | null;
@@ -186,6 +190,7 @@ interface WorkspaceStoreState {
   skipTaskToNextCycle: (taskId: string, strategy?: 'reset-to-backlog' | 'keep-stage') => void;
   setTodayCycleValues: (values: TodayCycleValues) => void;
   setTodayActualHours: (actualHours: Record<string, number>) => void;
+  replaceTodaySession: (session: TodaySessionDTO) => void;
   setOperationalSettings: (settings: UpdateUserSettingsInput) => void;
   resetWorkspaceStore: () => void;
 }
@@ -741,6 +746,10 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
   })),
   setTodayCycleValues: (values) => set({ todayCycleValues: values }),
   setTodayActualHours: (actualHours) => set({ todayActualHours: actualHours }),
+  replaceTodaySession: (session) => set((state) => ({
+    ...mapTodaySessionToWorkspace(session),
+    previousCycleSummary: state.previousCycleSummary,
+  })),
   setOperationalSettings: (settings) => set((state) => ({
     operationalSettings: {
       ...state.operationalSettings,
