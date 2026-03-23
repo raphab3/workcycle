@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T014 concluído em 2026-03-23
-- **Próximo ticket sugerido:** T015 — Validar fluxo ponta a ponta e cobertura de regressão
+- **Checkpoint atual:** T015 concluído em 2026-03-23
+- **Próximo ticket sugerido:** Epic concluído
 
 ## Por Fluxo
 
@@ -57,7 +57,7 @@
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T015 | Validar fluxo ponta a ponta e cobertura de regressão | TEST | L | T004, T007, T009, T012, T014 | Backlog |
+| T015 | Validar fluxo ponta a ponta e cobertura de regressão | TEST | L | T004, T007, T009, T012, T014 | Concluído |
 
 ## Ordem de Implementação
 

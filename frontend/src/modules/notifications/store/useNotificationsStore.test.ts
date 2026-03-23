@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetNotificationsStore, useNotificationsStore } from './useNotificationsStore';
 
+import { claimMultiTabNotificationEvent } from '@/modules/notifications/services/multiTabNotificationSync';
 import { createPulseInactivityState } from '@/modules/notifications/services/pulseInactivityPolicy';
+import { readReminderHistory } from '@/modules/notifications/services/reminderHistoryStorage';
 
 import type { NotificationCapabilityState } from '@/modules/notifications/types/capability';
 
@@ -26,6 +28,7 @@ describe('useNotificationsStore', () => {
   const OriginalNotification = globalThis.Notification;
 
   beforeEach(() => {
+    window.localStorage.clear();
     resetNotificationsStore();
   });
 
@@ -46,6 +49,20 @@ describe('useNotificationsStore', () => {
       title: 'Pulso de atividade',
     });
     expect(state.deliveryAttempts).toHaveLength(1);
+    expect(state.reminderHistory).toMatchObject([
+      {
+        eventId: 'event-1',
+        status: 'shown',
+        type: 'activity-pulse-due',
+      },
+    ]);
+    expect(readReminderHistory()).toMatchObject([
+      {
+        eventId: 'event-1',
+        status: 'shown',
+        type: 'activity-pulse-due',
+      },
+    ]);
   });
 
   it('attempts browser delivery when capability supports background notifications', () => {
@@ -106,6 +123,22 @@ describe('useNotificationsStore', () => {
     useNotificationsStore.getState().dispatchEvent(baseEvent, baseCapability, '2026-03-22T10:00:00.000Z');
 
     const decision = useNotificationsStore.getState().dispatchEvent(baseEvent, baseCapability, '2026-03-22T10:00:01.000Z');
+
+    expect(decision.channel).toBe('suppressed');
+    expect(decision.reason).toBe('duplicate-event');
+  });
+
+  it('suppresses an event already claimed by another tab', () => {
+    claimMultiTabNotificationEvent('activity-pulse-due:event-1', '2026-03-22T10:00:00.000Z');
+
+    const decision = useNotificationsStore.getState().dispatchEvent({
+      ...baseEvent,
+      eventId: 'event-1',
+    }, {
+      ...baseCapability,
+      visibilityState: 'hidden',
+      windowFocused: false,
+    }, '2026-03-22T10:00:01.000Z');
 
     expect(decision.channel).toBe('suppressed');
     expect(decision.reason).toBe('duplicate-event');
@@ -179,5 +212,20 @@ describe('useNotificationsStore', () => {
       suppressedSince: null,
     });
     expect(useNotificationsStore.getState().isNotificationEventActionable('today-pulse:2026-03-22T09:30:00.000Z:due')).toBe(true);
+  });
+
+  it('hydrates reminder history from persisted storage after a reload-like reset', () => {
+    useNotificationsStore.getState().dispatchEvent(baseEvent, baseCapability, '2026-03-22T10:00:00.000Z');
+
+    useNotificationsStore.setState({ reminderHistory: [] });
+    useNotificationsStore.getState().hydrateReminderHistory();
+
+    expect(useNotificationsStore.getState().reminderHistory).toMatchObject([
+      {
+        eventId: 'event-1',
+        status: 'shown',
+        type: 'activity-pulse-due',
+      },
+    ]);
   });
 });
