@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T009 concluído em 2026-03-23
-- **Próximo ticket sugerido:** T010 — Fechar contrato canônico de Today
+- **Checkpoint atual:** T010 concluído em 2026-03-23
+- **Próximo ticket sugerido:** T011 — Implementar backend de Today: sessão, pulse e rollover
 
 ## Por Fluxo
 
@@ -35,7 +35,7 @@
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T010 | Fechar contrato canônico de Today | RFCT | M | T005, T008 | Backlog |
+| T010 | Fechar contrato canônico de Today | RFCT | M | T005, T008 | Concluído |
 | T011 | Implementar backend de Today: sessão, pulse e rollover | API | L | T010 | Backlog |
 | T012 | Integrar Today no frontend com source of truth do backend | FEAT | L | T007, T009, T011 | Backlog |
 
