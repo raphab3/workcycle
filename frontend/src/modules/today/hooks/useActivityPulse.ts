@@ -2,6 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 
+import {
+  createActivityPulseDueNotificationEvent,
+  createActivityPulseExpiredNotificationEvent,
+  createTodayPulseNotificationEventId,
+  useNotificationCapability,
+  useNotificationsStore,
+} from '@/modules/notifications';
 import { useFirePulseMutation } from '@/modules/today/queries/useFirePulseMutation';
 import { useUpdateTodaySessionMutation } from '@/modules/today/queries/useUpdateTodaySessionMutation';
 import { getMillisecondsUntil } from '@/modules/today/utils/pulse';
@@ -14,14 +21,53 @@ export function useActivityPulse() {
   const activePulse = useWorkspaceStore((state) => state.activePulse);
   const nextPulseDueAt = useWorkspaceStore((state) => state.nextPulseDueAt);
   const activeProjectId = useWorkspaceStore((state) => state.activeProjectId);
+  const pulseHistory = useWorkspaceStore((state) => state.pulseHistory);
   const firePulse = useWorkspaceStore((state) => state.firePulse);
   const expireActivePulse = useWorkspaceStore((state) => state.expireActivePulse);
   const firePulseMutation = useFirePulseMutation();
   const updateTodaySessionMutation = useUpdateTodaySessionMutation();
+  const notificationCapability = useNotificationCapability({ enabled: sessionState === 'running' || sessionState === 'paused_inactivity' });
+  const dispatchNotificationEvent = useNotificationsStore((state) => state.dispatchEvent);
+  const dismissNotificationEvent = useNotificationsStore((state) => state.dismissNotificationEvent);
   const pendingFireRef = useRef<string | null>(null);
   const pendingExpireRef = useRef<string | null>(null);
+  const dispatchedDuePulseRef = useRef<string | null>(null);
+  const dispatchedExpiredPulseRef = useRef<string | null>(null);
+  const dismissedPulseRef = useRef<string | null>(null);
 
   const shouldUseBackend = Boolean(sessionId);
+
+  useEffect(() => {
+    if (!activePulse || dispatchedDuePulseRef.current === activePulse.firedAt) {
+      return;
+    }
+
+    dispatchNotificationEvent(createActivityPulseDueNotificationEvent(activePulse), notificationCapability, activePulse.firedAt);
+    dispatchedDuePulseRef.current = activePulse.firedAt;
+  }, [activePulse, dispatchNotificationEvent, notificationCapability]);
+
+  useEffect(() => {
+    const latestPulse = pulseHistory[pulseHistory.length - 1];
+
+    if (!latestPulse) {
+      return;
+    }
+
+    if (latestPulse.status === 'unconfirmed' && latestPulse.resolution === 'pending' && dispatchedExpiredPulseRef.current !== latestPulse.firedAt) {
+      dispatchNotificationEvent(
+        createActivityPulseExpiredNotificationEvent(latestPulse, latestPulse.reviewedAt ?? latestPulse.respondedAt ?? new Date().toISOString()),
+        notificationCapability,
+        latestPulse.firedAt,
+      );
+      dispatchedExpiredPulseRef.current = latestPulse.firedAt;
+      return;
+    }
+
+    if (latestPulse.resolution !== 'pending' && dismissedPulseRef.current !== latestPulse.firedAt) {
+      dismissNotificationEvent(createTodayPulseNotificationEventId(latestPulse.firedAt));
+      dismissedPulseRef.current = latestPulse.firedAt;
+    }
+  }, [dismissNotificationEvent, dispatchNotificationEvent, notificationCapability, pulseHistory]);
 
   useEffect(() => {
     if (sessionState !== 'running') {

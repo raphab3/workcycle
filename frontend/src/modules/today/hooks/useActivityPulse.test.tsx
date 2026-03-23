@@ -2,9 +2,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
+import { resetNotificationsStore, useNotificationsStore } from '@/modules/notifications';
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { useActivityPulse } from './useActivityPulse';
+
+vi.mock('@/modules/notifications', async () => {
+  const actual = await vi.importActual<typeof import('@/modules/notifications')>('@/modules/notifications');
+
+  return {
+    ...actual,
+    useNotificationCapability: () => ({
+      permission: 'granted',
+      productEnabled: true,
+      supportsBrowserNotification: true,
+      visibilityState: 'visible',
+      windowFocused: true,
+    }),
+  };
+});
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -21,6 +37,7 @@ function createWrapper() {
 describe('useActivityPulse', () => {
   beforeEach(() => {
     resetWorkspaceStore();
+    resetNotificationsStore();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-22T09:00:00.000Z'));
   });
@@ -44,6 +61,8 @@ describe('useActivityPulse', () => {
 
     expect(state.activePulse).not.toBeNull();
     expect(state.pulseHistory).toHaveLength(0);
+    expect(useNotificationsStore.getState().lastDeliveryDecision?.channel).toBe('in-app');
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
   });
 
   it('pauses the session after 5 minutes without pulse confirmation', () => {
@@ -69,6 +88,7 @@ describe('useActivityPulse', () => {
       status: 'unconfirmed',
       resolution: 'pending',
     });
+    expect(useNotificationsStore.getState().deliveryAttempts.at(-1)?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
   });
 
   it('does not fire additional pulses while the session is paused', () => {
@@ -121,5 +141,25 @@ describe('useActivityPulse', () => {
     expect(useWorkspaceStore.getState().activePulse).not.toBeNull();
     expect(useWorkspaceStore.getState().pulseHistory).toHaveLength(1);
     expect(useWorkspaceStore.getState().pulseHistory[0].status).toBe('confirmed');
+  });
+
+  it('dismisses the pending notification when the active pulse is confirmed', () => {
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
+
+    act(() => {
+      useWorkspaceStore.getState().startSession('proj-1');
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(30 * 60 * 1000);
+    });
+
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('today-pulse:2026-03-22T09:30:00.000Z');
+
+    act(() => {
+      useWorkspaceStore.getState().confirmActivePulse('2026-03-22T09:31:00.000Z');
+    });
+
+    expect(useNotificationsStore.getState().activeInAppNotification).toBeNull();
   });
 });

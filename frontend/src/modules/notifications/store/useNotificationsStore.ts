@@ -39,6 +39,7 @@ interface NotificationsStoreState {
   deliveryAttempts: NotificationDeliveryAttempt[];
   lastDeliveryDecision: DeliveryDecision | null;
   dismissInAppNotification: () => void;
+  dismissNotificationEvent: (eventId: string) => void;
   dispatchEvent: (event: OperationalNotificationEvent, capability: NotificationCapabilityState, now?: string) => DeliveryDecision;
   resetNotificationsStore: () => void;
 }
@@ -53,6 +54,11 @@ const initialState = {
 export const useNotificationsStore = create<NotificationsStoreState>((set) => ({
   ...initialState,
   dismissInAppNotification: () => set({ activeInAppNotification: null }),
+  dismissNotificationEvent: (eventId) => set((state) => ({
+    activeInAppNotification: state.activeInAppNotification?.eventId === eventId
+      ? null
+      : state.activeInAppNotification,
+  })),
   dispatchEvent: (event, capability, now = new Date().toISOString()) => {
     let decision = decideNotificationDelivery({ capability, dedupeStore, event, now });
 

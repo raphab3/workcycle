@@ -294,8 +294,16 @@ export function TodayPlannerOverview() {
 
   useEffect(() => {
     if (sessionState !== 'idle' && sessionState !== 'completed') {
-      setIsPlanExpanded(false);
+      const timeoutId = window.setTimeout(() => {
+        setIsPlanExpanded(false);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
+
+    return undefined;
   }, [sessionState]);
 
   const requestError = projectsQuery.error
@@ -325,7 +333,6 @@ export function TodayPlannerOverview() {
 
     if (hasCrossedCycleBoundary(currentTime, cycleDate)) {
       if (isAuthenticated) {
-        setIsRolloverPromptOpen(false);
         if (!selectedCycleDate) {
           void todaySessionQuery.refetch();
         }
@@ -333,7 +340,6 @@ export function TodayPlannerOverview() {
       }
 
       syncCycleBoundary(currentTime.toISOString());
-      setIsRolloverPromptOpen(false);
       return;
     }
 
@@ -342,10 +348,18 @@ export function TodayPlannerOverview() {
     }
 
     if (isWithinRolloverWindow(currentTime, cycleDate) && rolloverPromptCycleRef.current !== cycleDate) {
-      rolloverPromptCycleRef.current = cycleDate;
-      setKeepSameProjectOnRollover(Boolean(activeProjectId));
-      setIsRolloverPromptOpen(true);
+      const timeoutId = window.setTimeout(() => {
+        rolloverPromptCycleRef.current = cycleDate;
+        setKeepSameProjectOnRollover(Boolean(activeProjectId));
+        setIsRolloverPromptOpen(true);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
+
+    return undefined;
   }, [activeProjectId, currentTime, cycleDate, cycleState, isAuthenticated, selectedCycleDate, sessionState, syncCycleBoundary, todaySessionQuery]);
 
   const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects]);

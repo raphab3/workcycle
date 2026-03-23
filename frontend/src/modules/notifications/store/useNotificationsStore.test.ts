@@ -108,4 +108,16 @@ describe('useNotificationsStore', () => {
     expect(decision.channel).toBe('suppressed');
     expect(decision.reason).toBe('duplicate-event');
   });
+
+  it('dismisses only the in-app notification that matches the given event id', () => {
+    useNotificationsStore.getState().dispatchEvent(baseEvent, baseCapability);
+
+    useNotificationsStore.getState().dismissNotificationEvent('event-2');
+
+    expect(useNotificationsStore.getState().activeInAppNotification?.eventId).toBe('event-1');
+
+    useNotificationsStore.getState().dismissNotificationEvent('event-1');
+
+    expect(useNotificationsStore.getState().activeInAppNotification).toBeNull();
+  });
 });
