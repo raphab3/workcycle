@@ -8,12 +8,15 @@ import { useForm } from 'react-hook-form';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
 import { useNotificationCapability, useNotificationsStore } from '@/modules/notifications';
-import { useUpdateUserSettingsMutation, useUserSettingsQuery } from '@/modules/settings';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
+
+import { useUpdateUserSettingsMutation } from '@/modules/settings/queries/useUpdateUserSettingsMutation';
+import { useUserSettingsQuery } from '@/modules/settings/queries/useUserSettingsQuery';
+import type { UserSettingsDTO } from '@/modules/settings/types';
 
 import {
   notificationsSettingsFormSchema,
@@ -22,7 +25,7 @@ import {
 } from './schema';
 import { notificationsSettingsWorkspaceStyles } from './styles';
 
-import type { DeliveryDecision, NotificationDegradedReason, OperationalNotificationEvent, ReminderHistoryItem, UserSettingsDTO } from '@/modules/settings';
+import type { DeliveryDecision, NotificationDegradedReason, OperationalNotificationEvent, ReminderHistoryItem } from '@/modules/notifications';
 
 function createFormValues(settings: UserSettingsDTO): NotificationsSettingsFormInput {
   return {

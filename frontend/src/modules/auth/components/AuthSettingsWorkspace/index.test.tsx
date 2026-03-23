@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetAuthStore, useAuthStore } from '@/modules/auth/store/useAuthStore';
@@ -184,7 +183,7 @@ describe('AuthSettingsWorkspace', () => {
     });
   });
 
-  it('renders multiple accounts and their calendars', () => {
+  it('renders multiple accounts and their calendars without duplicating the notifications form', () => {
     googleAccountsQueryState = {
       data: [
         {
@@ -225,30 +224,10 @@ describe('AuthSettingsWorkspace', () => {
     expect(screen.getByText('Rafa Work')).toBeInTheDocument();
     expect(screen.getByText('rafa@work.dev')).toBeInTheDocument();
     expect(screen.getByText('Primary')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('America/Sao_Paulo')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('18:30')).toBeInTheDocument();
     expect(screen.getByText('Rafa Personal')).toBeInTheDocument();
     expect(screen.getByText('Esta conta precisa de atencao')).toBeInTheDocument();
     expect(screen.getByText('Esta conta ainda nao retornou calendarios conectados')).toBeInTheDocument();
-  });
-
-  it('submits persisted settings updates from the operational settings form', async () => {
-    const user = userEvent.setup();
-
-    renderWorkspace();
-
-    await user.clear(screen.getByLabelText('Timezone operacional'));
-    await user.type(screen.getByLabelText('Timezone operacional'), 'UTC');
-    await user.clear(screen.getByLabelText('Horario da revisao diaria'));
-    await user.type(screen.getByLabelText('Horario da revisao diaria'), '19:15');
-    await user.click(screen.getByRole('button', { name: 'Salvar preferencias' }));
-
-    expect(mutateSettingsAsyncMock).toHaveBeenCalledWith({
-      cycleStartHour: '08:00',
-      dailyReviewTime: '19:15',
-      notificationsEnabled: true,
-      timezone: 'UTC',
-    });
+    expect(screen.queryByLabelText('Horario da revisao diaria')).not.toBeInTheDocument();
   });
 
   it('toggles a calendar inclusion from the integrations card', async () => {
