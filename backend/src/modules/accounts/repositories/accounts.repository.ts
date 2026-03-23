@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, leftJoin } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
 import { googleAccounts, googleCalendars } from '@/shared/database/schema';
@@ -28,6 +28,40 @@ export class AccountsRepository {
       .from(googleAccounts)
       .leftJoin(googleCalendars, eq(googleCalendars.accountId, googleAccounts.id))
       .where(eq(googleAccounts.userId, userId))
+      .orderBy(desc(googleAccounts.updatedAt), googleCalendars.name);
+  }
+
+  async listOperationalCalendarSources(
+    userId: string,
+    filters: { accountIds?: string[]; calendarIds?: string[] },
+  ) {
+    const conditions = [eq(googleAccounts.userId, userId), eq(googleCalendars.isIncluded, true)];
+
+    if (filters.accountIds && filters.accountIds.length > 0) {
+      conditions.push(inArray(googleAccounts.id, filters.accountIds));
+    }
+
+    if (filters.calendarIds && filters.calendarIds.length > 0) {
+      conditions.push(inArray(googleCalendars.id, filters.calendarIds));
+    }
+
+    return this.drizzleService.db
+      .select({
+        accountAccessToken: googleAccounts.accessToken,
+        accountDisplayName: googleAccounts.displayName,
+        accountEmail: googleAccounts.email,
+        accountId: googleAccounts.id,
+        accountIsActive: googleAccounts.isActive,
+        accountRefreshToken: googleAccounts.refreshToken,
+        accountTokenExpiresAt: googleAccounts.tokenExpiresAt,
+        calendarColorHex: googleCalendars.colorHex,
+        calendarId: googleCalendars.id,
+        calendarIsPrimary: googleCalendars.isPrimary,
+        calendarName: googleCalendars.name,
+      })
+      .from(googleCalendars)
+      .innerJoin(googleAccounts, eq(googleAccounts.id, googleCalendars.accountId))
+      .where(and(...conditions))
       .orderBy(desc(googleAccounts.updatedAt), googleCalendars.name);
   }
 
@@ -62,5 +96,43 @@ export class AccountsRepository {
       });
 
     return calendar;
+  }
+
+  async touchCalendarSync(calendarId: string, syncedAt: Date) {
+    const [calendar] = await this.drizzleService.db
+      .update(googleCalendars)
+      .set({
+        syncedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(googleCalendars.id, calendarId))
+      .returning({
+        id: googleCalendars.id,
+        syncedAt: googleCalendars.syncedAt,
+      });
+
+    return calendar;
+  }
+
+  async updateGoogleAccountTokens(
+    accountId: string,
+    input: { accessToken: string; refreshToken: string; tokenExpiresAt: Date },
+  ) {
+    const [account] = await this.drizzleService.db
+      .update(googleAccounts)
+      .set({
+        accessToken: input.accessToken,
+        isActive: true,
+        refreshToken: input.refreshToken,
+        tokenExpiresAt: input.tokenExpiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(googleAccounts.id, accountId))
+      .returning({
+        id: googleAccounts.id,
+        tokenExpiresAt: googleAccounts.tokenExpiresAt,
+      });
+
+    return account;
   }
 }
