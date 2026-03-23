@@ -10,6 +10,40 @@ import type { NewCalendarEvent } from '@/shared/database/schema';
 export class EventsRepository {
   constructor(private readonly drizzleService: DrizzleService) {}
 
+  async findEventById(id: string, userId: string) {
+    const [event] = await this.drizzleService.db
+      .select({
+        accountDisplayName: googleAccounts.displayName,
+        accountEmail: googleAccounts.email,
+        accountId: googleAccounts.id,
+        attendees: calendarEvents.attendees,
+        calendarColorHex: googleCalendars.colorHex,
+        calendarId: calendarEvents.calendarId,
+        calendarIsIncluded: googleCalendars.isIncluded,
+        calendarName: googleCalendars.name,
+        description: calendarEvents.description,
+        endAt: calendarEvents.endAt,
+        id: calendarEvents.id,
+        isAllDay: calendarEvents.isAllDay,
+        location: calendarEvents.location,
+        meetLink: calendarEvents.meetLink,
+        projectId: calendarEvents.projectId,
+        recurrenceRule: calendarEvents.recurrenceRule,
+        recurringEventId: calendarEvents.recurringEventId,
+        responseStatus: calendarEvents.responseStatus,
+        startAt: calendarEvents.startAt,
+        syncedAt: calendarEvents.syncedAt,
+        title: calendarEvents.title,
+        updatedAt: calendarEvents.updatedAt,
+      })
+      .from(calendarEvents)
+      .innerJoin(googleCalendars, eq(googleCalendars.id, calendarEvents.calendarId))
+      .innerJoin(googleAccounts, eq(googleAccounts.id, googleCalendars.accountId))
+      .where(and(eq(calendarEvents.id, id), eq(googleAccounts.userId, userId)));
+
+    return event;
+  }
+
   async listEventsByInterval(
     userId: string,
     input: { accountIds?: string[]; calendarIds?: string[]; from: Date; to: Date },
@@ -89,6 +123,12 @@ export class EventsRepository {
       });
 
     return persistedEvent;
+  }
+
+  async deleteEvent(id: string) {
+    return this.drizzleService.db
+      .delete(calendarEvents)
+      .where(eq(calendarEvents.id, id));
   }
 
   async deleteMissingCalendarEvents(calendarId: string, from: Date, to: Date, persistedIds: string[]) {

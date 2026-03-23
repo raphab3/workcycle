@@ -136,16 +136,12 @@ Este epic existe para introduzir notificações operacionais do produto WorkCycl
 - O produto deve preferir recuperação na retomada do app a tentar simular notificações retroativas em lote
 - O modo foco completo continua fora do escopo deste epic e só deve ser citado como compatibilidade futura
 
-## Perguntas em Aberto
+## Decisões Consolidadas
 
-- [ ] O contrato atual de Settings será suficiente com notifications enabled e daily review time, ou o MVP precisa também de granularidade mínima por tipo de evento operacional
-- [ ] O lembrete de revisão diária deve existir mesmo quando não houver sessão iniciada no dia, ou só faz sentido em dias com contexto operacional ativo
-- [ ] O MVP precisa tocar som próprio do produto quando permitido, ou basta depender do comportamento padrão da notificação do navegador e da UI in-app
-- [ ] O produto deve registrar histórico curto de lembretes resolvidos ou perdidos para depuração e UX, ou isso fica fora deste primeiro corte
-- [ ] A área de notificações em Settings deve nascer apenas como preferências operacionais mínimas ou já incluir preview de estados degradados e testes de permissão
-- [ ] Quando o usuário reabre o app após perder um pulso, o sistema deve mostrar um lembrete pendente único, abrir a regularização diretamente, ou apenas refletir o estado da sessão já pausada
-- [ ] Mudanças de timezone e daily review time no meio do dia passam a valer imediatamente para o próximo lembrete ou somente no próximo ciclo operacional
-- [ ] O backend deve permanecer sem módulo dedicado de notificações neste recorte, ou a iniciativa já precisa abrir uma fronteira mínima própria para contratos futuros de histórico e scheduling
+- O lembrete de revisão diária só deve existir em dias com contexto operacional ativo.
+- O MVP não terá som próprio do produto; os canais iniciais são notificação do navegador quando suportada e UI in-app.
+- O produto deve registrar histórico curto persistido de lembretes para depuração operacional e UX.
+- A área de notificações em Settings nasce no primeiro corte com affordances extras: ação de teste, preview dos lembretes e explicitação do estado degradado.
 
 ---
 *Gerado por PLANNER — Fase 1/3*

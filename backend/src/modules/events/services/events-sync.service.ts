@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
 import { EventsRepository } from '@/modules/events/repositories/events.repository';
 import { env } from '@/shared/config';
+import { toPersistedCalendarEvent } from '@/modules/events/types/event';
 
 import type {
   DegradedSourceDTO,
@@ -170,62 +171,7 @@ export class EventsSyncService {
   }
 
   private toCalendarEventRecord(source: GoogleCalendarOperationalSource, event: RemoteGoogleCalendarEvent, syncedAt: Date) {
-    const startAt = this.resolveGoogleDate(event.start);
-    const endAt = this.resolveGoogleDate(event.end);
-    const isAllDay = Boolean(event.start?.date && event.end?.date);
-
-    return {
-      attendees: event.attendees ?? [],
-      calendarId: source.calendarId,
-      description: event.description ?? null,
-      endAt,
-      id: `${source.calendarId}:${event.id}`,
-      isAllDay,
-      location: event.location ?? null,
-      meetLink: event.hangoutLink ?? null,
-      projectId: null,
-      recurrenceRule: event.recurrence?.join('\n') ?? null,
-      recurringEventId: event.recurringEventId ?? null,
-      responseStatus: this.resolveResponseStatus(event),
-      startAt,
-      syncedAt,
-      title: event.summary?.trim() || 'Sem titulo',
-    };
-  }
-
-  private resolveGoogleDate(value: { date?: string; dateTime?: string } | undefined) {
-    if (!value) {
-      throw new Error('Google Calendar event payload is missing a date boundary.');
-    }
-
-    if (value.dateTime) {
-      return new Date(value.dateTime);
-    }
-
-    if (value.date) {
-      return new Date(`${value.date}T00:00:00.000Z`);
-    }
-
-    throw new Error('Google Calendar event payload is missing a valid date or datetime field.');
-  }
-
-  private resolveResponseStatus(event: RemoteGoogleCalendarEvent): 'accepted' | 'declined' | 'tentative' | 'needsAction' {
-    const selfAttendee = event.attendees?.find((attendee) => attendee.self);
-
-    if (
-      selfAttendee?.responseStatus === 'accepted'
-      || selfAttendee?.responseStatus === 'declined'
-      || selfAttendee?.responseStatus === 'tentative'
-      || selfAttendee?.responseStatus === 'needsAction'
-    ) {
-      return selfAttendee.responseStatus;
-    }
-
-    if (event.creator?.self || event.organizer?.self) {
-      return 'accepted';
-    }
-
-    return 'needsAction';
+    return toPersistedCalendarEvent(source, event, syncedAt);
   }
 
   private describeSyncError(error: unknown) {

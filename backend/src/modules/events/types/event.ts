@@ -69,16 +69,17 @@ export interface ListCalendarEventsResultDTO {
 
 export interface GoogleCalendarOperationalSource {
   accountAccessToken: string;
-  accountDisplayName?: string;
-  accountEmail?: string;
+  accountDisplayName: string;
+  accountEmail: string;
   accountId: string;
   accountIsActive: boolean;
   accountRefreshToken: string;
   accountTokenExpiresAt: Date;
-  calendarColorHex?: string;
+  calendarColorHex: string;
   calendarId: string;
+  calendarIsIncluded?: boolean;
   calendarIsPrimary?: boolean;
-  calendarName?: string;
+  calendarName: string;
 }
 
 export interface RemoteGoogleCalendarEvent {
@@ -100,6 +101,11 @@ export interface RemoteGoogleCalendarEvent {
 export interface GoogleCalendarEventsResponse {
   items?: RemoteGoogleCalendarEvent[];
   nextPageToken?: string;
+}
+
+export interface DeleteCalendarEventResultDTO {
+  deleted: true;
+  id: string;
 }
 
 export function toCalendarEventResponse(rows: CalendarEventListRow[]): CalendarEventResponseDTO[] {
@@ -126,6 +132,71 @@ export function toCalendarEventResponse(rows: CalendarEventListRow[]): CalendarE
     title: row.title,
     updatedAt: row.updatedAt.toISOString(),
   }));
+}
+
+function resolveGoogleDate(value: { date?: string; dateTime?: string } | undefined) {
+  if (!value) {
+    throw new Error('Google Calendar event payload is missing a date boundary.');
+  }
+
+  if (value.dateTime) {
+    return new Date(value.dateTime);
+  }
+
+  if (value.date) {
+    return new Date(`${value.date}T00:00:00.000Z`);
+  }
+
+  throw new Error('Google Calendar event payload is missing a valid date or datetime field.');
+}
+
+function resolveResponseStatus(event: RemoteGoogleCalendarEvent): 'accepted' | 'declined' | 'tentative' | 'needsAction' {
+  const selfAttendee = event.attendees?.find((attendee) => attendee.self);
+
+  if (
+    selfAttendee?.responseStatus === 'accepted'
+    || selfAttendee?.responseStatus === 'declined'
+    || selfAttendee?.responseStatus === 'tentative'
+    || selfAttendee?.responseStatus === 'needsAction'
+  ) {
+    return selfAttendee.responseStatus;
+  }
+
+  if (event.creator?.self || event.organizer?.self) {
+    return 'accepted';
+  }
+
+  return 'needsAction';
+}
+
+export function toPersistedCalendarEvent(source: GoogleCalendarOperationalSource, event: RemoteGoogleCalendarEvent, syncedAt: Date): NewCalendarEvent {
+  return {
+    attendees: event.attendees ?? [],
+    calendarId: source.calendarId,
+    description: event.description ?? null,
+    endAt: resolveGoogleDate(event.end),
+    id: toLocalCalendarEventId(source.calendarId, event.id),
+    isAllDay: Boolean(event.start?.date && event.end?.date),
+    location: event.location ?? null,
+    meetLink: event.hangoutLink ?? null,
+    projectId: null,
+    recurrenceRule: event.recurrence?.join('\n') ?? null,
+    recurringEventId: event.recurringEventId ?? null,
+    responseStatus: resolveResponseStatus(event),
+    startAt: resolveGoogleDate(event.start),
+    syncedAt,
+    title: event.summary?.trim() || 'Sem titulo',
+  };
+}
+
+export function toLocalCalendarEventId(calendarId: string, remoteEventId: string) {
+  return `${calendarId}:${remoteEventId}`;
+}
+
+export function toRemoteCalendarEventId(calendarId: string, localEventId: string) {
+  const prefix = `${calendarId}:`;
+
+  return localEventId.startsWith(prefix) ? localEventId.slice(prefix.length) : localEventId;
 }
 
 export type PersistedCalendarEventInput = NewCalendarEvent;

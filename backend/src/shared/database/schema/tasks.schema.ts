@@ -5,6 +5,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -18,10 +19,18 @@ import { projects } from './projects.schema';
 import { users } from './users.schema';
 
 export const cycleSessionStateEnum = pgEnum('cycle_session_state', ['idle', 'running', 'paused_manual', 'paused_inactivity', 'completed']);
+export const cycleRolloverStrategyEnum = pgEnum('cycle_rollover_strategy', ['auto-close-and-open-next', 'manual-start-next']);
 export const taskPriorityEnum = pgEnum('task_priority', ['critical', 'high', 'medium', 'low']);
 export const taskStatusEnum = pgEnum('task_status', ['todo', 'doing', 'blocked', 'done']);
 export const taskCycleAssignmentEnum = pgEnum('task_cycle_assignment', ['backlog', 'current', 'next']);
 export const taskBoardColumnEnum = pgEnum('task_board_column', ['backlog', 'in-progress', 'code-review', 'done']);
+
+interface PersistedCycleSnapshot {
+  actualHours: number;
+  completedTaskIds: string[];
+  incompleteTaskIds: string[];
+  plannedHours: number;
+}
 
 export const cycleSessions = pgTable(
   'cycle_sessions',
@@ -33,12 +42,19 @@ export const cycleSessions = pgTable(
     cycleDate: date('cycle_date', { mode: 'string' }).notNull(),
     startedAt: timestamp('started_at', { withTimezone: true }),
     closedAt: timestamp('closed_at', { withTimezone: true }),
+    snapshot: jsonb('snapshot').$type<PersistedCycleSnapshot | null>(),
+    previousCycleDate: date('previous_cycle_date', { mode: 'string' }),
+    rolloverTriggeredAt: timestamp('rollover_triggered_at', { withTimezone: true }),
+    rolloverStrategy: cycleRolloverStrategyEnum('rollover_strategy').notNull().default('manual-start-next'),
+    rolloverNoticeTitle: varchar('rollover_notice_title', { length: 255 }),
+    rolloverNoticeDescription: text('rollover_notice_description'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index('cycle_sessions_user_id_idx').on(table.userId),
     index('cycle_sessions_active_project_id_idx').on(table.activeProjectId),
+    index('cycle_sessions_previous_cycle_date_idx').on(table.previousCycleDate),
     uniqueIndex('cycle_sessions_user_id_cycle_date_key').on(table.userId, table.cycleDate),
   ],
 );

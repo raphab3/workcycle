@@ -45,3 +45,41 @@ export const listCalendarEventsQuerySchema = z.object({
     });
   }
 });
+
+const calendarEventFieldsSchema = z.object({
+  calendarId: z.string().min(1),
+  description: z.string().trim().max(4000).optional(),
+  endAt: z.string().min(1).refine((value) => !Number.isNaN(Date.parse(value)), 'endAt must be a valid ISO datetime'),
+  location: z.string().trim().max(1024).optional(),
+  startAt: z.string().min(1).refine((value) => !Number.isNaN(Date.parse(value)), 'startAt must be a valid ISO datetime'),
+  title: z.string().trim().min(1).max(512),
+});
+
+function validateCalendarEventWindow(input: { endAt: string; startAt: string }, context: z.RefinementCtx) {
+  if (Date.parse(input.startAt) >= Date.parse(input.endAt)) {
+    context.addIssue({
+      code: 'custom',
+      message: 'startAt must be earlier than endAt',
+      path: ['startAt'],
+    });
+  }
+}
+
+export const createCalendarEventSchema = calendarEventFieldsSchema.superRefine(validateCalendarEventWindow);
+
+export const updateCalendarEventSchema = calendarEventFieldsSchema.partial().superRefine((input, context) => {
+  if (Object.keys(input).length === 0) {
+    context.addIssue({
+      code: 'custom',
+      message: 'At least one event field must be provided for update.',
+      path: [],
+    });
+  }
+
+  if (input.startAt && input.endAt) {
+    validateCalendarEventWindow({ endAt: input.endAt, startAt: input.startAt }, context);
+  }
+});
+
+export type CreateCalendarEventInput = z.infer<typeof createCalendarEventSchema>;
+export type UpdateCalendarEventInput = z.infer<typeof updateCalendarEventSchema>;

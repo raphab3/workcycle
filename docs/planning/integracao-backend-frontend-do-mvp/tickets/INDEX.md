@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T010 concluído em 2026-03-23
-- **Próximo ticket sugerido:** T011 — Implementar backend de Today: sessão, pulse e rollover
+- **Checkpoint atual:** T011 concluído em 2026-03-23
+- **Próximo ticket sugerido:** T012 — Integrar Today no frontend com source of truth do backend
 
 ## Por Fluxo
 
@@ -36,7 +36,7 @@
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
 | T010 | Fechar contrato canônico de Today | RFCT | M | T005, T008 | Concluído |
-| T011 | Implementar backend de Today: sessão, pulse e rollover | API | L | T010 | Backlog |
+| T011 | Implementar backend de Today: sessão, pulse e rollover | API | L | T010 | Concluído |
 | T012 | Integrar Today no frontend com source of truth do backend | FEAT | L | T007, T009, T011 | Backlog |
 
 ### CF-05: Weekly híbrido com semana aberta e histórico fechado

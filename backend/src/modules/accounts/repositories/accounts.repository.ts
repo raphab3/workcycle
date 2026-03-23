@@ -77,6 +77,29 @@ export class AccountsRepository {
     return calendar;
   }
 
+  async findCalendarSource(calendarId: string, userId: string) {
+    const [source] = await this.drizzleService.db
+      .select({
+        accountAccessToken: googleAccounts.accessToken,
+        accountDisplayName: googleAccounts.displayName,
+        accountEmail: googleAccounts.email,
+        accountId: googleAccounts.id,
+        accountIsActive: googleAccounts.isActive,
+        accountRefreshToken: googleAccounts.refreshToken,
+        accountTokenExpiresAt: googleAccounts.tokenExpiresAt,
+        calendarColorHex: googleCalendars.colorHex,
+        calendarId: googleCalendars.id,
+        calendarIsIncluded: googleCalendars.isIncluded,
+        calendarIsPrimary: googleCalendars.isPrimary,
+        calendarName: googleCalendars.name,
+      })
+      .from(googleCalendars)
+      .innerJoin(googleAccounts, eq(googleAccounts.id, googleCalendars.accountId))
+      .where(and(eq(googleCalendars.id, calendarId), eq(googleAccounts.userId, userId)));
+
+    return source;
+  }
+
   async updateCalendar(calendarId: string, input: Pick<typeof googleCalendars.$inferInsert, 'isIncluded'>) {
     const [calendar] = await this.drizzleService.db
       .update(googleCalendars)

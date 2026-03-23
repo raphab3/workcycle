@@ -1,0 +1,189 @@
+import { BadGatewayException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+
+import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
+import { env } from '@/shared/config';
+
+import type { CreateCalendarEventInput, UpdateCalendarEventInput } from '@/modules/events/events.schemas';
+import type { GoogleCalendarOperationalSource, RemoteGoogleCalendarEvent } from '@/modules/events/types/event';
+
+class GoogleCalendarWriteError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+@Injectable()
+export class EventsRemoteWriterService {
+  constructor(private readonly accountsRepository: AccountsRepository) {}
+
+  async createEvent(source: GoogleCalendarOperationalSource, input: CreateCalendarEventInput) {
+    const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events`, {
+      body: JSON.stringify(this.toGoogleEventWritePayload(input)),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    });
+
+    return this.parseRemoteEventResponse(response);
+  }
+
+  async updateEvent(source: GoogleCalendarOperationalSource, remoteEventId: string, input: Omit<UpdateCalendarEventInput, 'calendarId'>) {
+    const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events/${encodeURIComponent(remoteEventId)}`, {
+      body: JSON.stringify(this.toGoogleEventWritePayload(input)),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'PATCH',
+    });
+
+    return this.parseRemoteEventResponse(response);
+  }
+
+  async deleteEvent(source: GoogleCalendarOperationalSource, remoteEventId: string) {
+    try {
+      await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events/${encodeURIComponent(remoteEventId)}`, {
+        method: 'DELETE',
+      });
+
+      return { deleted: true } as const;
+    } catch (error) {
+      if (error instanceof GoogleCalendarWriteError && error.status === 404) {
+        return { deleted: true } as const;
+      }
+
+      throw this.toHttpError(error);
+    }
+  }
+
+  async rollbackCreatedEvent(source: GoogleCalendarOperationalSource, remoteEventId: string) {
+    try {
+      await this.deleteEvent(source, remoteEventId);
+    } catch {
+      throw new InternalServerErrorException('Remote event was created but the local rollback also failed.');
+    }
+  }
+
+  private async performRequest(
+    source: GoogleCalendarOperationalSource,
+    path: string,
+    init: Pick<RequestInit, 'body' | 'headers' | 'method'>,
+  ) {
+    let accessToken = source.accountAccessToken;
+
+    if (this.isTokenExpired(source.accountTokenExpiresAt)) {
+      accessToken = await this.refreshAccessToken(source);
+    }
+
+    try {
+      return await this.fetchWithAccessToken(accessToken, path, init);
+    } catch (error) {
+      if (!(error instanceof GoogleCalendarWriteError) || error.status !== 401) {
+        throw error;
+      }
+
+      accessToken = await this.refreshAccessToken(source);
+      return this.fetchWithAccessToken(accessToken, path, init);
+    }
+  }
+
+  private async fetchWithAccessToken(accessToken: string, path: string, init: Pick<RequestInit, 'body' | 'headers' | 'method'>) {
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${path}`, {
+      body: init.body,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...init.headers,
+      },
+      method: init.method,
+    });
+
+    if (!response.ok) {
+      throw new GoogleCalendarWriteError(response.status, `Google Calendar write failed with status ${response.status}.`);
+    }
+
+    return response;
+  }
+
+  private async parseRemoteEventResponse(response: Response) {
+    const payload = await response.json() as RemoteGoogleCalendarEvent | undefined;
+
+    if (!payload?.id) {
+      throw new BadGatewayException('Google Calendar did not return a persisted event payload.');
+    }
+
+    return payload;
+  }
+
+  private async refreshAccessToken(source: GoogleCalendarOperationalSource) {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      throw new InternalServerErrorException('Google OAuth environment is not configured for token refresh.');
+    }
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      body: new URLSearchParams({
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: source.accountRefreshToken,
+      }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new BadGatewayException('Google token refresh failed.');
+    }
+
+    const payload = await response.json() as { access_token?: string; expires_in?: number; refresh_token?: string };
+
+    if (!payload.access_token || !payload.expires_in) {
+      throw new BadGatewayException('Google token refresh payload is incomplete.');
+    }
+
+    const tokenExpiresAt = new Date(Date.now() + payload.expires_in * 1_000);
+    const refreshToken = payload.refresh_token ?? source.accountRefreshToken;
+
+    await this.accountsRepository.updateGoogleAccountTokens(source.accountId, {
+      accessToken: payload.access_token,
+      refreshToken,
+      tokenExpiresAt,
+    });
+
+    return payload.access_token;
+  }
+
+  private toGoogleEventWritePayload(input: Partial<CreateCalendarEventInput>) {
+    return {
+      description: input.description,
+      end: input.endAt ? { dateTime: input.endAt } : undefined,
+      location: input.location,
+      start: input.startAt ? { dateTime: input.startAt } : undefined,
+      summary: input.title,
+    };
+  }
+
+  private toHttpError(error: unknown) {
+    if (error instanceof GoogleCalendarWriteError) {
+      if (error.status === 404) {
+        return new NotFoundException('Google calendar event was not found remotely.');
+      }
+
+      return new BadGatewayException(error.message);
+    }
+
+    if (error instanceof Error) {
+      return error;
+    }
+
+    return new BadGatewayException('Google Calendar write failed unexpectedly.');
+  }
+
+  private isTokenExpired(tokenExpiresAt: Date) {
+    return tokenExpiresAt.getTime() <= Date.now() + 60_000;
+  }
+}

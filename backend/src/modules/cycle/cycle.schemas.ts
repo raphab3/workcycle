@@ -22,6 +22,13 @@ const todayTimeBlockSchema = z.object({
   startedAt: isoTimestampSchema,
 });
 
+const todayTimeBlockWriteSchema = z.object({
+  confirmedMinutes: z.number().int().min(0).default(0),
+  endedAt: nullableIsoTimestampSchema.default(null),
+  projectId: z.string().uuid(),
+  startedAt: isoTimestampSchema,
+});
+
 const todayPulseRecordSchema = z.object({
   confirmedMinutes: z.number().int().min(0),
   firedAt: isoTimestampSchema,
@@ -127,5 +134,53 @@ export const todayContractStatusSchema = z.object({
   targetSession: todaySessionSchema,
 });
 
+export const getTodaySessionQuerySchema = z.object({
+  cycleDate: isoDateSchema.optional(),
+});
+
+export const listPulseRecordsQuerySchema = z.object({
+  cycleDate: isoDateSchema.optional(),
+  sessionId: z.string().uuid().optional(),
+}).refine((input) => input.cycleDate !== undefined || input.sessionId !== undefined || true, {
+  message: 'Pulse records query accepts an optional cycleDate or sessionId.',
+});
+
+export const updateTodaySessionSchema = z.object({
+  activeProjectId: z.string().uuid().nullable().optional(),
+  closedAt: nullableIsoTimestampSchema.optional(),
+  cycleDate: isoDateSchema.optional(),
+  rollover: z.object({
+    carryOverInProgressTaskIds: z.array(z.string().uuid()).default([]),
+    noticeDescription: z.string().trim().max(500).nullable().optional(),
+    noticeTitle: z.string().trim().max(255).nullable().optional(),
+    previousCycleDate: isoDateSchema.nullable().optional(),
+    strategy: z.enum(TODAY_ROLLOVER_STRATEGY_VALUES),
+    triggeredAt: nullableIsoTimestampSchema.optional(),
+  }).optional(),
+  sessionId: z.string().uuid().optional(),
+  snapshot: todayCycleSnapshotSchema.nullable().optional(),
+  startedAt: nullableIsoTimestampSchema.optional(),
+  state: z.enum(TODAY_SESSION_STATE_VALUES).optional(),
+  timeBlocks: z.array(todayTimeBlockWriteSchema).optional(),
+}).refine((input) => Object.values(input).some((value) => value !== undefined), {
+  message: 'At least one session field must be provided for update.',
+});
+
+export const upsertPulseRecordSchema = z.object({
+  confirmedMinutes: z.number().int().min(0).max(30).default(0),
+  expiresAt: isoTimestampSchema.optional(),
+  firedAt: isoTimestampSchema,
+  projectId: z.string().uuid().nullable().optional(),
+  resolution: z.enum(TODAY_PULSE_RESOLUTION_VALUES),
+  respondedAt: nullableIsoTimestampSchema.optional(),
+  reviewedAt: nullableIsoTimestampSchema.optional(),
+  sessionId: z.string().uuid(),
+  status: z.enum(TODAY_PULSE_STATUS_VALUES),
+});
+
 export type TodaySessionOutput = z.infer<typeof todaySessionSchema>;
 export type TodayContractStatusOutput = z.infer<typeof todayContractStatusSchema>;
+export type GetTodaySessionQuery = z.infer<typeof getTodaySessionQuerySchema>;
+export type ListPulseRecordsQuery = z.infer<typeof listPulseRecordsQuerySchema>;
+export type UpdateTodaySessionInput = z.infer<typeof updateTodaySessionSchema>;
+export type UpsertPulseRecordInput = z.infer<typeof upsertPulseRecordSchema>;
