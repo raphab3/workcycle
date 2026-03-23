@@ -1,20 +1,45 @@
-import { act, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
+import { resetAuthStore, useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { mockProjects } from '@/modules/projects/mocks/projects';
+import { projectsService } from '@/modules/projects/services/projectsService';
+import { mockTasks } from '@/modules/tasks/mocks/tasks';
+import { tasksService } from '@/modules/tasks/services/tasksService';
+import { todayService } from '@/modules/today/services/todayService';
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { TodayPlannerOverview } from './index';
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  };
+}
+
 describe('TodayPlannerOverview', () => {
   beforeEach(() => {
     resetWorkspaceStore();
+    resetAuthStore();
+  });
+
+  afterEach(() => {
+    resetAuthStore();
+    vi.restoreAllMocks();
   });
 
   it('renders the operational cockpit idle state and blocks session start until a project is selected', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     expect(screen.getByRole('heading', { name: /Nenhuma sessao iniciada hoje/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /Contexto do ciclo a partir do que esta acontecendo hoje/i })).not.toBeInTheDocument();
@@ -31,7 +56,7 @@ describe('TodayPlannerOverview', () => {
   it('starts a session and collapses the day plan after the initial project is selected', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /DataVault/i }));
@@ -46,7 +71,7 @@ describe('TodayPlannerOverview', () => {
   it('switches the active project from the project picker', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
@@ -61,7 +86,7 @@ describe('TodayPlannerOverview', () => {
   it('renders the project-filtered Today board and moves a task to done', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /DataVault/i }));
@@ -82,7 +107,7 @@ describe('TodayPlannerOverview', () => {
   it('schedules a task to the next cycle from the Today board', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /DataVault/i }));
@@ -104,7 +129,7 @@ describe('TodayPlannerOverview', () => {
     vi.useFakeTimers();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /DataVault/i }));
@@ -130,7 +155,7 @@ describe('TodayPlannerOverview', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     resetWorkspaceStore();
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
@@ -146,7 +171,7 @@ describe('TodayPlannerOverview', () => {
   it('opens the close-day drawer from the running state', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
@@ -161,7 +186,7 @@ describe('TodayPlannerOverview', () => {
   it('shows paused inactivity actions and opens the review drawer', async () => {
     const user = userEvent.setup();
 
-    render(<TodayPlannerOverview />);
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
 
     await user.click(screen.getByRole('button', { name: /Selecionar projeto inicial/i }));
     await user.click(screen.getByRole('button', { name: /ClienteCore/i }));
@@ -177,5 +202,80 @@ describe('TodayPlannerOverview', () => {
 
     expect(screen.getByRole('dialog', { name: /Revisar tempo/i })).toBeInTheDocument();
     expect(screen.getByText(/Confirme ou marque como inativo/i)).toBeInTheDocument();
+  });
+
+  it('hydrates the persisted backend session when the user is authenticated', async () => {
+    useAuthStore.setState({
+      hasHydrated: true,
+      sessionStatus: 'authenticated',
+    });
+
+    vi.spyOn(projectsService, 'getProjects').mockResolvedValue(mockProjects);
+    vi.spyOn(tasksService, 'getTasks').mockResolvedValue(mockTasks);
+    vi.spyOn(todayService, 'getTodaySession').mockResolvedValue({
+      activeProjectId: 'datavault',
+      closeDayReview: {
+        closedAt: null,
+        message: null,
+        requiresConfirmation: false,
+        unconfirmedMinutes: 0,
+      },
+      closedAt: null,
+      cycleDate: '2026-03-22',
+      id: 'cycle-2026-03-22',
+      operationalBoundary: {
+        boundaryStartsAt: '2026-03-22T00:00:00.000Z',
+        cycleStartHour: '00:00',
+        rolloverWindow: {
+          endsAt: '2026-03-23T00:04:59.000Z',
+          startsAt: '2026-03-22T23:55:59.000Z',
+        },
+        timezone: 'UTC',
+      },
+      pulses: {
+        active: null,
+        history: [],
+      },
+      regularization: {
+        highlightedPulseIndex: null,
+        history: [],
+        isOpen: false,
+        pendingPulseCount: 0,
+      },
+      rollover: {
+        carryOverInProgressTaskIds: [],
+        noticeDescription: null,
+        noticeTitle: null,
+        previousCycleDate: null,
+        strategy: 'manual-start-next',
+        triggeredAt: null,
+      },
+      snapshot: null,
+      startedAt: '2026-03-22T08:00:00.000Z',
+      state: 'running',
+      taskScope: {
+        completedTaskIds: [],
+        currentTaskIds: ['billing-migration'],
+        linkedCycleSessionId: 'cycle-2026-03-22',
+        nextCycleTaskIds: ['daily-contract'],
+        relationMode: 'cycle-session-and-assignment',
+      },
+      timeBlocks: [
+        {
+          confirmedMinutes: 30,
+          id: 'time-block-1',
+          endedAt: null,
+          projectId: 'datavault',
+          startedAt: '2026-03-22T08:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<TodayPlannerOverview />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Sessao em andamento/i })).toBeInTheDocument());
+
+    expect(screen.getByText(/Projeto ativo: DataVault/i)).toBeInTheDocument();
+    expect(todayService.getTodaySession).toHaveBeenCalled();
   });
 });

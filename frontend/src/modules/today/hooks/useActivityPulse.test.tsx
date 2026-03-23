@@ -1,9 +1,22 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { resetWorkspaceStore, useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 
 import { useActivityPulse } from './useActivityPulse';
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  };
+}
 
 describe('useActivityPulse', () => {
   beforeEach(() => {
@@ -17,7 +30,7 @@ describe('useActivityPulse', () => {
   });
 
   it('fires a pulse 30 minutes after a running session starts', () => {
-    renderHook(() => useActivityPulse());
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
 
     act(() => {
       useWorkspaceStore.getState().startSession('proj-1');
@@ -34,7 +47,7 @@ describe('useActivityPulse', () => {
   });
 
   it('pauses the session after 5 minutes without pulse confirmation', () => {
-    renderHook(() => useActivityPulse());
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
 
     act(() => {
       useWorkspaceStore.getState().startSession('proj-1');
@@ -59,7 +72,7 @@ describe('useActivityPulse', () => {
   });
 
   it('does not fire additional pulses while the session is paused', () => {
-    renderHook(() => useActivityPulse());
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
 
     act(() => {
       useWorkspaceStore.getState().startSession('proj-1');
@@ -81,7 +94,7 @@ describe('useActivityPulse', () => {
   });
 
   it('resets the 30-minute timer after confirming a pulse', () => {
-    renderHook(() => useActivityPulse());
+    renderHook(() => useActivityPulse(), { wrapper: createWrapper() });
 
     act(() => {
       useWorkspaceStore.getState().startSession('proj-1');
