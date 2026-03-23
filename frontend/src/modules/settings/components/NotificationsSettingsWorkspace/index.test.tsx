@@ -123,18 +123,9 @@ describe('NotificationsSettingsWorkspace', () => {
     });
   });
 
-  it('renders a separate notifications area with current capability and history', () => {
+  it('renders a configuration-focused notifications area with compact environment status', () => {
     useNotificationsStore.setState({
       degradedReason: 'browser-permission-default',
-      reminderHistory: [
-        {
-          contextLabel: 'Pulso de atividade',
-          eventId: 'event-1',
-          occurredAt: '2026-03-22T10:00:00.000Z',
-          status: 'shown',
-          type: 'activity-pulse-due',
-        },
-      ],
     });
 
     renderWorkspace();
@@ -142,9 +133,9 @@ describe('NotificationsSettingsWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Notificacoes operacionais' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('America/Sao_Paulo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('18:30')).toBeInTheDocument();
-    expect(screen.getByText('Capacidade e estado degradado')).toBeInTheDocument();
+    expect(screen.getByText('Capacidade do canal neste navegador')).toBeInTheDocument();
     expect(screen.getByText('O ambiente esta operando em fallback')).toBeInTheDocument();
-    expect(screen.getByText('Pulso de atividade')).toBeInTheDocument();
+    expect(screen.getByText('Avisos ativos e historico recente ficam no drawer de notificacoes do header.')).toBeInTheDocument();
   });
 
   it('submits the notifications preferences form', async () => {
@@ -164,18 +155,6 @@ describe('NotificationsSettingsWorkspace', () => {
       notificationsEnabled: true,
       timezone: 'UTC',
     });
-  });
-
-  it('executes a preview using the current delivery engine state', async () => {
-    const user = userEvent.setup();
-
-    renderWorkspace();
-
-    await user.click(screen.getByRole('button', { name: 'Testar notificacao' }));
-
-    expect(useNotificationsStore.getState().lastDeliveryDecision?.channel).toBe('in-app');
-    expect(screen.getByText('O motor entregaria um aviso in-app neste contexto.')).toBeInTheDocument();
-    expect(screen.getByText('Preview de notificacoes operacionais')).toBeInTheDocument();
   });
 
   it('shows an integrations warning when preferences fail to load', () => {
