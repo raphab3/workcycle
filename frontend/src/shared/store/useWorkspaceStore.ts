@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 
 import { mockProjects } from '@/modules/projects/mocks/projects';
+import type { UpdateUserSettingsInput } from '@/modules/auth/types';
 import type { Project, ProjectFormValues } from '@/modules/projects/types';
 import { defaultTaskColumns } from '@/modules/tasks/mocks/taskColumns';
 import { mockTasks } from '@/modules/tasks/mocks/tasks';
@@ -84,6 +85,13 @@ function getTomorrowISODate(): string {
   return `${year}-${month}-${day}`;
 }
 
+const defaultOperationalSettings = {
+  cycleStartHour: '00:00',
+  dailyReviewTime: '18:00',
+  notificationsEnabled: false,
+  timezone: 'UTC',
+} satisfies Required<UpdateUserSettingsInput>;
+
 function createInitialWorkspaceState() {
   const projects = mockProjects.map(cloneProject);
   const taskColumns = defaultTaskColumns.map(cloneTaskColumn);
@@ -114,6 +122,7 @@ function createInitialWorkspaceState() {
     previousCycleSummary: null as PreviousCycleSummary | null,
     rolloverNotice: null as RolloverNotice | null,
     deferNextCycleUntilManualStart: false,
+    operationalSettings: defaultOperationalSettings,
   };
 }
 
@@ -138,6 +147,7 @@ interface WorkspaceStoreState {
   previousCycleSummary: PreviousCycleSummary | null;
   rolloverNotice: RolloverNotice | null;
   deferNextCycleUntilManualStart: boolean;
+  operationalSettings: Required<UpdateUserSettingsInput>;
   startSession: (projectId: string) => void;
   pauseSession: (reason: 'manual' | 'inactivity') => void;
   resumeSession: () => void;
@@ -176,6 +186,7 @@ interface WorkspaceStoreState {
   skipTaskToNextCycle: (taskId: string, strategy?: 'reset-to-backlog' | 'keep-stage') => void;
   setTodayCycleValues: (values: TodayCycleValues) => void;
   setTodayActualHours: (actualHours: Record<string, number>) => void;
+  setOperationalSettings: (settings: UpdateUserSettingsInput) => void;
   resetWorkspaceStore: () => void;
 }
 
@@ -730,6 +741,12 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
   })),
   setTodayCycleValues: (values) => set({ todayCycleValues: values }),
   setTodayActualHours: (actualHours) => set({ todayActualHours: actualHours }),
+  setOperationalSettings: (settings) => set((state) => ({
+    operationalSettings: {
+      ...state.operationalSettings,
+      ...settings,
+    },
+  })),
   resetWorkspaceStore: () => set(createInitialWorkspaceState()),
 }));
 

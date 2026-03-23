@@ -11,7 +11,8 @@ import { AuthSettingsWorkspace } from './index';
 const searchParamsMock = new URLSearchParams();
 const getGoogleLinkUrlMock = vi.fn();
 const handleAssignMock = vi.fn();
-const mutateAsyncMock = vi.fn();
+const mutateCalendarAsyncMock = vi.fn();
+const mutateSettingsAsyncMock = vi.fn();
 let googleAccountsQueryState = {
   data: [] as Array<{
     calendars: Array<{
@@ -32,6 +33,28 @@ let googleAccountsQueryState = {
   }>,
   isError: false,
   isFetching: false,
+};
+let settingsQueryState = {
+  data: {
+    cycleStartHour: '08:00',
+    dailyReviewTime: '18:30',
+    googleConnection: {
+      connectedAccountCount: 1,
+      hasGoogleLinked: true,
+      linkedAt: '2026-03-22T10:00:00.000Z',
+    },
+    notificationsEnabled: true,
+    timezone: 'America/Sao_Paulo',
+  },
+  error: null as unknown,
+  isPending: false,
+  isRefetching: false,
+};
+let updateUserSettingsMutationState = {
+  error: null as unknown,
+  isPending: false,
+  isSuccess: false,
+  mutateAsync: mutateSettingsAsyncMock,
 };
 
 vi.mock('next/navigation', () => ({
@@ -54,10 +77,18 @@ vi.mock('@/modules/auth/queries/useGoogleAccountsQuery', () => ({
   useGoogleAccountsQuery: () => googleAccountsQueryState,
 }));
 
+vi.mock('@/modules/auth/queries/useUserSettingsQuery', () => ({
+  useUserSettingsQuery: () => settingsQueryState,
+}));
+
+vi.mock('@/modules/auth/queries/useUpdateUserSettingsMutation', () => ({
+  useUpdateUserSettingsMutation: () => updateUserSettingsMutationState,
+}));
+
 vi.mock('@/modules/auth/queries/useUpdateGoogleCalendarMutation', () => ({
   useUpdateGoogleCalendarMutation: () => ({
     isPending: false,
-    mutateAsync: mutateAsyncMock,
+    mutateAsync: mutateCalendarAsyncMock,
   }),
 }));
 
@@ -89,8 +120,31 @@ describe('AuthSettingsWorkspace', () => {
       isError: false,
       isFetching: false,
     };
+    settingsQueryState = {
+      data: {
+        cycleStartHour: '08:00',
+        dailyReviewTime: '18:30',
+        googleConnection: {
+          connectedAccountCount: 1,
+          hasGoogleLinked: true,
+          linkedAt: '2026-03-22T10:00:00.000Z',
+        },
+        notificationsEnabled: true,
+        timezone: 'America/Sao_Paulo',
+      },
+      error: null,
+      isPending: false,
+      isRefetching: false,
+    };
+    updateUserSettingsMutationState = {
+      error: null,
+      isPending: false,
+      isSuccess: false,
+      mutateAsync: mutateSettingsAsyncMock,
+    };
     getGoogleLinkUrlMock.mockReset();
-    mutateAsyncMock.mockReset();
+    mutateCalendarAsyncMock.mockReset();
+    mutateSettingsAsyncMock.mockReset();
     handleAssignMock.mockReset();
     useAuthStore.getState().signIn({
       accessToken: 'auth-token',
@@ -161,9 +215,30 @@ describe('AuthSettingsWorkspace', () => {
     expect(screen.getByText('Rafa Work')).toBeInTheDocument();
     expect(screen.getByText('rafa@work.dev')).toBeInTheDocument();
     expect(screen.getByText('Primary')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('America/Sao_Paulo')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('18:30')).toBeInTheDocument();
     expect(screen.getByText('Rafa Personal')).toBeInTheDocument();
     expect(screen.getByText('Esta conta precisa de atencao')).toBeInTheDocument();
     expect(screen.getByText('Esta conta ainda nao retornou calendarios conectados')).toBeInTheDocument();
+  });
+
+  it('submits persisted settings updates from the operational settings form', async () => {
+    const user = userEvent.setup();
+
+    renderWorkspace();
+
+    await user.clear(screen.getByLabelText('Timezone operacional'));
+    await user.type(screen.getByLabelText('Timezone operacional'), 'UTC');
+    await user.clear(screen.getByLabelText('Horario da revisao diaria'));
+    await user.type(screen.getByLabelText('Horario da revisao diaria'), '19:15');
+    await user.click(screen.getByRole('button', { name: 'Salvar preferencias' }));
+
+    expect(mutateSettingsAsyncMock).toHaveBeenCalledWith({
+      cycleStartHour: '08:00',
+      dailyReviewTime: '19:15',
+      notificationsEnabled: true,
+      timezone: 'UTC',
+    });
   });
 
   it('toggles a calendar inclusion from the integrations card', async () => {
@@ -198,7 +273,7 @@ describe('AuthSettingsWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Excluir da agenda' }));
 
-    expect(mutateAsyncMock).toHaveBeenCalledWith({ calendarId: 'calendar-1', isIncluded: false });
+    expect(mutateCalendarAsyncMock).toHaveBeenCalledWith({ calendarId: 'calendar-1', isIncluded: false });
   });
 
   it('shows a global integrations warning when the accounts query fails', () => {
@@ -211,5 +286,18 @@ describe('AuthSettingsWorkspace', () => {
     renderWorkspace();
 
     expect(screen.getByText('Nao foi possivel carregar as contas Google agora')).toBeInTheDocument();
+  });
+
+  it('shows a settings synchronization warning when the persisted settings query fails', () => {
+    settingsQueryState = {
+      data: null,
+      error: new Error('settings unavailable'),
+      isPending: false,
+      isRefetching: false,
+    };
+
+    renderWorkspace();
+
+    expect(screen.getByText('Falha ao sincronizar configuracoes')).toBeInTheDocument();
   });
 });

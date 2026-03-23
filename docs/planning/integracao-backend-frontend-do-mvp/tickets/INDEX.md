@@ -4,8 +4,8 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** T007 concluído em 2026-03-22
-- **Próximo ticket sugerido:** T008 — Persistir Settings e contratos de preferências
+- **Checkpoint atual:** T009 concluído em 2026-03-23
+- **Próximo ticket sugerido:** T010 — Fechar contrato canônico de Today
 
 ## Por Fluxo
 
@@ -50,8 +50,8 @@
 
 | ID | Título | Tipo | Tamanho | Depende de | Status |
 |----|--------|------|---------|------------|--------|
-| T008 | Persistir Settings e contratos de preferências | API | M | T001 | Backlog |
-| T009 | Integrar Settings no frontend e propagar timezone | FEAT | M | T002, T008 | Backlog |
+| T008 | Persistir Settings e contratos de preferências | API | M | T001 | Concluído |
+| T009 | Integrar Settings no frontend e propagar timezone | FEAT | M | T002, T008 | Concluído |
 
 ### Fechamento do Epic
 

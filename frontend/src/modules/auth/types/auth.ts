@@ -26,6 +26,22 @@ export interface GoogleAccountDTO {
   updatedAt: string;
 }
 
+export interface GoogleConnectionDTO {
+  connectedAccountCount: number;
+  hasGoogleLinked: boolean;
+  linkedAt: string | null;
+}
+
+export interface UserSettingsDTO {
+  cycleStartHour: string;
+  dailyReviewTime: string;
+  googleConnection: GoogleConnectionDTO;
+  notificationsEnabled: boolean;
+  timezone: string;
+}
+
+export type UpdateUserSettingsInput = Partial<Pick<UserSettingsDTO, 'cycleStartHour' | 'dailyReviewTime' | 'notificationsEnabled' | 'timezone'>>;
+
 export interface AuthUserDTO {
   authProvider: 'email' | 'google' | 'hybrid';
   displayName: string;

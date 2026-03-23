@@ -3,11 +3,15 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { authKeys } from '@/modules/auth/queries/authKeys';
+import { settingsKeys } from '@/modules/auth/queries/settingsKeys';
 import { useGoogleAccountsQuery } from '@/modules/auth/queries/useGoogleAccountsQuery';
 import { useUpdateGoogleCalendarMutation } from '@/modules/auth/queries/useUpdateGoogleCalendarMutation';
+import { useUpdateUserSettingsMutation } from '@/modules/auth/queries/useUpdateUserSettingsMutation';
+import { useUserSettingsQuery } from '@/modules/auth/queries/useUserSettingsQuery';
 import { authService } from '@/modules/auth/services/authService';
+import { settingsService } from '@/modules/auth/services/settingsService';
 
-import type { GoogleAccountDTO } from '@/modules/auth/types';
+import type { GoogleAccountDTO, UserSettingsDTO } from '@/modules/auth/types';
 
 const accountsPayload: GoogleAccountDTO[] = [
   {
@@ -31,6 +35,18 @@ const accountsPayload: GoogleAccountDTO[] = [
   },
 ];
 
+const settingsPayload: UserSettingsDTO = {
+  cycleStartHour: '08:00',
+  dailyReviewTime: '18:30',
+  googleConnection: {
+    connectedAccountCount: 1,
+    hasGoogleLinked: true,
+    linkedAt: '2026-03-22T10:00:00.000Z',
+  },
+  notificationsEnabled: true,
+  timezone: 'America/Sao_Paulo',
+};
+
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -38,6 +54,21 @@ function createWrapper(queryClient: QueryClient) {
 }
 
 describe('auth queries', () => {
+  it('loads persisted user settings from the backend settings contract', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    vi.spyOn(settingsService, 'getUserSettings').mockResolvedValue(settingsPayload);
+
+    const { result } = renderHook(() => useUserSettingsQuery(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(settingsPayload);
+  });
+
   it('loads connected google accounts with calendars', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -78,5 +109,32 @@ describe('auth queries', () => {
 
     expect(queryClient.getQueryData<GoogleAccountDTO[]>(authKeys.accounts())?.[0]?.calendars[0]?.isIncluded).toBe(false);
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: authKeys.accounts() });
+  });
+
+  it('updates persisted settings cache after the settings mutation', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    queryClient.setQueryData(settingsKeys.user(), settingsPayload);
+
+    vi.spyOn(settingsService, 'updateUserSettings').mockResolvedValue({
+      ...settingsPayload,
+      notificationsEnabled: false,
+      timezone: 'UTC',
+    });
+
+    const { result } = renderHook(() => useUpdateUserSettingsMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await result.current.mutateAsync({ notificationsEnabled: false, timezone: 'UTC' });
+
+    expect(queryClient.getQueryData<UserSettingsDTO>(settingsKeys.user())).toEqual({
+      ...settingsPayload,
+      notificationsEnabled: false,
+      timezone: 'UTC',
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: settingsKeys.user() });
   });
 });
