@@ -4,7 +4,7 @@
 - **Total:** 8 tickets | **Estimativa total:** 38 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
-- **Checkpoint atual:** decomposicao revisada para reduzir handoffs e tickets de contrato sem entrega observavel
+- **Checkpoint atual:** tickets refinados para execucao, com escopo observavel, contratos minimos, edge cases e nao-goals por unidade de trabalho
 - **Proximo ticket sugerido:** T001 - Entregar Integracoes Google multi-conta e toggle por calendario
 
 ## Criterios usados na revisao
@@ -12,6 +12,9 @@
 - remover tickets de definicao de contrato sem entrega funcional independente
 - preservar dependencia tecnica real entre `accounts`, `events`, `accounting`, `cycle` e frontend
 - manter tamanho maximo em torno de slices executaveis por fluxo, evitando microtickets artificiais
+- explicitar ownership de backend e frontend em cada ticket, reduzindo ambiguidade entre rota, modulo, query e endpoint
+- transformar criterios de aceite em validacoes objetivas, incluindo estados degradados, idempotencia e recuperacao
+- registrar edge cases e nao-goals para evitar expansao fora do escopo aprovado do epic
 
 ## Por Fluxo
 
@@ -91,6 +94,10 @@ graph LR
 ## Motivo da reducao
 
 O plano anterior estava correto em cobertura, mas fragmentado demais para uma feature fortemente encadeada. A nova divisao reduz esperas entre backend e frontend, evita tickets que apenas preparam contrato sem liberar comportamento e deixa cada etapa com um resultado validavel no produto.
+
+## Observacao sobre este pacote refinado
+
+Os IDs, titulos e dependencias aprovados foram preservados. O refinamento abaixo detalha melhor contratos esperados, limites de modulo, arquivos provaveis, edge cases obrigatorios e criterios de aceite testaveis, sem criar novo epic, novo core flow ou novas capacidades fora do escopo aprovado.
 
 ---
 *Gerado por PLANNER - Fase 3/3 | Epic: Modo Agenda*

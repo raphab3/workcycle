@@ -1,5 +1,5 @@
 export const authSettingsWorkspaceStyles = {
-  container: 'mx-auto grid max-w-5xl gap-6',
+  container: 'grid gap-6',
   cardStack: 'grid gap-6 lg:grid-cols-[1fr_1fr]',
   profileList: 'grid gap-3',
   form: 'grid gap-4',

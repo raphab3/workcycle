@@ -1,6 +1,6 @@
 export const notificationsSettingsWorkspaceStyles = {
-  container: 'mx-auto grid max-w-5xl gap-6',
-  layoutGrid: 'grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(22rem,0.95fr)]',
+  container: 'grid gap-6',
+  layoutGrid: 'grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(25rem,0.95fr)]',
   sidebarStack: 'grid gap-6 min-[1400px]:grid-cols-[minmax(16rem,0.9fr)_minmax(18rem,1.1fr)]',
   form: 'grid gap-4',
   formGrid: 'grid gap-4 md:grid-cols-2',

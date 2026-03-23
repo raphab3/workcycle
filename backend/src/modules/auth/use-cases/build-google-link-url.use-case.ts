@@ -24,7 +24,7 @@ export class BuildGoogleLinkUrlUseCase {
       'openid',
       'email',
       'profile',
-      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar',
     ].join(' '));
     url.searchParams.set('state', state);
 

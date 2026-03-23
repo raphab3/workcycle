@@ -4,55 +4,52 @@
 > **Depende de:** T001 | **Bloqueia:** T003, T004, T005, T006  
 > **Assignee:** - | **Status:** Backlog
 
-## Contexto
-O schema e o modulo `events` ja existem, mas a capacidade atual e insuficiente para o Modo Agenda. O produto precisa de leitura por intervalo, refresh manual, snapshot local confiavel e reconciliacao idempotente com Google Calendar sem depender de webhooks.
+## Objetivo
+Entregar no backend a fonte operacional confiavel de eventos para o Modo Agenda: leitura por intervalo, refresh manual e reconciliacao idempotente do snapshot local com Google Calendar, sem webhooks.
 
-## O que fazer
-Entregar no backend o contrato e a implementacao de leitura operacional de eventos por intervalo, incluindo sync sob demanda, persistencia em `calendar_events` e reconciliacao de alteracoes ou remocoes remotas.
+## Escopo desta entrega
 
-### Arquivos esperados / impactados
-- `backend/src/modules/events/controllers/events.controller.ts` - modificar
-- `backend/src/modules/events/services/events-finder.service.ts` - modificar
-- `backend/src/modules/events/services/` - criar service de sync e reconciliacao
-- `backend/src/modules/events/repositories/events.repository.ts` - modificar
-- `backend/src/modules/events/use-cases/list-calendar-events.use-case.ts` - modificar
-- `backend/src/modules/events/use-cases/` - criar use case de refresh, se necessario
-- `backend/src/modules/events/events.module.ts` - modificar
-- `backend/src/shared/database/schema/events.schema.ts` - modificar apenas se faltar metadata operacional essencial
+### Backend
+- `events` passa a ser a fronteira oficial de leitura operacional por intervalo.
+- `events` passa a oferecer um contrato explicito de sync manual para telas que precisem atualizar a janela corrente.
+- `events` passa a reconciliar criacoes, updates e remocoes remotas no snapshot local sem duplicidade e com degradacao localizada por conta/calendario.
 
-## Criterios de Aceite
+### Fora desta entrega
+- Nao inclui create, update ou delete iniciados pelo usuario; isso fica em T003.
+- Nao inclui accounting ou impacto no ciclo.
 
-- [ ] Existe leitura de eventos por intervalo com filtros coerentes de conta e calendario
-- [ ] O frontend pode disparar refresh manual da agenda via contrato explicito
-- [ ] O snapshot local em `calendar_events` e atualizado por upsert idempotente
-- [ ] Alteracoes e remocoes remotas sao reconciliadas sem duplicidade local
-- [ ] Falha parcial de uma conta ou calendario nao impede retorno dos demais dados
-- [ ] O payload de leitura contem os campos necessarios para `/agenda`, widgets e accounting
-- [ ] Testes cobrem sync, reconciliacao e degradacao parcial
+## Contratos esperados
 
-## Detalhes Tecnicos
+### Responsabilidades de endpoint
+- `GET /events` ou rota equivalente em `events.controller.ts` deve receber uma janela temporal e retornar o read model operacional da agenda.
+- `POST /events/sync` ou rota equivalente deve disparar refresh explicito para a mesma janela, retornando o resultado consolidado e as fontes degradadas.
+- Se a controller atual ja usar outra convencao de path, preservar o path existente e garantir estas responsabilidades.
 
-### Contrato / Interface
+### DTO minimo esperado
 ```typescript
 interface ListCalendarEventsInputDTO {
   from: string;
   to: string;
   accountIds?: string[];
   calendarIds?: string[];
-  refresh?: boolean;
+}
+
+interface AgendaEventReadDTO {
+  id: string;
+  accountId: string;
+  calendarId: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  isAllDay: boolean;
+  recurringEventId?: string | null;
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  responseStatus?: 'accepted' | 'declined' | 'tentative' | 'needsAction';
+  lastSyncedAt: string | null;
 }
 
 interface EventSyncResultDTO {
-  events: Array<{
-    id: string;
-    calendarId: string;
-    title: string;
-    startAt: string;
-    endAt: string;
-    isAllDay: boolean;
-    recurringEventId?: string | null;
-    responseStatus: 'accepted' | 'declined' | 'tentative' | 'needsAction';
-  }>;
+  events: AgendaEventReadDTO[];
   degradedSources: Array<{
     accountId: string;
     calendarId?: string;
@@ -61,17 +58,43 @@ interface EventSyncResultDTO {
 }
 ```
 
-### Regras de Negocio
-- Leitura operacional usa apenas calendarios marcados como incluidos.
-- O contrato precisa ser viavel sem push notifications nem sincronizacao em tempo real.
+## Arquivos esperados / impactados
+- `backend/src/modules/events/controllers/events.controller.ts`
+- `backend/src/modules/events/services/events-finder.service.ts`
+- `backend/src/modules/events/services/events-sync.service.ts`
+- `backend/src/modules/events/repositories/events.repository.ts`
+- `backend/src/modules/events/use-cases/list-calendar-events.use-case.ts`
+- `backend/src/modules/events/events.schemas.ts`
+- `backend/src/modules/events/events.module.ts`
+- `backend/src/modules/events/types/event.ts`
+- `backend/src/modules/events/services/events-sync.service.spec.ts`
+- `backend/src/modules/events/use-cases/list-calendar-events.use-case.spec.ts`
+- `backend/src/shared/database/schema/events.schema.ts` somente se faltar metadata operacional ja prevista no epic
 
-### Edge Cases
-- [ ] Intervalo cruza boundary do dia operacional
-- [ ] Evento recorrente muda apenas uma ocorrencia
-- [ ] Conta expira durante o refresh
+## Criterios de aceite
+- [ ] Existe leitura de eventos por intervalo usando apenas calendarios incluidos e retornando dados suficientes para `/agenda`, widgets e accounting.
+- [ ] Existe refresh manual por contrato explicito, sem depender de abrir outra rota ou de efeitos colaterais ocultos.
+- [ ] O snapshot local em `calendar_events` e atualizado por upsert idempotente para criacoes e alteracoes remotas.
+- [ ] Eventos removidos ou cancelados remotamente sao reconciliados sem deixar duplicidade local nem sumir silenciosamente quando houver historico relevante.
+- [ ] Falha parcial de uma conta ou calendario nao impede retorno dos demais dados e fica representada em `degradedSources`.
+- [ ] Recorrencias e ocorrencias isoladas nao geram duplicidade no read model retornado.
+- [ ] Existem testes cobrindo sync inicial, sync incremental, alteracao remota, remocao remota, recorrencia e degradacao parcial.
 
-## Notas de Implementacao
-Este ticket absorve a antiga fase de contrato para evitar um passo intermediario sem entrega funcional.
+## Edge cases obrigatorios
+- [ ] Janela consultada cruza o boundary operacional do dia e ainda retorna os eventos no bucket correto.
+- [ ] Evento all-day nao muda de dia por erro de timezone.
+- [ ] Uma ocorrencia recorrente muda sem alterar a serie inteira.
+- [ ] A conta expira durante o refresh e apenas aquela fonte fica degradada.
+
+## Nao faz parte
+- Endpoints de create, update e delete de eventos.
+- Decisao operacional de `approved`, `ignored` e `silenced`.
+- Desconto no ciclo.
+
+## Notas de implementacao
+- A reconciliacao precisa ser idempotente por identificador remoto do evento dentro da combinacao conta/calendario, nao por ordem de chegada do sync.
+- Quando houver historico de accounting associado, a reconciliacao nao deve apagar evidencias necessarias para revisao futura.
+- Este ticket deve reutilizar a base existente de `events.repository.ts`, `events-sync.service.ts` e `list-calendar-events.use-case.ts` em vez de criar um segundo fluxo paralelo de leitura.
 
 ---
 *Gerado por PLANNER - Fase 3/3 | Epic: Modo Agenda*

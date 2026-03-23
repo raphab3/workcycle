@@ -11,7 +11,7 @@ import { useAgendaEventsQuery } from '@/modules/agenda/queries/useAgendaEventsQu
 import { useDeleteAgendaEventMutation } from '@/modules/agenda/queries/useDeleteAgendaEventMutation';
 import { useRefreshAgendaMutation } from '@/modules/agenda/queries/useRefreshAgendaMutation';
 import { useUpdateAgendaEventMutation } from '@/modules/agenda/queries/useUpdateAgendaEventMutation';
-import { buildAgendaDayInterval, countUniqueAgendaCalendars, formatAgendaDateTime, formatAgendaDayLabel, formatAgendaTimeRange, getIncludedAgendaCalendars, getLocalISODate, shiftAgendaDate, sortAgendaEvents, toAgendaEventWritePayload } from '@/modules/agenda/utils/agenda';
+import { buildAgendaDayInterval, countUniqueAgendaCalendars, formatAgendaDateTime, formatAgendaDayLabel, formatAgendaTimeRange, getAgendaGuestSummary, getIncludedAgendaCalendars, getLocalISODate, shiftAgendaDate, sortAgendaEvents, toAgendaEventWritePayload } from '@/modules/agenda/utils/agenda';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog/index';
@@ -218,8 +218,11 @@ export function AgendaWorkspace() {
 
         {visibleEvents.length > 0 && (
           <div className={agendaWorkspaceStyles.eventList}>
-            {visibleEvents.map((event) => (
-              <article className={agendaWorkspaceStyles.eventCard} key={event.id}>
+            {visibleEvents.map((event) => {
+              const guestSummary = getAgendaGuestSummary(event);
+
+              return (
+                <article className={agendaWorkspaceStyles.eventCard} key={event.id}>
                 <div className={agendaWorkspaceStyles.eventHeader}>
                   <div className={agendaWorkspaceStyles.eventTitleBlock}>
                     <h2 className={agendaWorkspaceStyles.eventTitle}>{event.title}</h2>
@@ -235,16 +238,36 @@ export function AgendaWorkspace() {
 
                 <div className={agendaWorkspaceStyles.eventBody}>
                   {event.location ? <p><strong>Local:</strong> {event.location}</p> : null}
+                  {event.meetLink ? (
+                    <p>
+                      <strong>Meet:</strong>{' '}
+                      <a className={agendaWorkspaceStyles.eventLink} href={event.meetLink} rel="noreferrer" target="_blank">
+                        Abrir link da reuniao
+                      </a>
+                    </p>
+                  ) : null}
                   {event.description ? <p>{event.description}</p> : null}
-                  {!event.description && !event.location ? <p>Evento sem descricao adicional. A leitura cronologica usa o contrato real do backend.</p> : null}
+                  {guestSummary.visibleGuests.length > 0 ? (
+                    <div className={agendaWorkspaceStyles.eventGuests}>
+                      <p><strong>Convidados:</strong></p>
+                      <ul className={agendaWorkspaceStyles.eventGuestList}>
+                        {guestSummary.visibleGuests.map((guest) => (
+                          <li className={agendaWorkspaceStyles.eventGuestItem} key={guest}>{guest}</li>
+                        ))}
+                      </ul>
+                      {guestSummary.hiddenCount > 0 ? <p className={agendaWorkspaceStyles.eventGuestOverflow}>+{guestSummary.hiddenCount} convidado(s) adicional(is)</p> : null}
+                    </div>
+                  ) : null}
+                  {!event.description && !event.location && !event.meetLink ? <p>Evento sem descricao adicional. A leitura cronologica usa o contrato real do backend.</p> : null}
                 </div>
 
                 <div className={agendaWorkspaceStyles.eventActions}>
                   <Button onClick={() => handleOpenEditEvent(event)} size="sm" type="button" variant="outline">Editar evento</Button>
                   <Button onClick={() => setPendingDeleteEvent(event)} size="sm" type="button" variant="outline">Excluir evento</Button>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </div>

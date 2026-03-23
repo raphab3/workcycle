@@ -10,6 +10,13 @@ const createMutateAsyncMock = vi.fn();
 const updateMutateAsyncMock = vi.fn();
 const deleteMutateAsyncMock = vi.fn();
 
+function buildAttendees(total: number) {
+  return Array.from({ length: total }, (_, index) => ({
+    displayName: `Convidado ${index + 1}`,
+    email: `guest${index + 1}@work.dev`,
+  }));
+}
+
 const useAuthStoreMock = vi.fn();
 const useGoogleAccountsQueryMock = vi.fn();
 const useAgendaEventsQueryMock = vi.fn();
@@ -112,7 +119,7 @@ describe('AgendaWorkspace', () => {
             accountDisplayName: 'Rafa Work',
             accountEmail: 'rafa@work.dev',
             accountId: 'account-1',
-            attendees: [],
+            attendees: buildAttendees(3),
             calendarColorHex: '#3367D6',
             calendarId: 'calendar-1',
             calendarName: 'Primary',
@@ -135,7 +142,7 @@ describe('AgendaWorkspace', () => {
             accountDisplayName: 'Rafa Work',
             accountEmail: 'rafa@work.dev',
             accountId: 'account-1',
-            attendees: [],
+            attendees: buildAttendees(12),
             calendarColorHex: '#3367D6',
             calendarId: 'calendar-1',
             calendarName: 'Primary',
@@ -144,7 +151,7 @@ describe('AgendaWorkspace', () => {
             id: 'calendar-1:event-1',
             isAllDay: false,
             location: 'Meet',
-            meetLink: null,
+            meetLink: 'https://meet.google.com/example-link',
             projectId: null,
             recurrenceRule: null,
             recurringEventId: null,
@@ -174,6 +181,11 @@ describe('AgendaWorkspace', () => {
     const headings = screen.getAllByRole('heading', { level: 2 });
     expect(headings[0]).toHaveTextContent('Daily operacional');
     expect(headings[1]).toHaveTextContent('Planejamento semanal');
+    expect(screen.getByRole('link', { name: 'Abrir link da reuniao' })).toHaveAttribute('href', 'https://meet.google.com/example-link');
+    expect(screen.getAllByText('Convidado 1 <guest1@work.dev>')).toHaveLength(2);
+    expect(screen.getByText('Convidado 10 <guest10@work.dev>')).toBeInTheDocument();
+    expect(screen.queryByText('Convidado 11 <guest11@work.dev>')).not.toBeInTheDocument();
+    expect(screen.getByText('+2 convidado(s) adicional(is)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Atualizar agenda' }));
 

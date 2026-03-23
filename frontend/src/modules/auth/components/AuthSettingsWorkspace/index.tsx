@@ -59,7 +59,11 @@ function formatDateTimeByTimezone(value: string | null, timezone: string) {
   }).format(new Date(value));
 }
 
-export function AuthSettingsWorkspace() {
+interface AuthSettingsWorkspaceProps {
+  showIntro?: boolean;
+}
+
+export function AuthSettingsWorkspace({ showIntro = true }: AuthSettingsWorkspaceProps) {
   const searchParams = useSearchParams();
   const session = useAuthStore((state) => state.session);
   const authStatusQuery = useAuthStatusQuery();
@@ -94,6 +98,7 @@ export function AuthSettingsWorkspace() {
   const googleAccounts = googleAccountsQuery.data ?? [];
   const googleWasLinkedNow = searchParams?.get('google') === 'linked';
   const settings = settingsQuery.data ?? null;
+  const needsGoogleReconnectForWriteAccess = googleAccounts.length > 0;
   const requestError = settingsQuery.error ?? googleAccountsQuery.error;
   const requestErrorMessage = requestError
     ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar os metadados da conta agora.')
@@ -101,11 +106,13 @@ export function AuthSettingsWorkspace() {
 
   return (
     <div className={authSettingsWorkspaceStyles.container}>
-      <SectionIntro
-        eyebrow="Configuracoes"
-        title="Conta, seguranca e integracao Google"
-        description="Quem entrou por email continua operando normalmente e pode conectar o Google depois. Esta area agora fica restrita a sessao autenticada e ao vinculo com o ecossistema Google."
-      />
+      {showIntro && (
+        <SectionIntro
+          eyebrow="Configuracoes"
+          title="Conta, seguranca e integracao Google"
+          description="Quem entrou por email continua operando normalmente e pode conectar o Google depois. Esta area agora fica restrita a sessao autenticada e ao vinculo com o ecossistema Google."
+        />
+      )}
 
       {googleWasLinkedNow && (
         <StateNotice
@@ -177,6 +184,15 @@ export function AuthSettingsWorkspace() {
                 title="A configuracao Google ainda nao foi habilitada no backend"
                 description="Assim que as credenciais OAuth estiverem preenchidas no ambiente, o botao abaixo passa a abrir o fluxo de conexao real."
                 tone="warning"
+              />
+            )}
+
+            {authStatusQuery.data?.oauthConfigured && needsGoogleReconnectForWriteAccess && (
+              <StateNotice
+                eyebrow="Permissao ampliada"
+                title="Reconecte o Google para liberar criacao, edicao e exclusao de eventos"
+                description="O WorkCycle passou a solicitar acesso completo ao Google Calendar. As contas ja vinculadas precisam reconectar para renovar o consentimento com permissao de escrita."
+                tone="info"
               />
             )}
 
@@ -279,7 +295,7 @@ export function AuthSettingsWorkspace() {
 
             <Button disabled={!authStatusQuery.data?.oauthConfigured} onClick={() => void handleLinkGoogle()} size="lg" type="button">
               <Link2 aria-hidden="true" className="mr-2 h-4.5 w-4.5" />
-              Conectar Google
+              {needsGoogleReconnectForWriteAccess ? 'Reconectar Google com acesso completo' : 'Conectar Google'}
             </Button>
 
             {googleAccountsQuery.isFetching && googleAccounts.length > 0 && (

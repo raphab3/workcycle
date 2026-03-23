@@ -129,3 +129,26 @@ export function isAgendaEventWithinInterval(event: AgendaEvent, interval: Agenda
 export function countUniqueAgendaCalendars(events: AgendaEvent[]) {
   return new Set(events.map((event) => event.calendarId)).size;
 }
+
+function getAgendaAttendeeLabel(attendee: Record<string, unknown>) {
+  const displayName = typeof attendee.displayName === 'string' ? attendee.displayName.trim() : '';
+  const email = typeof attendee.email === 'string' ? attendee.email.trim() : '';
+
+  if (displayName && email && displayName.toLocaleLowerCase() !== email.toLocaleLowerCase()) {
+    return `${displayName} <${email}>`;
+  }
+
+  return displayName || email || null;
+}
+
+export function getAgendaGuestSummary(event: AgendaEvent, limit = 10) {
+  const guestLabels = event.attendees
+    .filter((attendee) => attendee.self !== true)
+    .map((attendee) => getAgendaAttendeeLabel(attendee))
+    .filter((label): label is string => Boolean(label));
+
+  return {
+    hiddenCount: Math.max(guestLabels.length - limit, 0),
+    visibleGuests: guestLabels.slice(0, limit),
+  };
+}

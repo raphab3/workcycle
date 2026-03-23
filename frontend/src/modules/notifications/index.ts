@@ -1,6 +1,7 @@
 export { useNotificationCapability } from './hooks/useNotificationCapability';
 export { useNotificationHistorySync } from './hooks/useNotificationHistorySync';
 export { useNotificationRecovery } from './hooks/useNotificationRecovery';
+export { NotificationsDrawer } from './components/NotificationsDrawer';
 export {
   getBrowserNotificationCapabilitySnapshot,
   getServerNotificationCapabilitySnapshot,

@@ -1,4 +1,4 @@
-import { BadGatewayException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ForbiddenException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
 import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
 import { env } from '@/shared/config';
@@ -39,27 +39,35 @@ export class EventsRemoteWriterService {
   }
 
   async createEvent(source: GoogleCalendarOperationalSource, input: CreateCalendarEventInput) {
-    const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events`, {
-      body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    });
+    try {
+      const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events`, {
+        body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      });
 
-    return this.parseRemoteEventResponse(response);
+      return this.parseRemoteEventResponse(response);
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
   }
 
   async updateEvent(source: GoogleCalendarOperationalSource, remoteEventId: string, input: Omit<UpdateCalendarEventInput, 'calendarId'>) {
-    const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events/${encodeURIComponent(remoteEventId)}`, {
-      body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'PATCH',
-    });
+    try {
+      const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events/${encodeURIComponent(remoteEventId)}`, {
+        body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'PATCH',
+      });
 
-    return this.parseRemoteEventResponse(response);
+      return this.parseRemoteEventResponse(response);
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
   }
 
   async deleteEvent(source: GoogleCalendarOperationalSource, remoteEventId: string) {
@@ -129,7 +137,7 @@ export class EventsRemoteWriterService {
     const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${path}`, requestInit);
 
     if (!response.ok) {
-      throw new GoogleCalendarWriteError(response.status, `Google Calendar write failed with status ${response.status}.`);
+      throw new GoogleCalendarWriteError(response.status, await this.resolveGoogleWriteErrorMessage(response));
     }
 
     return response;
@@ -184,8 +192,31 @@ export class EventsRemoteWriterService {
 
     return payload.access_token;
   }
+
+  private async resolveGoogleWriteErrorMessage(response: Response) {
+    try {
+      const payload = await response.json() as { error?: { message?: string } };
+
+      if (payload.error?.message) {
+        return payload.error.message;
+      }
+    } catch {
+      // Ignore malformed Google error payloads and use the status fallback below.
+    }
+
+    return `Google Calendar write failed with status ${response.status}.`;
+  }
+
   private toHttpError(error: unknown) {
     if (error instanceof GoogleCalendarWriteError) {
+      if (error.status === 400) {
+        return new BadRequestException(error.message);
+      }
+
+      if (error.status === 403) {
+        return new ForbiddenException('Google Calendar denied write access for this event or calendar.');
+      }
+
       if (error.status === 404) {
         return new NotFoundException('Google calendar event was not found remotely.');
       }

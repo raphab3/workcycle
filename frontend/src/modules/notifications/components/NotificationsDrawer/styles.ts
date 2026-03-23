@@ -1,0 +1,17 @@
+export const notificationsDrawerStyles = {
+  stack: 'grid gap-6',
+  section: 'grid gap-4',
+  sectionHeader: 'grid gap-1',
+  sectionEyebrow: 'text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground',
+  sectionTitle: 'text-base font-semibold tracking-tight text-foreground',
+  activeCard: 'grid gap-4 rounded-[1.75rem] border border-border/70 bg-card px-4 py-4 shadow-[0_20px_44px_-32px_rgba(15,23,42,0.34)]',
+  activeCopy: 'grid gap-2',
+  activeTitle: 'text-base font-semibold tracking-tight text-foreground',
+  activeMessage: 'text-sm leading-6 text-muted-foreground',
+  historyList: 'grid gap-3',
+  historyItem: 'grid gap-2 rounded-[1.4rem] border border-border/60 bg-background/70 px-4 py-4',
+  historyRow: 'flex items-start justify-between gap-3',
+  historyTitle: 'text-sm font-semibold text-foreground',
+  historyStatus: 'inline-flex rounded-full bg-muted px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground',
+  meta: 'text-xs leading-5 text-muted-foreground',
+};

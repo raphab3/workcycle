@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { NotificationsDrawer } from '@/modules/notifications';
 import { AppNavigation } from '@/shared/components/AppNavigation/index';
 import { useWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { cn } from '@/shared/utils/cn';
@@ -24,6 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { themeMode, setThemeMode, toggleThemeMode, meta } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpenPath, setMobileSidebarOpenPath] = useState<string | null>(null);
+  const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] = useState(false);
   const authSession = useAuthStore((state) => state.session);
   const signOut = useAuthStore((state) => state.signOut);
   const projects = useWorkspaceStore((state) => state.projects);
@@ -37,6 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     signOut();
     queryClient.clear();
     setMobileSidebarOpenPath(null);
+    setIsNotificationsDrawerOpen(false);
   }
 
   return (
@@ -154,7 +157,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <button aria-label={meta.actionLabel} className={appLayoutStyles.iconButton} onClick={toggleThemeMode} type="button">
                   <MonitorCog className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
-                <button aria-label="Notificacoes" className={appLayoutStyles.iconButton} type="button">
+                <button
+                  aria-expanded={isNotificationsDrawerOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Notificacoes"
+                  className={appLayoutStyles.iconButton}
+                  onClick={() => setIsNotificationsDrawerOpen((currentValue) => !currentValue)}
+                  type="button"
+                >
                   <Bell className="h-4.5 w-4.5" aria-hidden="true" />
                 </button>
                 <button aria-label={authSession ? `Conta de ${authSession.user.displayName}` : 'Conta do usuario'} className={appLayoutStyles.iconButton} title={authSession?.user.email} type="button">
@@ -172,6 +182,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           <main className={appLayoutStyles.content} id="main-content" tabIndex={-1}>{children}</main>
         </div>
       </div>
+
+      <NotificationsDrawer isOpen={isNotificationsDrawerOpen} onClose={() => setIsNotificationsDrawerOpen(false)} />
     </div>
   );
 }

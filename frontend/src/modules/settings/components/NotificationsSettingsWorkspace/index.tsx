@@ -124,7 +124,11 @@ function createPreviewEvent(): OperationalNotificationEvent {
   };
 }
 
-export function NotificationsSettingsWorkspace() {
+interface NotificationsSettingsWorkspaceProps {
+  showIntro?: boolean;
+}
+
+export function NotificationsSettingsWorkspace({ showIntro = true }: NotificationsSettingsWorkspaceProps) {
   const session = useAuthStore((state) => state.session);
   const settingsQuery = useUserSettingsQuery({ enabled: Boolean(session) });
   const updateUserSettingsMutation = useUpdateUserSettingsMutation();
@@ -176,11 +180,13 @@ export function NotificationsSettingsWorkspace() {
 
   return (
     <div className={notificationsSettingsWorkspaceStyles.container}>
-      <SectionIntro
-        eyebrow="Configuracoes"
-        title="Notificacoes operacionais"
-        description="Gerencie permissao, preferencias operacionais e um preview coerente com o motor real de entrega, sem misturar isso com conta ou Google."
-      />
+      {showIntro && (
+        <SectionIntro
+          eyebrow="Configuracoes"
+          title="Notificacoes operacionais"
+          description="Gerencie permissao, preferencias operacionais e um preview coerente com o motor real de entrega, sem misturar isso com conta ou Google."
+        />
+      )}
 
       <div className={notificationsSettingsWorkspaceStyles.layoutGrid}>
         <Card>

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 
 import { resetAuthStore, useAuthStore } from '@/modules/auth/store/useAuthStore';
+import { resetNotificationsStore, useNotificationsStore } from '@/modules/notifications';
 import { resetWorkspaceStore } from '@/shared/store/useWorkspaceStore';
 import { AppLayout } from './index';
 import { ThemeProvider } from '@/shared/theme';
@@ -37,6 +38,7 @@ vi.mock('next/navigation', () => ({
 describe('AppLayout', () => {
   beforeEach(() => {
     resetAuthStore();
+    resetNotificationsStore();
     resetWorkspaceStore();
   });
 
@@ -110,5 +112,41 @@ describe('AppLayout', () => {
     expect(useAuthStore.getState().session).toBeNull();
     expect(useAuthStore.getState().sessionStatus).toBe('unauthenticated');
     expect(screen.getByRole('link', { name: 'Sair' })).toHaveAttribute('href', '/login?logout=1');
+  });
+
+  it('opens and closes the notifications drawer from the header bell', async () => {
+    const user = userEvent.setup();
+
+    usePathnameMock.mockReturnValue('/hoje');
+    useNotificationsStore.setState({
+      activeInAppNotification: {
+        eventId: 'event-1',
+        message: 'Existe um aviso pendente para revisar.',
+        occurredAt: '2026-03-23T12:00:00.000Z',
+        title: 'Review diario pendente',
+        type: 'daily-review-due',
+      },
+      reminderHistory: [
+        {
+          contextLabel: 'Revisao diaria',
+          eventId: 'event-1',
+          occurredAt: '2026-03-23T12:00:00.000Z',
+          status: 'shown',
+          type: 'daily-review-due',
+        },
+      ],
+    });
+
+    renderAppLayout();
+
+    await user.click(screen.getByRole('button', { name: 'Notificacoes' }));
+
+    expect(screen.getByRole('dialog', { name: 'Central de notificacoes operacionais' })).toBeInTheDocument();
+    expect(screen.getByText('Review diario pendente')).toBeInTheDocument();
+    expect(screen.getByText('Revisao diaria')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Notificacoes' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Central de notificacoes operacionais' })).not.toBeInTheDocument();
   });
 });
