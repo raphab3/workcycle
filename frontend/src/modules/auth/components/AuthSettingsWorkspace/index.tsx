@@ -1,9 +1,7 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarClock, CheckCircle2, Link2, RefreshCcw, Unplug } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -12,18 +10,16 @@ import { useGoogleAccountsQuery } from '@/modules/auth/queries/useGoogleAccounts
 import { useUpdateGoogleCalendarMutation } from '@/modules/auth/queries/useUpdateGoogleCalendarMutation';
 import { authService } from '@/modules/auth/services/authService';
 import { useAuthStore } from '@/modules/auth/store/useAuthStore';
-import { useUpdateUserSettingsMutation, useUserSettingsQuery } from '@/modules/settings';
+import { useUserSettingsQuery } from '@/modules/settings';
 import { Button } from '@/shared/components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { StateNotice } from '@/shared/components/StateNotice';
 
-import { authSettingsFormSchema, type AuthSettingsFormInput, type AuthSettingsFormOutput } from './schema';
 import { authSettingsWorkspaceStyles } from './styles';
 
 import type { GoogleAccountDTO, GoogleCalendarDTO } from '@/modules/auth/types';
-import type { UserSettingsDTO } from '@/modules/settings';
 
 function isAccountExpired(account: GoogleAccountDTO) {
   return Number.isFinite(Date.parse(account.tokenExpiresAt)) && Date.parse(account.tokenExpiresAt) <= Date.now();
@@ -51,15 +47,6 @@ function getAccountStatus(account: GoogleAccountDTO) {
   return null;
 }
 
-function createFormValues(settings: UserSettingsDTO): AuthSettingsFormInput {
-  return {
-    cycleStartHour: settings.cycleStartHour,
-    dailyReviewTime: settings.dailyReviewTime,
-    notificationsEnabled: settings.notificationsEnabled,
-    timezone: settings.timezone,
-  };
-}
-
 function formatDateTimeByTimezone(value: string | null, timezone: string) {
   if (!value) {
     return 'ainda nao sincronizado';
@@ -72,74 +59,12 @@ function formatDateTimeByTimezone(value: string | null, timezone: string) {
   }).format(new Date(value));
 }
 
-interface OperationalSettingsFormProps {
-  isDisabled: boolean;
-  isSubmitting: boolean;
-  onSubmitSettings: (values: AuthSettingsFormOutput) => Promise<void>;
-  settings: UserSettingsDTO;
-}
-
-function OperationalSettingsForm({ isDisabled, isSubmitting, onSubmitSettings, settings }: OperationalSettingsFormProps) {
-  const {
-    formState: { errors, isDirty },
-    handleSubmit,
-    register,
-    reset,
-  } = useForm<AuthSettingsFormInput, undefined, AuthSettingsFormOutput>({
-    resolver: zodResolver(authSettingsFormSchema),
-    defaultValues: createFormValues(settings),
-  });
-
-  useEffect(() => {
-    reset(createFormValues(settings));
-  }, [reset, settings]);
-
-  return (
-    <form className={authSettingsWorkspaceStyles.form} onSubmit={handleSubmit(onSubmitSettings)}>
-      <div className={authSettingsWorkspaceStyles.formGrid}>
-        <div className={authSettingsWorkspaceStyles.fieldWide}>
-          <label className={authSettingsWorkspaceStyles.label} htmlFor="settings-timezone">Timezone operacional</label>
-          <input className={authSettingsWorkspaceStyles.input} disabled={isDisabled} id="settings-timezone" placeholder="Ex: America/Sao_Paulo" {...register('timezone')} />
-          {errors.timezone ? <p className={authSettingsWorkspaceStyles.error}>{errors.timezone.message}</p> : <p className={authSettingsWorkspaceStyles.helper}>Esse timezone passa a ser a referencia canônica das regras compartilhadas do produto.</p>}
-        </div>
-
-        <div className={authSettingsWorkspaceStyles.field}>
-          <label className={authSettingsWorkspaceStyles.label} htmlFor="settings-daily-review-time">Horario da revisao diaria</label>
-          <input className={authSettingsWorkspaceStyles.input} disabled={isDisabled} id="settings-daily-review-time" type="time" {...register('dailyReviewTime')} />
-          {errors.dailyReviewTime ? <p className={authSettingsWorkspaceStyles.error}>{errors.dailyReviewTime.message}</p> : <p className={authSettingsWorkspaceStyles.helper}>Base para o lembrete operacional diario.</p>}
-        </div>
-
-        <div className={authSettingsWorkspaceStyles.field}>
-          <label className={authSettingsWorkspaceStyles.label} htmlFor="settings-cycle-start-hour">Inicio do cycle</label>
-          <input className={authSettingsWorkspaceStyles.input} disabled={isDisabled} id="settings-cycle-start-hour" type="time" {...register('cycleStartHour')} />
-          {errors.cycleStartHour ? <p className={authSettingsWorkspaceStyles.error}>{errors.cycleStartHour.message}</p> : <p className={authSettingsWorkspaceStyles.helper}>Boundary operacional que os proximos tickets vao consolidar no backend.</p>}
-        </div>
-      </div>
-
-      <label className={authSettingsWorkspaceStyles.checkboxRow} htmlFor="settings-notifications-enabled">
-        <div className={authSettingsWorkspaceStyles.checkboxLabelWrap}>
-          <span className={authSettingsWorkspaceStyles.label}>Notificacoes operacionais</span>
-          <span className={authSettingsWorkspaceStyles.helper}>Pausa ou reativa os lembretes sem perder o restante das preferencias persistidas.</span>
-        </div>
-        <input className={authSettingsWorkspaceStyles.checkbox} disabled={isDisabled} id="settings-notifications-enabled" type="checkbox" {...register('notificationsEnabled')} />
-      </label>
-
-      <div className={authSettingsWorkspaceStyles.actions}>
-        <Button disabled={isDisabled || !isDirty || isSubmitting} type="submit">
-          {isSubmitting ? 'Salvando...' : 'Salvar preferencias'}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 export function AuthSettingsWorkspace() {
   const searchParams = useSearchParams();
   const session = useAuthStore((state) => state.session);
   const authStatusQuery = useAuthStatusQuery();
   const settingsQuery = useUserSettingsQuery({ enabled: Boolean(session) });
   const googleAccountsQuery = useGoogleAccountsQuery({ enabled: Boolean(session) });
-  const updateUserSettingsMutation = useUpdateUserSettingsMutation();
   const updateGoogleCalendarMutation = useUpdateGoogleCalendarMutation();
   const [pendingCalendarId, setPendingCalendarId] = useState<string | null>(null);
 
@@ -169,21 +94,17 @@ export function AuthSettingsWorkspace() {
   const googleAccounts = googleAccountsQuery.data ?? [];
   const googleWasLinkedNow = searchParams?.get('google') === 'linked';
   const settings = settingsQuery.data ?? null;
-  const requestError = settingsQuery.error ?? updateUserSettingsMutation.error ?? googleAccountsQuery.error;
+  const requestError = settingsQuery.error ?? googleAccountsQuery.error;
   const requestErrorMessage = requestError
-    ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar as configuracoes persistidas agora.')
+    ? getApiErrorMessage(requestError, 'Nao foi possivel sincronizar os metadados da conta agora.')
     : null;
-
-  async function handleSubmitSettings(values: AuthSettingsFormOutput) {
-    await updateUserSettingsMutation.mutateAsync(values);
-  }
 
   return (
     <div className={authSettingsWorkspaceStyles.container}>
       <SectionIntro
         eyebrow="Configuracoes"
         title="Conta, seguranca e integracao Google"
-        description="Quem entrou por email continua operando normalmente e pode conectar o Google depois. O workspace tambem persiste timezone e horarios-base que sustentam os proximos fluxos operacionais."
+        description="Quem entrou por email continua operando normalmente e pode conectar o Google depois. Esta area agora fica restrita a sessao autenticada e ao vinculo com o ecossistema Google."
       />
 
       {googleWasLinkedNow && (
@@ -228,24 +149,15 @@ export function AuthSettingsWorkspace() {
 
         <Card>
           <CardHeader>
-            <CardDescription>Preferencias operacionais</CardDescription>
-            <CardTitle>Timezone, revisao diaria e boundary do cycle</CardTitle>
+            <CardDescription>Google</CardDescription>
+            <CardTitle>Contas conectadas e calendarios operacionais</CardTitle>
           </CardHeader>
           <CardContent className={authSettingsWorkspaceStyles.connections}>
             {settingsQuery.isPending && (
               <StateNotice
                 eyebrow="Sincronizacao"
-                title="Carregando preferencias persistidas"
-                description="As configuracoes operacionais autenticadas estao sendo recuperadas do backend."
-                tone="info"
-              />
-            )}
-
-            {settingsQuery.isRefetching && !settingsQuery.isPending && (
-              <StateNotice
-                eyebrow="Sincronizacao"
-                title="Atualizando preferencias persistidas"
-                description="A tela esta reconciliando os valores mais recentes confirmados pelo backend."
+                title="Carregando metadados da conta"
+                description="O backend ainda esta reconciliando o vinculo Google e o timezone usado para formatar os horarios desta tela."
                 tone="info"
               />
             )}
@@ -253,50 +165,12 @@ export function AuthSettingsWorkspace() {
             {requestErrorMessage && (
               <StateNotice
                 eyebrow="Integracao"
-                title="Falha ao sincronizar configuracoes"
+                title="Falha ao sincronizar os dados da conta"
                 description={requestErrorMessage}
                 tone="warning"
               />
             )}
 
-            {updateUserSettingsMutation.isSuccess && !updateUserSettingsMutation.isPending && (
-              <StateNotice
-                eyebrow="Preferencias salvas"
-                title="Configuracoes persistidas com sucesso"
-                description="O backend confirmou o novo timezone e os horarios-base operacionais."
-                tone="info"
-              />
-            )}
-
-            {settings && (
-              <>
-                <div className={authSettingsWorkspaceStyles.row}>
-                  <div>
-                    <p className={authSettingsWorkspaceStyles.label}>Vinculo Google no contexto de Settings</p>
-                    <p className={authSettingsWorkspaceStyles.value}>{settings.googleConnection.hasGoogleLinked ? 'Google conectado' : 'Sem Google conectado'}</p>
-                    <p className={authSettingsWorkspaceStyles.hint}>
-                      {settings.googleConnection.connectedAccountCount} conta(s) conectada(s) · vinculo {settings.googleConnection.linkedAt ? `registrado em ${formatDateTimeByTimezone(settings.googleConnection.linkedAt, settings.timezone)}` : 'ainda nao registrado'}
-                    </p>
-                  </div>
-                </div>
-
-                <OperationalSettingsForm
-                  isDisabled={settingsQuery.isRefetching || updateUserSettingsMutation.isPending}
-                  isSubmitting={updateUserSettingsMutation.isPending}
-                  onSubmitSettings={handleSubmitSettings}
-                  settings={settings}
-                />
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription>Google</CardDescription>
-            <CardTitle>Contas conectadas e calendarios operacionais</CardTitle>
-          </CardHeader>
-          <CardContent className={authSettingsWorkspaceStyles.connections}>
             {!authStatusQuery.data?.oauthConfigured && (
               <StateNotice
                 eyebrow="OAuth pendente"

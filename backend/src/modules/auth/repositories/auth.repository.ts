@@ -1,8 +1,8 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { DrizzleService } from '@/shared/database/drizzle.service';
-import { googleAccounts, users } from '@/shared/database/schema';
+import { googleAccounts, googleCalendars, users } from '@/shared/database/schema';
 
 import type { AuthProvider } from '@/modules/auth/types/auth';
 
@@ -14,6 +14,13 @@ interface UpsertGoogleAccountInput {
   refreshToken: string;
   tokenExpiresAt: Date;
   userId: string;
+}
+
+interface SyncGoogleCalendarInput {
+  colorHex: string;
+  googleCalendarId: string;
+  isPrimary: boolean;
+  name: string;
 }
 
 @Injectable()
@@ -127,6 +134,59 @@ export class AuthRepository {
     }
 
     return googleAccount;
+  }
+
+  async syncGoogleCalendars(accountId: string, calendars: SyncGoogleCalendarInput[]) {
+    const nextCalendarIds = calendars.map((calendar) => calendar.googleCalendarId);
+    const existingCalendars = await this.drizzleService.db
+      .select({ id: googleCalendars.id })
+      .from(googleCalendars)
+      .where(eq(googleCalendars.accountId, accountId));
+
+    const calendarsToDelete = existingCalendars
+      .map((calendar) => calendar.id)
+      .filter((calendarId) => !nextCalendarIds.includes(calendarId));
+
+    if (calendarsToDelete.length > 0) {
+      await this.drizzleService.db
+        .delete(googleCalendars)
+        .where(and(eq(googleCalendars.accountId, accountId), inArray(googleCalendars.id, calendarsToDelete)));
+    }
+
+    if (calendars.length === 0) {
+      return [];
+    }
+
+    const persistedCalendars = [] as Array<{ id: string }>;
+
+    for (const calendar of calendars) {
+      const [persistedCalendar] = await this.drizzleService.db
+        .insert(googleCalendars)
+        .values({
+          accountId,
+          colorHex: calendar.colorHex,
+          id: calendar.googleCalendarId,
+          isPrimary: calendar.isPrimary,
+          name: calendar.name,
+        })
+        .onConflictDoUpdate({
+          target: googleCalendars.id,
+          set: {
+            accountId,
+            colorHex: calendar.colorHex,
+            isPrimary: calendar.isPrimary,
+            name: calendar.name,
+            updatedAt: new Date(),
+          },
+        })
+        .returning({ id: googleCalendars.id });
+
+      if (persistedCalendar) {
+        persistedCalendars.push(persistedCalendar);
+      }
+    }
+
+    return persistedCalendars;
   }
 
   async updateUser(input: { authProvider: AuthProvider; displayName: string; googleLinkedAt?: Date | null; passwordHash?: string | null; userId: string }) {

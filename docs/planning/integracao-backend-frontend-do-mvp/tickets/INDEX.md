@@ -4,6 +4,7 @@
 - **Total:** 15 tickets | **Estimativa total:** 56 pontos
 - **Epic:** [../epic.md](../epic.md)
 - **Core Flow:** [../core-flow.md](../core-flow.md)
+- **Resumo executivo:** [../executive-summary.md](../executive-summary.md)
 - **Checkpoint atual:** T015 concluído em 2026-03-23
 - **Próximo ticket sugerido:** Epic concluído
 

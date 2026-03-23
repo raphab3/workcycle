@@ -1,3 +1,4 @@
+export { NotificationsSettingsWorkspace } from './components/NotificationsSettingsWorkspace';
 export { settingsKeys } from './queries/settingsKeys';
 export { useUpdateUserSettingsMutation } from './queries/useUpdateUserSettingsMutation';
 export { useUserSettingsQuery } from './queries/useUserSettingsQuery';

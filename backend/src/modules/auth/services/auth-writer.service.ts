@@ -25,6 +25,18 @@ interface GoogleProfileResponse {
   name: string;
 }
 
+interface GoogleCalendarListResponse {
+  items?: GoogleCalendarListItem[];
+  nextPageToken?: string;
+}
+
+interface GoogleCalendarListItem {
+  backgroundColor?: string;
+  id?: string;
+  primary?: boolean;
+  summary?: string;
+}
+
 @Injectable()
 export class AuthWriterService {
   constructor(
@@ -102,7 +114,7 @@ export class AuthWriterService {
       throw new ConflictException('This Google account is already linked to another user.');
     }
 
-    await this.authRepository.upsertGoogleAccount({
+    const googleAccount = await this.authRepository.upsertGoogleAccount({
       accessToken: tokens.access_token,
       displayName: profile.name,
       email: profile.email,
@@ -111,6 +123,10 @@ export class AuthWriterService {
       tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1_000),
       userId: user.id,
     });
+
+    const calendars = await this.fetchGoogleCalendars(tokens.access_token);
+
+    await this.authRepository.syncGoogleCalendars(googleAccount.id, calendars);
 
 
     if (!user) {
@@ -245,6 +261,52 @@ export class AuthWriterService {
     }
 
     return response.json() as Promise<GoogleProfileResponse>;
+  }
+
+  private async fetchGoogleCalendars(accessToken: string) {
+    const calendars: Array<{
+      colorHex: string;
+      googleCalendarId: string;
+      isPrimary: boolean;
+      name: string;
+    }> = [];
+    let pageToken: string | undefined;
+
+    do {
+      const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+      url.searchParams.set('maxResults', '250');
+
+      if (pageToken) {
+        url.searchParams.set('pageToken', pageToken);
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new BadRequestException('Google calendar list fetch failed.');
+      }
+
+      const payload = await response.json() as GoogleCalendarListResponse;
+
+      calendars.push(
+        ...(payload.items ?? [])
+          .filter((calendar): calendar is Required<Pick<GoogleCalendarListItem, 'id' | 'summary'>> & GoogleCalendarListItem => Boolean(calendar.id && calendar.summary))
+          .map((calendar) => ({
+            colorHex: calendar.backgroundColor ?? '#9ca3af',
+            googleCalendarId: calendar.id,
+            isPrimary: Boolean(calendar.primary),
+            name: calendar.summary,
+          })),
+      );
+
+      pageToken = payload.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    return calendars;
   }
 
   private mergeAuthProviders(currentProvider: AuthProvider, nextProvider: 'email' | 'google') {
