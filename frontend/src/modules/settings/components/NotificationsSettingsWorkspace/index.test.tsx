@@ -139,10 +139,10 @@ describe('NotificationsSettingsWorkspace', () => {
 
     renderWorkspace();
 
-    expect(screen.getByText('Notificacoes operacionais')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Notificacoes operacionais' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('America/Sao_Paulo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('18:30')).toBeInTheDocument();
-    expect(screen.getByText('Permissao pendente')).toBeInTheDocument();
+    expect(screen.getByText('Capacidade e estado degradado')).toBeInTheDocument();
     expect(screen.getByText('O ambiente esta operando em fallback')).toBeInTheDocument();
     expect(screen.getByText('Pulso de atividade')).toBeInTheDocument();
   });
