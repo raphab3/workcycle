@@ -182,7 +182,7 @@ export function NotificationsSettingsWorkspace() {
         description="Gerencie permissao, preferencias operacionais e um preview coerente com o motor real de entrega, sem misturar isso com conta ou Google."
       />
 
-      <div className={notificationsSettingsWorkspaceStyles.cardStack}>
+      <div className={notificationsSettingsWorkspaceStyles.layoutGrid}>
         <Card>
           <CardHeader>
             <CardDescription>Preferencias persistidas</CardDescription>
@@ -260,7 +260,7 @@ export function NotificationsSettingsWorkspace() {
           </CardContent>
         </Card>
 
-        <div className={notificationsSettingsWorkspaceStyles.cardStack}>
+        <div className={notificationsSettingsWorkspaceStyles.sidebarStack}>
           <Card>
             <CardHeader>
               <CardDescription>Ambiente atual</CardDescription>
