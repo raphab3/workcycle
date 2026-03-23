@@ -17,7 +17,7 @@ export class BuildGoogleLinkUrlUseCase {
     url.searchParams.set('access_type', 'offline');
     url.searchParams.set('client_id', env.GOOGLE_CLIENT_ID);
     url.searchParams.set('include_granted_scopes', 'true');
-    url.searchParams.set('prompt', 'consent');
+    url.searchParams.set('prompt', 'consent select_account');
     url.searchParams.set('redirect_uri', env.GOOGLE_REDIRECT_URI);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', [

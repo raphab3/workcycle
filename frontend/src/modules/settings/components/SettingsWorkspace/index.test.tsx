@@ -5,7 +5,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { SettingsWorkspace } from './index';
 
 vi.mock('@/modules/auth', () => ({
-  AuthSettingsWorkspace: ({ showIntro }: { showIntro?: boolean }) => (
+  AccountSettingsWorkspace: ({ showIntro }: { showIntro?: boolean }) => (
+    <div data-show-intro={String(showIntro)}>
+      Account content
+    </div>
+  ),
+  GoogleCalendarSettingsWorkspace: ({ showIntro }: { showIntro?: boolean }) => (
     <div data-show-intro={String(showIntro)}>
       Google Calendar content
     </div>
@@ -21,7 +26,7 @@ vi.mock('../NotificationsSettingsWorkspace', () => ({
 }));
 
 describe('SettingsWorkspace', () => {
-  it('renders notifications as the default tab and switches to Google Calendar', async () => {
+  it('renders notifications as the default tab and switches to account and Google Calendar tabs', async () => {
     const user = userEvent.setup();
 
     render(<SettingsWorkspace />);
@@ -29,6 +34,11 @@ describe('SettingsWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Centro de configuracoes' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Notificacoes/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Notifications content')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /Conta e acesso/i }));
+
+    expect(screen.getByRole('tab', { name: /Conta e acesso/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Account content')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: /Google Calendar/i }));
 

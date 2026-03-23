@@ -6,7 +6,7 @@ import type { SuggestedAllocation, TodayCycleValues } from '@/modules/today/type
 
 import type { WeeklyDayCell, WeeklyDeviationStatus, WeeklyProjectRow, WeeklyScenario } from '../types';
 
-const weekDays: WeekDay[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+const weekDays: WeekDay[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
 const currentDay: WeekDay = 'Qua';
 
 interface BuildWeeklyScenarioParams {

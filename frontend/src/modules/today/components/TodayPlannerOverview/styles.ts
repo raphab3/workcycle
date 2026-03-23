@@ -15,7 +15,7 @@ export const todayPlannerOverviewStyles = {
   sessionCopy: 'mt-2 max-w-3xl text-sm leading-6 text-muted-foreground',
   sessionIdleActions: 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end',
   projectPickerRoot: 'relative',
-  projectPickerMenu: 'absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-border/70 bg-background p-3 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.44)]',
+  projectPickerMenu: 'absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-border/70 bg-background p-3 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.44)]',
   projectPickerLabel: 'px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground',
   projectPickerList: 'grid gap-2',
   projectPickerItem: 'flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-muted',

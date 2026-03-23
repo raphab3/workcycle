@@ -1,9 +1,9 @@
 'use client';
 
-import { BellRing, CalendarClock } from 'lucide-react';
+import { BellRing, CalendarClock, ShieldCheck } from 'lucide-react';
 import { useId, useState } from 'react';
 
-import { AuthSettingsWorkspace } from '@/modules/auth';
+import { AccountSettingsWorkspace, GoogleCalendarSettingsWorkspace } from '@/modules/auth';
 import { SectionIntro } from '@/shared/components/SectionIntro';
 import { cn } from '@/shared/utils/cn';
 
@@ -11,7 +11,7 @@ import { NotificationsSettingsWorkspace } from '../NotificationsSettingsWorkspac
 
 import { settingsWorkspaceStyles } from './styles';
 
-type SettingsTabId = 'notifications' | 'google-calendar';
+type SettingsTabId = 'notifications' | 'account' | 'google-calendar';
 
 const settingsTabs: Array<{
   description: string;
@@ -26,7 +26,13 @@ const settingsTabs: Array<{
     label: 'Notificacoes',
   },
   {
-    description: 'Contas conectadas, reconexao OAuth e calendarios incluidos na agenda.',
+    description: 'Sessao autenticada, origem do login e separacao entre acesso a conta e integracoes externas.',
+    icon: ShieldCheck,
+    id: 'account',
+    label: 'Conta e acesso',
+  },
+  {
+    description: 'Contas conectadas, reconexao OAuth e espaco dedicado para anexar mais contas Google Calendar.',
     icon: CalendarClock,
     id: 'google-calendar',
     label: 'Google Calendar',
@@ -42,7 +48,7 @@ export function SettingsWorkspace() {
       <SectionIntro
         eyebrow="Configuracoes"
         title="Centro de configuracoes"
-        description="Use abas separadas para ajustar notificacoes operacionais e a integracao com Google Calendar sem comprimir o restante da tela."
+        description="Use abas separadas para ajustar notificacoes, revisar a conta autenticada e administrar o Google Calendar sem misturar login com integracoes operacionais."
       />
 
       <div className={settingsWorkspaceStyles.shell}>
@@ -85,6 +91,15 @@ export function SettingsWorkspace() {
           >
             <NotificationsSettingsWorkspace showIntro={false} />
           </section>
+        ) : activeTab === 'account' ? (
+          <section
+            aria-labelledby={`${tabListId}-account`}
+            className={settingsWorkspaceStyles.panel}
+            id={`${tabListId}-account-panel`}
+            role="tabpanel"
+          >
+            <AccountSettingsWorkspace showIntro={false} />
+          </section>
         ) : (
           <section
             aria-labelledby={`${tabListId}-google-calendar`}
@@ -92,7 +107,7 @@ export function SettingsWorkspace() {
             id={`${tabListId}-google-calendar-panel`}
             role="tabpanel"
           >
-            <AuthSettingsWorkspace showIntro={false} />
+            <GoogleCalendarSettingsWorkspace showIntro={false} />
           </section>
         )}
       </div>

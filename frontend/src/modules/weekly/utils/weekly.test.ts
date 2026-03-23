@@ -15,7 +15,7 @@ describe('weekly helpers', () => {
 
     expect(scenario.rows.length).toBeGreaterThan(0);
     expect(scenario.summary.plannedWeekHours).toBeGreaterThan(0);
-    expect(scenario.rows[0]?.cells).toHaveLength(6);
+    expect(scenario.rows[0]?.cells).toHaveLength(7);
   });
 
   it('formats weekly cells and adjusted actual hours', () => {

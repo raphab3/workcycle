@@ -29,6 +29,7 @@ const weeklySnapshotPayload: WeeklySnapshotDTO = {
         { day: 'Qui', date: '2026-03-26', plannedHours: 2, actualHours: 1.5 },
         { day: 'Sex', date: '2026-03-27', plannedHours: 2, actualHours: 1.5 },
         { day: 'Sab', date: '2026-03-28', plannedHours: 0, actualHours: 0 },
+        { day: 'Dom', date: '2026-03-29', plannedHours: 0, actualHours: 0 },
       ],
     },
   ],
@@ -119,6 +120,7 @@ describe('WeeklyBalanceWorkspace', () => {
 
     expect(screen.getByText('Previsto na semana')).toBeInTheDocument();
     expect(screen.getByText('Projeto')).toBeInTheDocument();
+    expect(screen.getByText('Dom')).toBeInTheDocument();
     expect(screen.getByText('Previsto')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Desvios semanais por projeto' })).toBeInTheDocument();
@@ -138,8 +140,22 @@ describe('WeeklyBalanceWorkspace', () => {
     expect(screen.getByText('Historico recente')).toBeInTheDocument();
     expect(screen.getByText('Semanas fechadas persistidas')).toBeInTheDocument();
     expect(screen.getByText('2026 · Semana 12')).toBeInTheDocument();
+    expect(screen.getByText('Dom')).toBeInTheDocument();
     expect(screen.getByText('Fechada')).toBeInTheDocument();
     expect(screen.getAllByText('Atencao').length).toBeGreaterThan(0);
     expect(screen.getByTitle('Dado provisório enquanto a semana atual estiver aberta.')).toBeInTheDocument();
+  });
+
+  it('does not render the local fallback when the authenticated backend snapshot fails', async () => {
+    authenticateSession();
+    vi.spyOn(weeklyService, 'getWeeklySnapshot').mockRejectedValue(new Error('snapshot failed'));
+    vi.spyOn(weeklyService, 'getWeeklyHistory').mockResolvedValue({ snapshots: [] });
+
+    renderWeeklyBalanceWorkspace();
+
+    await waitFor(() => expect(screen.getByText('Nao foi possivel carregar a semana atual do backend')).toBeInTheDocument());
+
+    expect(screen.queryByRole('table', { name: 'Desvios semanais por projeto' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Previsto na semana')).not.toBeInTheDocument();
   });
 });

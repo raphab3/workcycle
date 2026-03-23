@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { GetWeeklySnapshotUseCase } from '@/modules/weekly/use-cases/get-weekly-snapshot.use-case';
 import { ListWeeklyHistoryUseCase } from '@/modules/weekly/use-cases/list-weekly-history.use-case';
@@ -6,7 +6,9 @@ import { ListWeeklyHistoryUseCase } from '@/modules/weekly/use-cases/list-weekly
 @Injectable()
 export class WeeklyFinderService {
   constructor(
+    @Inject(GetWeeklySnapshotUseCase)
     private readonly getWeeklySnapshotUseCase: GetWeeklySnapshotUseCase,
+    @Inject(ListWeeklyHistoryUseCase)
     private readonly listWeeklyHistoryUseCase: ListWeeklyHistoryUseCase,
   ) {}
 

@@ -27,6 +27,15 @@ const statusLabels = {
   critical: 'Critico',
 } as const;
 
+const weeklyDayHeaders = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'] as const;
+
+const emptySummary = {
+  plannedWeekHours: 0,
+  actualWeekHours: 0,
+  attentionProjects: 0,
+  criticalProjects: 0,
+};
+
 function formatWeekLabel(weekKey: string | undefined) {
   if (!weekKey) {
     return 'Semana atual';
@@ -58,15 +67,19 @@ export function WeeklyBalanceWorkspace() {
     : null;
   const isSyncingWeekly = isAuthenticated && (weeklySnapshotQuery.isPending || weeklyHistoryQuery.isPending);
   const isRefetchingWeekly = isAuthenticated && ((weeklySnapshotQuery.isRefetching && !weeklySnapshotQuery.isPending) || (weeklyHistoryQuery.isRefetching && !weeklyHistoryQuery.isPending));
-  const scenario = weeklySnapshotQuery.data ?? localScenario;
-  const rows = scenario.rows;
-  const summary = scenario.summary;
+  const scenario = isAuthenticated ? (weeklySnapshotQuery.data ?? null) : localScenario;
+  const rows = scenario?.rows ?? [];
+  const summary = scenario?.summary ?? emptySummary;
   const historySnapshots = weeklyHistoryQuery.data?.snapshots ?? [];
   const provisionalCellsCount = rows.reduce(
     (total, row) => total + row.cells.filter((cell) => cell.isProvisional).length,
     0,
   );
-  const hasProvisionalData = provisionalCellsCount > 0 || scenario.isFinal === false;
+  const hasProvisionalData = provisionalCellsCount > 0 || scenario?.isFinal === false;
+  const dayHeaders = rows[0]?.cells.map((cell) => cell.day) ?? weeklyDayHeaders;
+  const rowClassName = dayHeaders.length === 7
+    ? weeklyBalanceWorkspaceStyles.rowSevenDays
+    : weeklyBalanceWorkspaceStyles.rowSixDays;
 
   return (
     <div className={weeklyBalanceWorkspaceStyles.layout}>
@@ -130,7 +143,7 @@ export function WeeklyBalanceWorkspace() {
         />
       )}
 
-      {scenario.weekKey && (
+      {scenario?.weekKey && (
         <StateNotice
           eyebrow="Contrato Weekly"
           title={scenario.isFinal ? `Historico fechado: ${formatWeekLabel(scenario.weekKey)}` : `Semana aberta: ${formatWeekLabel(scenario.weekKey)}`}
@@ -143,7 +156,16 @@ export function WeeklyBalanceWorkspace() {
         />
       )}
 
-      {rows.length === 0 && (
+      {!scenario && hasHydratedSession && isAuthenticated && !isSyncingWeekly && (
+        <EmptyState
+          eyebrow="Semana"
+          title="Nao foi possivel carregar a semana atual do backend"
+          description="A tela Semana autenticada nao usa mais o fallback local quando a API falha, para evitar leitura inconsistente com o servidor."
+          hint="Corrija a integracao weekly no backend ou recarregue apos a API voltar a responder o snapshot atual."
+        />
+      )}
+
+      {scenario && rows.length === 0 && (
         <EmptyState
           eyebrow="Semana"
           title="Nao ha dados suficientes para consolidar a semana"
@@ -156,6 +178,7 @@ export function WeeklyBalanceWorkspace() {
         />
       )}
 
+      {scenario && (
       <div className={weeklyBalanceWorkspaceStyles.summaryGrid}>
         <Card>
           <CardHeader>
@@ -182,6 +205,7 @@ export function WeeklyBalanceWorkspace() {
           </CardHeader>
         </Card>
       </div>
+      )}
 
       {historySnapshots.length > 0 && (
         <Card>
@@ -207,15 +231,13 @@ export function WeeklyBalanceWorkspace() {
         </Card>
       )}
 
+      {scenario && rows.length > 0 && (
       <div aria-label="Desvios semanais por projeto" className={weeklyBalanceWorkspaceStyles.board} role="table">
-        <div className={cn(weeklyBalanceWorkspaceStyles.row, weeklyBalanceWorkspaceStyles.rowHeader)} role="row">
+        <div className={cn(rowClassName, weeklyBalanceWorkspaceStyles.rowHeader)} role="row">
           <span role="columnheader">Projeto</span>
-          <span role="columnheader">Seg</span>
-          <span role="columnheader">Ter</span>
-          <span role="columnheader">Qua</span>
-          <span role="columnheader">Qui</span>
-          <span role="columnheader">Sex</span>
-          <span role="columnheader">Sab</span>
+          {dayHeaders.map((day) => (
+            <span key={day} role="columnheader">{day}</span>
+          ))}
           <span role="columnheader">Previsto</span>
           <span role="columnheader">Real</span>
           <span role="columnheader">Delta</span>
@@ -223,7 +245,7 @@ export function WeeklyBalanceWorkspace() {
         </div>
 
         {rows.map((row, index) => (
-          <div key={row.projectId} className={cn(weeklyBalanceWorkspaceStyles.row, index % 2 === 0 && weeklyBalanceWorkspaceStyles.rowAlt)} role="row">
+          <div key={row.projectId} className={cn(rowClassName, index % 2 === 0 && weeklyBalanceWorkspaceStyles.rowAlt)} role="row">
             <span className={weeklyBalanceWorkspaceStyles.projectCell} role="cell">
               <span aria-hidden="true" className={weeklyBalanceWorkspaceStyles.projectColor} style={{ backgroundColor: row.colorHex }} />
               {row.projectName}
@@ -262,7 +284,9 @@ export function WeeklyBalanceWorkspace() {
           </div>
         ))}
       </div>
+      )}
 
+      {scenario && rows.length > 0 && (
       <div className={weeklyBalanceWorkspaceStyles.insightGrid}>
         <Card>
           <CardHeader>
@@ -316,6 +340,7 @@ export function WeeklyBalanceWorkspace() {
           </CardContent>
         </Card>
       </div>
+      )}
     </div>
   );
 }

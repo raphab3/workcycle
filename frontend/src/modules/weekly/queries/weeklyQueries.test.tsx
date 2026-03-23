@@ -27,6 +27,7 @@ const weeklySnapshotPayload: WeeklySnapshotDTO = {
         { day: 'Qui', date: '2026-03-26', plannedHours: 2, actualHours: 1.5 },
         { day: 'Sex', date: '2026-03-27', plannedHours: 2, actualHours: 1.5 },
         { day: 'Sab', date: '2026-03-28', plannedHours: 0, actualHours: 0 },
+        { day: 'Dom', date: '2026-03-29', plannedHours: 0, actualHours: 0 },
       ],
     },
   ],
