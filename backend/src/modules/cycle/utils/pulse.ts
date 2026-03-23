@@ -1,4 +1,4 @@
-import type { TodayPulseRecordDTO, TodayRegularizationDTO, TodayTimeBlockDTO } from '@/modules/cycle/types/today';
+import type { TodayPulseRecordDTO, TodayRegularizationDTO, TodayRegularizationEntryDTO, TodayTimeBlockDTO } from '@/modules/cycle/types/today';
 
 export const DEFAULT_PULSE_INTERVAL_MINUTES = 30;
 export const DEFAULT_PULSE_RESPONSE_WINDOW_MINUTES = 5;
@@ -80,7 +80,7 @@ export function buildCloseDayReview(pulseHistory: TodayPulseRecordDTO[]) {
 }
 
 export function buildRegularizationState(pulseHistory: TodayPulseRecordDTO[]): TodayRegularizationDTO {
-  const history = pulseHistory
+  const history: TodayRegularizationEntryDTO[] = pulseHistory
     .filter((pulse) => pulse.status === 'unconfirmed' && pulse.reviewedAt !== null)
     .map((pulse) => ({
       confirmedMinutes: pulse.confirmedMinutes,

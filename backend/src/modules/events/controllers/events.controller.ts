@@ -22,7 +22,13 @@ export class EventsController {
   async listEvents(@CurrentUser() user: AuthTokenPayload, @Query() query: unknown) {
     const input = listCalendarEventsQuerySchema.parse(query);
 
-    return this.eventsFinderService.listEvents(user.sub, input);
+    return this.eventsFinderService.listEvents(user.sub, {
+      ...(input.accountIds !== undefined ? { accountIds: input.accountIds } : {}),
+      ...(input.calendarIds !== undefined ? { calendarIds: input.calendarIds } : {}),
+      from: input.from,
+      refresh: input.refresh,
+      to: input.to,
+    });
   }
 
   @UseGuards(AuthGuard)

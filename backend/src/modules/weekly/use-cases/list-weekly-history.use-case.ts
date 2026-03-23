@@ -26,8 +26,8 @@ export class ListWeeklyHistoryUseCase {
     const requestedWeekKeys = listWeekKeysInRange(fromWeekKey, toWeekKey).filter((weekKey) => weekKey < currentWeekKey);
     const persistedSnapshots = await this.weeklyRepository.listWeeklySnapshots(userId, {
       fromWeekKey,
-      limit: options?.limit,
       toWeekKey,
+      ...(options?.limit !== undefined ? { limit: options.limit } : {}),
     });
     const persistedMap = new Map(persistedSnapshots.map((snapshot) => [snapshot.weekKey, snapshot.snapshot]));
     const snapshots = [];

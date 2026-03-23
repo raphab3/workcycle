@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import type { UpdateUserSettingsInput } from '@/modules/settings/types/settings';
-
 const timeValueSchema = z.string().trim().regex(/^([01]\d|2[0-3]):([0-5]\d)$/,
   'Use o formato HH:mm para horarios persistidos.');
 
@@ -22,7 +20,7 @@ const settingsFieldSchemas = {
   timezone: z.string().trim().min(1).max(120).refine(isValidTimezone, 'Use um timezone IANA valido.'),
 } as const;
 
-export const updateUserSettingsSchema: z.ZodType<UpdateUserSettingsInput> = z.object({
+export const updateUserSettingsSchema = z.object({
   cycleStartHour: settingsFieldSchemas.cycleStartHour.optional(),
   dailyReviewTime: settingsFieldSchemas.dailyReviewTime.optional(),
   notificationsEnabled: settingsFieldSchemas.notificationsEnabled.optional(),

@@ -21,6 +21,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     origin: appConfig.frontendOrigin,
   });
   app.useGlobalFilters(new ApiExceptionFilter());

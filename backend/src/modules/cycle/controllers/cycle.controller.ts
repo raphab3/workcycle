@@ -51,6 +51,9 @@ export class CycleController {
   async listPulseRecords(@CurrentUser() user: AuthTokenPayload, @Query() query: Record<string, string | undefined>) {
     const input = listPulseRecordsQuerySchema.parse(query);
 
-    return this.cycleFinderService.listPulseRecords(user.sub, input);
+    return this.cycleFinderService.listPulseRecords(user.sub, {
+      ...(input.cycleDate !== undefined ? { cycleDate: input.cycleDate } : {}),
+      ...(input.sessionId !== undefined ? { sessionId: input.sessionId } : {}),
+    });
   }
 }

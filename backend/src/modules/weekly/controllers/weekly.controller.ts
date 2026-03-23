@@ -27,6 +27,10 @@ export class WeeklyController {
   async getHistory(@CurrentUser() user: AuthTokenPayload, @Query() query: Record<string, string | undefined>) {
     const input = getWeeklyHistoryQuerySchema.parse(query);
 
-    return this.weeklyFinderService.listWeeklyHistory(user.sub, input);
+    return this.weeklyFinderService.listWeeklyHistory(user.sub, {
+      ...(input.fromWeekKey !== undefined ? { fromWeekKey: input.fromWeekKey } : {}),
+      ...(input.limit !== undefined ? { limit: input.limit } : {}),
+      ...(input.toWeekKey !== undefined ? { toWeekKey: input.toWeekKey } : {}),
+    });
   }
 }

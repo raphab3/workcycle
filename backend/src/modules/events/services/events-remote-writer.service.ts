@@ -19,9 +19,25 @@ class GoogleCalendarWriteError extends Error {
 export class EventsRemoteWriterService {
   constructor(private readonly accountsRepository: AccountsRepository) {}
 
+  private static buildGoogleEventWritePayload(input: {
+    description?: string | undefined;
+    endAt?: string | undefined;
+    location?: string | undefined;
+    startAt?: string | undefined;
+    title?: string | undefined;
+  }) {
+    return {
+      description: input.description,
+      end: input.endAt ? { dateTime: input.endAt } : undefined,
+      location: input.location,
+      start: input.startAt ? { dateTime: input.startAt } : undefined,
+      summary: input.title,
+    };
+  }
+
   async createEvent(source: GoogleCalendarOperationalSource, input: CreateCalendarEventInput) {
     const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events`, {
-      body: JSON.stringify(this.toGoogleEventWritePayload(input)),
+      body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -33,7 +49,7 @@ export class EventsRemoteWriterService {
 
   async updateEvent(source: GoogleCalendarOperationalSource, remoteEventId: string, input: Omit<UpdateCalendarEventInput, 'calendarId'>) {
     const response = await this.performRequest(source, `${encodeURIComponent(source.calendarId)}/events/${encodeURIComponent(remoteEventId)}`, {
-      body: JSON.stringify(this.toGoogleEventWritePayload(input)),
+      body: JSON.stringify(EventsRemoteWriterService.buildGoogleEventWritePayload(input)),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -70,7 +86,7 @@ export class EventsRemoteWriterService {
   private async performRequest(
     source: GoogleCalendarOperationalSource,
     path: string,
-    init: Pick<RequestInit, 'body' | 'headers' | 'method'>,
+    init: { body?: BodyInit | null; headers?: HeadersInit; method: NonNullable<RequestInit['method']> },
   ) {
     let accessToken = source.accountAccessToken;
 
@@ -90,15 +106,24 @@ export class EventsRemoteWriterService {
     }
   }
 
-  private async fetchWithAccessToken(accessToken: string, path: string, init: Pick<RequestInit, 'body' | 'headers' | 'method'>) {
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${path}`, {
-      body: init.body,
+  private async fetchWithAccessToken(
+    accessToken: string,
+    path: string,
+    init: { body?: BodyInit | null; headers?: HeadersInit; method: NonNullable<RequestInit['method']> },
+  ) {
+    const requestInit: RequestInit = {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        ...init.headers,
+        ...(init.headers ?? {}),
       },
       method: init.method,
-    });
+    };
+
+    if (init.body !== undefined) {
+      requestInit.body = init.body;
+    }
+
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${path}`, requestInit);
 
     if (!response.ok) {
       throw new GoogleCalendarWriteError(response.status, `Google Calendar write failed with status ${response.status}.`);
@@ -156,17 +181,6 @@ export class EventsRemoteWriterService {
 
     return payload.access_token;
   }
-
-  private toGoogleEventWritePayload(input: Partial<CreateCalendarEventInput>) {
-    return {
-      description: input.description,
-      end: input.endAt ? { dateTime: input.endAt } : undefined,
-      location: input.location,
-      start: input.startAt ? { dateTime: input.startAt } : undefined,
-      summary: input.title,
-    };
-  }
-
   private toHttpError(error: unknown) {
     if (error instanceof GoogleCalendarWriteError) {
       if (error.status === 404) {

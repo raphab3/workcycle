@@ -31,7 +31,16 @@ export function toTodayPulseRecordDTO(record: PulseRecord): TodayPulseRecordDTO 
 }
 
 export function deriveActivePulse(pulseHistory: TodayPulseRecordDTO[], referenceAt: string): TodayActivePulseDTO | null {
-  const activePulse = pulseHistory.findLast((pulse) => pulse.respondedAt === null && pulse.resolution === 'pending');
+  let activePulse: TodayPulseRecordDTO | null = null;
+
+  for (let index = pulseHistory.length - 1; index >= 0; index -= 1) {
+    const pulse = pulseHistory[index];
+
+    if (pulse && pulse.respondedAt === null && pulse.resolution === 'pending') {
+      activePulse = pulse;
+      break;
+    }
+  }
 
   if (!activePulse) {
     return null;
@@ -77,7 +86,7 @@ export function buildSnapshotFromSession(tasks: Task[], timeBlocks: TodayTimeBlo
     actualHours,
     completedTaskIds: currentCycleTasks.filter((task) => task.status === 'done').map((task) => task.id),
     incompleteTaskIds: currentCycleTasks.filter((task) => task.status !== 'done').map((task) => task.id),
-    plannedHours: persistedSnapshot?.plannedHours ?? 0,
+    plannedHours: 0,
   };
 }
 

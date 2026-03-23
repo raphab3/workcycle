@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { updateTodaySessionSchema, upsertPulseRecordSchema } from '@/modules/cycle/cycle.schemas';
+import { todayContractStatusSchema } from '@/modules/cycle/cycle.schemas';
+import { createTodayContractStatus } from '@/modules/cycle/types/today';
 
 test('updateTodaySessionSchema accepts a valid Today session update payload', () => {
   const parsed = updateTodaySessionSchema.parse({
@@ -27,11 +29,7 @@ test('upsertPulseRecordSchema rejects invalid pulse minutes', () => {
     sessionId: '7f6c59b0-b0d2-4f44-b73c-5f7f67f0c165',
     status: 'confirmed',
   }), /Too big: expected number to be <=30/);
-});import assert from 'node:assert/strict';
-import test from 'node:test';
-
-import { todayContractStatusSchema } from '@/modules/cycle/cycle.schemas';
-import { createTodayContractStatus } from '@/modules/cycle/types/today';
+});
 
 test('todayContractStatusSchema accepts the canonical Today contract payload', () => {
   const parsed = todayContractStatusSchema.parse(createTodayContractStatus());

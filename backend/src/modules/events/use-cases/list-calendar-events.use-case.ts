@@ -17,8 +17,8 @@ export class ListCalendarEventsUseCase {
   async execute(userId: string, input: ListCalendarEventsInputDTO): Promise<ListCalendarEventsResultDTO> {
     const degradedSources = input.refresh ? await this.eventsSyncService.refreshEvents(userId, input) : [];
     const events = await this.eventsRepository.listEventsByInterval(userId, {
-      accountIds: input.accountIds,
-      calendarIds: input.calendarIds,
+      ...(input.accountIds !== undefined ? { accountIds: input.accountIds } : {}),
+      ...(input.calendarIds !== undefined ? { calendarIds: input.calendarIds } : {}),
       from: new Date(input.from),
       to: new Date(input.to),
     });

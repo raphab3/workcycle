@@ -31,8 +31,8 @@ export class EventsSyncService {
 
   async refreshEvents(userId: string, input: ListCalendarEventsInputDTO) {
     const sources = await this.accountsRepository.listOperationalCalendarSources(userId, {
-      accountIds: input.accountIds,
-      calendarIds: input.calendarIds,
+      ...(input.accountIds !== undefined ? { accountIds: input.accountIds } : {}),
+      ...(input.calendarIds !== undefined ? { calendarIds: input.calendarIds } : {}),
     });
     const degradedSources: DegradedSourceDTO[] = [];
     const from = new Date(input.from);

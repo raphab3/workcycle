@@ -127,7 +127,7 @@ test('refreshEvents upserts remote events, reconciles missing local rows and deg
 });
 
 test('refreshEvents refreshes an expired Google token and retries the calendar fetch once', async () => {
-  const refreshedTokens: Array<{ accessToken: string; refreshToken: string }> = [];
+  const refreshedTokens: Array<{ accessToken: string; refreshToken: string; tokenExpiresAt: Date }> = [];
   const originalFetch = globalThis.fetch;
   const originalClientId = env.GOOGLE_CLIENT_ID;
   const originalClientSecret = env.GOOGLE_CLIENT_SECRET;
@@ -171,7 +171,7 @@ test('refreshEvents refreshes an expired Google token and retries the calendar f
           },
         ],
         touchCalendarSync: async () => undefined,
-        updateGoogleAccountTokens: async (_accountId: string, input: { accessToken: string; refreshToken: string }) => {
+        updateGoogleAccountTokens: async (_accountId: string, input: { accessToken: string; refreshToken: string; tokenExpiresAt: Date }) => {
           refreshedTokens.push(input);
         },
       },

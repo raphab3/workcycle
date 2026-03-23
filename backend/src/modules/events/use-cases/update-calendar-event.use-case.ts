@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
 import { AccountsRepository } from '@/modules/accounts/repositories/accounts.repository';
 import { EventsRepository } from '@/modules/events/repositories/events.repository';
@@ -44,6 +44,10 @@ export class UpdateCalendarEventUseCase {
     });
     const persistedRecord = toPersistedCalendarEvent(source, remoteEvent, new Date());
 
+    if (!persistedRecord.startAt || !persistedRecord.endAt || !persistedRecord.syncedAt || !persistedRecord.title) {
+      throw new InternalServerErrorException('Persisted event payload is incomplete after Google event update.');
+    }
+
     await this.eventsRepository.upsertEvent(persistedRecord);
 
     return toCalendarEventResponse([{
@@ -57,13 +61,13 @@ export class UpdateCalendarEventUseCase {
       description: persistedRecord.description ?? null,
       endAt: persistedRecord.endAt,
       id: persistedRecord.id,
-      isAllDay: persistedRecord.isAllDay,
+      isAllDay: persistedRecord.isAllDay ?? false,
       location: persistedRecord.location ?? null,
       meetLink: persistedRecord.meetLink ?? null,
       projectId: persistedRecord.projectId ?? null,
       recurrenceRule: persistedRecord.recurrenceRule ?? null,
       recurringEventId: persistedRecord.recurringEventId ?? null,
-      responseStatus: persistedRecord.responseStatus,
+      responseStatus: persistedRecord.responseStatus ?? 'needsAction',
       startAt: persistedRecord.startAt,
       syncedAt: persistedRecord.syncedAt,
       title: persistedRecord.title,

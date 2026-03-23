@@ -28,6 +28,11 @@ export class SettingsController {
   async updateUserSettings(@CurrentUser() user: AuthTokenPayload, @Body() body: unknown) {
     const input = updateUserSettingsSchema.parse(body);
 
-    return this.settingsWriterService.updateUserSettings(user.sub, input);
+    return this.settingsWriterService.updateUserSettings(user.sub, {
+      ...(input.cycleStartHour !== undefined ? { cycleStartHour: input.cycleStartHour } : {}),
+      ...(input.dailyReviewTime !== undefined ? { dailyReviewTime: input.dailyReviewTime } : {}),
+      ...(input.notificationsEnabled !== undefined ? { notificationsEnabled: input.notificationsEnabled } : {}),
+      ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
+    });
   }
 }

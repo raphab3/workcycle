@@ -2,10 +2,12 @@ import { boolean, index, jsonb, pgTable, timestamp, uniqueIndex, uuid, varchar, 
 
 import { users } from './users.schema';
 
+import type { WeeklyDay, WeeklyDeviationStatus, WeeklySnapshotSource } from '@/modules/weekly/types/weekly';
+
 interface PersistedWeeklyDayCell {
   actualHours: number;
   date: string;
-  day: string;
+  day: WeeklyDay;
   isProvisional: boolean;
   plannedHours: number;
 }
@@ -18,14 +20,14 @@ interface PersistedWeeklyProjectRow {
   plannedWeekHours: number;
   projectId: string;
   projectName: string;
-  status: string;
+  status: WeeklyDeviationStatus;
 }
 
 interface PersistedWeeklySnapshot {
   generatedAt: string;
   isFinal: boolean;
   rows: PersistedWeeklyProjectRow[];
-  source: string;
+  source: WeeklySnapshotSource;
   summary: {
     actualWeekHours: number;
     attentionProjects: number;
